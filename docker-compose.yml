@@ -1,0 +1,22 @@
+# Docker Compose for Davetim Frontend (Supabase Backend)
+
+services:
+  # React Frontend (Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: davetim-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - davetim-network
+
+networks:
+  davetim-network:
+    driver: bridge
