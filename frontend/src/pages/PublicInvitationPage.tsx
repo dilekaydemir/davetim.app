@@ -1,0 +1,283 @@
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Download, Share2, Loader2, Calendar, MapPin, Clock } from 'lucide-react';
+import { invitationService, type Invitation } from '../services/invitationService';
+import { pdfService } from '../services/pdfService';
+import toast from 'react-hot-toast';
+
+const PublicInvitationPage: React.FC = () => {
+  const { invitationId } = useParams<{ invitationId: string }>();
+  const navigate = useNavigate();
+  
+  const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  // Prevent duplicate loads and toasts in React Strict Mode
+  const hasLoadedRef = useRef(false);
+  const hasShownErrorRef = useRef(false);
+
+  useEffect(() => {
+    // Skip if already loaded
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+    
+    loadInvitation();
+  }, [invitationId]);
+
+  const loadInvitation = async () => {
+    if (!invitationId) {
+      if (!hasShownErrorRef.current) {
+        hasShownErrorRef.current = true;
+        toast.error('Geçersiz davetiye');
+      }
+      navigate('/');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const data = await invitationService.getInvitation(invitationId);
+      
+      if (!data) {
+        if (!hasShownErrorRef.current) {
+          hasShownErrorRef.current = true;
+          toast.error('Davetiye bulunamadı');
+        }
+        navigate('/');
+        return;
+      }
+
+      // Show status badge for non-published invitations
+      // But still allow viewing (since they have the link)
+      if (data.status !== 'published') {
+        console.log('⚠️ Viewing draft invitation:', data.id);
+      }
+
+      setInvitation(data);
+      
+      // Increment view count only for published invitations
+      if (data.status === 'published') {
+        await invitationService.incrementViewCount(invitationId);
+      }
+    } catch (error) {
+      console.error('Error loading invitation:', error);
+      if (!hasShownErrorRef.current) {
+        hasShownErrorRef.current = true;
+        toast.error('Davetiye yüklenirken bir hata oluştu');
+      }
+      navigate('/');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    const previewElement = document.getElementById('invitation-preview');
+    if (!previewElement || !invitation) return;
+    
+    setIsExporting(true);
+    try {
+      await pdfService.exportAndDownload(previewElement, {
+        filename: `${invitation.title || 'davetiye'}.pdf`,
+        quality: 2,
+        orientation: 'portrait'
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleShare = () => {
+    const shareUrl = window.location.href;
+    const shareText = invitation?.title 
+      ? `${invitation.title} - Davetiye` 
+      : 'Davetiye';
+
+    if (navigator.share) {
+      pdfService.share(shareText, 'Davetiyeyi görüntülemek için tıklayın', shareUrl);
+    } else {
+      navigator.clipboard.writeText(shareUrl)
+        .then(() => toast.success('Link kopyalandı!'))
+        .catch(() => toast.error('Link kopyalanamadı'));
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('tr-TR', { 
+      day: 'numeric', 
+      month: 'long', 
+      year: 'numeric',
+      weekday: 'long'
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary-500 mx-auto mb-4" />
+          <p className="text-gray-600">Davetiye yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!invitation) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Davetiye bulunamadı</p>
+          <button onClick={() => navigate('/')} className="btn-primary">
+            Ana Sayfaya Dön
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      {/* Draft Banner */}
+      {invitation.status !== 'published' && (
+        <div className="bg-yellow-50 border-b border-yellow-200 py-3">
+          <div className="max-w-4xl mx-auto px-4">
+            <p className="text-sm text-yellow-800 text-center">
+              ⚠️ <strong>Önizleme Modu:</strong> Bu davetiye henüz yayınlanmamış. Sadece linke sahip olanlar görebilir.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Header Actions */}
+      <div className="max-w-4xl mx-auto px-4 mb-6">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate('/')}
+            className="text-gray-600 hover:text-gray-900 font-medium"
+          >
+            ← Ana Sayfa
+          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleShare}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <Share2 className="h-4 w-4" />
+              Paylaş
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              disabled={isExporting}
+              className="btn-primary flex items-center gap-2"
+            >
+              {isExporting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+              {isExporting ? 'İndiriliyor...' : 'PDF İndir'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Invitation Preview */}
+      <div className="max-w-4xl mx-auto px-4">
+        <div 
+          id="invitation-preview"
+          className="bg-white shadow-2xl rounded-lg overflow-hidden"
+          style={{
+            minHeight: '700px',
+            background: invitation.template?.preview_url 
+              ? `url(${invitation.template.preview_url}) center/cover no-repeat`
+              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+          }}
+        >
+          <div className="p-12 md:p-16 text-center text-white">
+            {/* Title */}
+            <h1 className="text-4xl md:text-6xl font-bold mb-8 drop-shadow-2xl">
+              {invitation.title}
+            </h1>
+
+            {/* Event Details */}
+            <div className="space-y-6 max-w-2xl mx-auto">
+              {/* Date */}
+              {invitation.event_date && (
+                <div className="bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-6">
+                  <div className="flex items-center justify-center gap-3 text-xl md:text-2xl font-semibold">
+                    <Calendar className="h-6 w-6" />
+                    <span>{formatDate(invitation.event_date)}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Time */}
+              {invitation.event_time && (
+                <div className="bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-6">
+                  <div className="flex items-center justify-center gap-3 text-xl md:text-2xl font-semibold">
+                    <Clock className="h-6 w-6" />
+                    <span>{invitation.event_time}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Location */}
+              {invitation.event_location_name && (
+                <div className="bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-6">
+                  <div className="flex items-center justify-center gap-3 text-xl md:text-2xl font-semibold">
+                    <MapPin className="h-6 w-6" />
+                    <span>{invitation.event_location_name}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Message */}
+              {invitation.content?.message && (
+                <div className="mt-12 bg-white bg-opacity-30 backdrop-blur-md rounded-lg p-8">
+                  <p className="text-lg md:text-xl leading-relaxed whitespace-pre-wrap">
+                    {invitation.content.message}
+                  </p>
+                </div>
+              )}
+
+              {/* Decorative Footer */}
+              <div className="mt-16 pt-8 border-t-2 border-white border-opacity-40">
+                <p className="text-xl md:text-2xl italic font-light">
+                  Sizleri aramızda görmekten mutluluk duyarız
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer Info */}
+        <div className="mt-8 text-center text-gray-600">
+          <p className="text-sm">
+            Bu davetiye{' '}
+            <a 
+              href="/" 
+              className="text-primary-600 hover:text-primary-700 font-medium"
+            >
+              Davetim
+            </a>
+            {' '}ile oluşturulmuştur
+          </p>
+          <p className="text-xs mt-2 text-gray-500">
+            Kendi davetiyenizi oluşturmak için{' '}
+            <a 
+              href="/signup" 
+              className="text-primary-600 hover:text-primary-700 font-medium"
+            >
+              ücretsiz kayıt olun
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PublicInvitationPage;

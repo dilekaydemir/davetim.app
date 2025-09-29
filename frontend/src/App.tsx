@@ -14,6 +14,7 @@ import AuthPage from './pages/AuthPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import PricingPage from './pages/PricingPage'
 import AccountPage from './pages/AccountPage'
+import PublicInvitationPage from './pages/PublicInvitationPage'
 
 // Protected Route Component
 import ProtectedRoute from './components/Auth/ProtectedRoute'
@@ -23,6 +24,9 @@ function App() {
     <div className="App">
       <Suspense fallback={<LoadingSpinner />}>
         <Routes>
+          {/* Public Invitation View (No Layout) */}
+          <Route path="/i/:invitationId" element={<PublicInvitationPage />} />
+
           {/* Public Routes */}
           <Route path="/" element={<Layout />}>
             <Route index element={<HomePage />} />

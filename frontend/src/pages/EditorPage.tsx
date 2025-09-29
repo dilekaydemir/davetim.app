@@ -1,29 +1,134 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Eye, Save, Palette } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Download, Share2, Eye, Save, Palette, Loader2 } from 'lucide-react';
+import { templateService, type Template } from '../services/templateService';
+import { invitationService, type Invitation } from '../services/invitationService';
+import { useAuth } from '../store/authStore';
+import { pdfService } from '../services/pdfService';
+import PreviewModal from '../components/Editor/PreviewModal';
+import toast from 'react-hot-toast';
 
 const EditorPage: React.FC = () => {
-  const { templateId } = useParams();
+  const { templateId: invitationId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+
+  // State
+  const [template, setTemplate] = useState<Template | null>(null);
+  const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
-  // Mock form data - will be connected to form management
-  const [formData, setFormData] = React.useState({
-    title: 'Sevgi & Ahmet Düğünü',
-    eventDate: '2025-06-15',
-    eventTime: '16:00',
-    location: 'Grand Hotel, İstanbul',
-    customMessage: 'Mutluluğumuzu paylaşmak istiyoruz'
+  // Use ref to prevent duplicate creation across re-renders
+  const isCreatingRef = useRef(false);
+  const hasCreatedRef = useRef(false);
+  
+  // Form data
+  const [formData, setFormData] = useState({
+    title: '',
+    eventDate: '',
+    eventTime: '',
+    location: '',
+    customMessage: ''
   });
 
-  const [selectedColor, setSelectedColor] = React.useState('default');
-  const [selectedFont, setSelectedFont] = React.useState('normal');
+  const [selectedColor, setSelectedColor] = useState('default');
+  const [selectedFont, setSelectedFont] = useState('normal');
 
-  // Mock template data
-  const template = {
-    id: templateId,
-    name: 'Altın Düğün',
-    category: 'wedding',
-    isPremium: true
+  // Load template or invitation
+  useEffect(() => {
+    if (!isAuthenticated) {
+      toast.error('Davetiye oluşturmak için giriş yapmalısınız');
+      navigate('/auth');
+      return;
+    }
+    
+    loadData();
+  }, [invitationId, searchParams, isAuthenticated]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Check if we're editing an existing invitation
+      if (invitationId) {
+        const invitationData = await invitationService.getInvitation(invitationId);
+        
+        if (!invitationData) {
+          toast.error('Davetiye bulunamadı');
+          navigate('/dashboard');
+          return;
+        }
+        
+        setInvitation(invitationData);
+        setTemplate(invitationData.template);
+        
+        // Load invitation data into form
+        setFormData({
+          title: invitationData.title || '',
+          eventDate: invitationData.event_date?.split('T')[0] || '',
+          eventTime: invitationData.event_time || '',
+          location: invitationData.event_location_name || '',
+          customMessage: invitationData.content?.message || ''
+        });
+        
+      } else {
+        // Creating new invitation from template
+        const templateSlug = searchParams.get('template');
+        
+        if (!templateSlug) {
+          toast.error('Şablon seçilmedi');
+          navigate('/templates');
+          return;
+        }
+        
+        // Prevent duplicate creation using ref (persists across re-renders)
+        if (isCreatingRef.current || hasCreatedRef.current) {
+          console.log('⏸️ Already creating/created invitation, skipping...');
+          return;
+        }
+        
+        isCreatingRef.current = true;
+        console.log('✨ Creating new invitation for template:', templateSlug);
+        
+        const templateData = await templateService.getTemplateBySlug(templateSlug);
+        
+        if (!templateData) {
+          toast.error('Şablon bulunamadı');
+          navigate('/templates');
+          isCreatingRef.current = false;
+          return;
+        }
+        
+        setTemplate(templateData);
+        
+        // Create new invitation
+        const newInvitation = await invitationService.createInvitation({
+          template_id: templateData.id,
+          title: `Yeni ${templateData.category?.name || 'Etkinlik'}`,
+          event_type: templateData.category?.slug || '',
+          content: {}
+        });
+        
+        if (newInvitation) {
+          setInvitation(newInvitation);
+          hasCreatedRef.current = true; // Mark as created
+          isCreatingRef.current = false;
+          console.log('✅ Invitation created, redirecting...');
+          // Redirect to edit URL
+          navigate(`/editor/${newInvitation.id}`, { replace: true });
+        } else {
+          isCreatingRef.current = false;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Veri yüklenirken hata oluştu');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const colorOptions = [
@@ -44,23 +149,105 @@ const EditorPage: React.FC = () => {
     });
   };
 
-  const handleSave = () => {
-    // TODO: Save invitation to backend
-    console.log('Saving invitation:', { templateId, formData, selectedColor, selectedFont });
-    alert('Davetiye kaydedildi!');
+  const handleSave = async () => {
+    if (!invitation) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const success = await invitationService.updateInvitation(invitation.id, {
+        title: formData.title,
+        event_date: formData.eventDate || null,
+        event_time: formData.eventTime || null,
+        event_location_name: formData.location || null,
+        content: {
+          message: formData.customMessage
+        },
+        custom_design: {
+          color: selectedColor,
+          font: selectedFont
+        }
+      });
+      
+      if (success) {
+        // Reload invitation data
+        const updated = await invitationService.getInvitation(invitation.id);
+        if (updated) {
+          setInvitation(updated);
+        }
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleDownload = () => {
-    // TODO: Generate and download PDF
-    console.log('Downloading PDF:', { templateId, formData, selectedColor, selectedFont });
-    alert('PDF indiriliyor...');
+  const handlePreview = () => {
+    setIsPreviewOpen(true);
+  };
+
+  const handleDownload = async () => {
+    if (!invitation) return;
+    
+    // Save first
+    await handleSave();
+    
+    // Then open preview modal for download
+    setIsPreviewOpen(true);
+  };
+
+  const handleTogglePublish = async () => {
+    if (!invitation) return;
+    
+    const newStatus = invitation.status === 'published' ? 'draft' : 'published';
+    const statusText = newStatus === 'published' ? 'yayınlandı' : 'taslağa alındı';
+    
+    try {
+      const updated = await invitationService.updateInvitation(invitation.id, {
+        status: newStatus
+      });
+      
+      if (updated) {
+        setInvitation(updated);
+        toast.success(`Davetiye ${statusText}`);
+      }
+    } catch (error) {
+      console.error('Toggle publish error:', error);
+      toast.error('Status güncellenemedi');
+    }
   };
 
   const handleShare = () => {
-    // TODO: Implement sharing functionality
-    console.log('Sharing invitation');
-    alert('Paylaşım özelliği yakında eklenecek!');
+    if (invitation?.id) {
+      pdfService.copyShareLink(invitation.id);
+    }
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500 mx-auto mb-4" />
+          <p className="text-gray-600">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!template || !invitation) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">Davetiye bulunamadı</p>
+          <button onClick={() => navigate('/templates')} className="btn-primary">
+            Şablonlara Dön
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,7 +268,8 @@ const EditorPage: React.FC = () => {
                   {template.name} - Düzenle
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Son kaydedilme: Bugün 14:30
+                  {invitation.status === 'draft' ? '📝 Taslak' : invitation.status === 'published' ? '🌐 Yayında' : '🗄️ Arşivlendi'}
+                  {invitation.updated_at && ` • ${new Date(invitation.updated_at).toLocaleString('tr-TR')}`}
                 </p>
               </div>
             </div>
@@ -89,12 +277,24 @@ const EditorPage: React.FC = () => {
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleSave}
-                className="btn-secondary flex items-center gap-2"
+                disabled={isSaving}
+                className="btn-secondary flex items-center gap-2 disabled:opacity-50"
               >
-                <Save className="h-4 w-4" />
-                Kaydet
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
               </button>
               <button
+                onClick={handleTogglePublish}
+                className={`btn-outline flex items-center gap-2 ${
+                  invitation.status === 'published' 
+                    ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100' 
+                    : 'bg-yellow-50 text-yellow-700 border-yellow-300 hover:bg-yellow-100'
+                }`}
+              >
+                {invitation.status === 'published' ? '✓ Yayında' : '📝 Yayınla'}
+              </button>
+              <button
+                onClick={handlePreview}
                 className="btn-outline flex items-center gap-2"
               >
                 <Eye className="h-4 w-4" />
@@ -327,6 +527,20 @@ const EditorPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        invitation={invitation}
+        invitationData={{
+          title: formData.title,
+          eventDate: formData.eventDate,
+          eventTime: formData.eventTime,
+          location: formData.location,
+          message: formData.customMessage
+        }}
+      />
     </div>
   );
 };

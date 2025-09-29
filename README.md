@@ -30,7 +30,10 @@ cd davetim.app
 ### 2. Setup Supabase
 1. Create a new project at [supabase.com](https://supabase.com)
 2. Get your Project URL and API Key from Settings > API
-3. Run the database migration in your Supabase SQL Editor
+3. Run the database migrations in your Supabase SQL Editor (in order):
+   - **Step 1:** Run `database/supabase-migration.sql` (User auth & invitation schema)
+   - **Step 2:** Run `database/templates-migration.sql` (Template system)
+   - **Step 3:** Run `database/increment-views-function.sql` (View counter function)
 
 ### 3. Environment Setup
 Create `frontend/.env.local`:
@@ -61,22 +64,45 @@ Visit: http://localhost:3000
   - Password reset functionality
   - Protected routes & state management
 
+- **Template System**
+  - 8 categorized invitation templates
+  - Category filtering (Düğün, Nişan, Doğum Günü, Baby Shower, etc.)
+  - Search functionality
+  - Save/favorite templates (authenticated users)
+  - Featured & popular templates
+  - Template cards with preview images
+  - Tier badges (Free/Pro/Premium)
+
+- **Invitation Editor** (Phase 1 & 2)
+  - Template-based invitation creation
+  - Real-time text editing (title, date, time, location, message)
+  - Live preview panel
+  - Auto-save functionality
+  - **PDF Export** (html2canvas + jsPDF)
+  - **PNG/Image Export**
+  - **Public sharing links** (`/i/:id`)
+  - **Download functionality**
+  - View count tracking
+
+- **Dashboard**
+  - User invitation list
+  - Statistics (total invitations, views, plan info)
+  - Edit, preview, share, delete actions
+  - Status badges (draft/published)
+
 - **Modern UI/UX**
   - Responsive design with Tailwind CSS
   - Clean, professional interface
   - Loading states and error handling
   - Toast notifications
+  - Modal dialogs
 
 ### 🚧 In Development
-- **Template System**
-  - 5+ beautiful invitation templates
-  - Real-time preview
-  - Custom design options
-  
-- **Invitation Builder**
-  - Drag & drop editor
-  - Custom fields and styling
-  - PDF export functionality
+- **Advanced Editor Features**
+  - Color customization
+  - Image upload (Supabase Storage)
+  - Font selection
+  - Advanced layout options
 
 - **Payment Integration**
   - iyzico & PayTR support
@@ -90,12 +116,20 @@ davetim.app/
 ├── frontend/              # React Frontend
 │   ├── src/
 │   │   ├── components/    # Reusable components
+│   │   │   ├── Auth/      # Authentication components
+│   │   │   ├── Templates/ # Template components
+│   │   │   ├── Layout/    # Layout components
+│   │   │   └── UI/        # Shared UI components
 │   │   ├── pages/         # Route pages
 │   │   ├── services/      # API & Supabase services
 │   │   ├── store/         # Zustand state management
 │   │   └── utils/         # Helper functions
 │   └── ...
-├── docker-compose.yml     # Docker setup
+├── database/             # SQL migrations
+│   ├── supabase-migration.sql          # Auth & user schema
+│   ├── templates-migration.sql         # Template system schema
+│   └── increment-views-function.sql    # View counter function
+├── docker-compose.yml    # Docker setup
 └── README.md
 ```
 

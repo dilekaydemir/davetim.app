@@ -1,77 +1,68 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Download, Share2, Edit, Trash2, Eye } from 'lucide-react';
+import { Plus, Calendar, Download, Share2, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
+import { invitationService, type Invitation } from '../services/invitationService';
+import { useAuth } from '../store/authStore';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
 
-  // Mock user data - will be replaced with real data from store
-  const user = {
-    name: 'Demo Kullanıcı',
-    email: 'demo@davetim.com',
-    plan: 'free',
-    usage: {
-      downloads: 2,
-      maxDownloads: 3,
-      invitations: 4
+  // State
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load invitations
+  useEffect(() => {
+    loadInvitations();
+  }, []);
+
+  const loadInvitations = async () => {
+    setIsLoading(true);
+    try {
+      const data = await invitationService.getUserInvitations();
+      setInvitations(data);
+    } catch (error) {
+      console.error('Error loading invitations:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Mock invitations data - will be replaced with API call
-  const invitations = [
-    {
-      id: 1,
-      title: 'Sevgi & Ahmet Düğün',
-      template: 'Altın Düğün',
-      eventDate: '2025-06-15',
-      status: 'completed',
-      downloads: 15,
-      lastDownload: '2025-09-20',
-      createdAt: '2025-09-10'
-    },
-    {
-      id: 2,
-      title: 'Elif\'in Doğum Günü',
-      template: 'Renkli Parti',
-      eventDate: '2025-10-05',
-      status: 'draft',
-      downloads: 0,
-      lastDownload: null,
-      createdAt: '2025-09-25'
-    },
-    {
-      id: 3,
-      title: 'Baby Shower Partisi',
-      template: 'Pastel Bebek',
-      eventDate: '2025-11-12',
-      status: 'completed',
-      downloads: 8,
-      lastDownload: '2025-09-28',
-      createdAt: '2025-09-15'
-    }
-  ];
+  // User stats
+  const userStats = {
+    totalInvitations: invitations.length,
+    draftInvitations: invitations.filter(i => i.status === 'draft').length,
+    publishedInvitations: invitations.filter(i => i.status === 'published').length,
+    totalViews: invitations.reduce((sum, i) => sum + i.view_count, 0),
+  };
 
   const handleCreateNew = () => {
     navigate('/templates');
   };
 
-  const handleEditInvitation = (id: number) => {
+  const handleEditInvitation = (id: string) => {
     navigate(`/editor/${id}`);
   };
 
-  const handleDeleteInvitation = (id: number) => {
-    // TODO: Implement delete functionality
+  const handleDeleteInvitation = async (id: string) => {
     if (confirm('Bu davetiyeyi silmek istediğinizden emin misiniz?')) {
-      console.log('Deleting invitation:', id);
+      const success = await invitationService.deleteInvitation(id);
+      if (success) {
+        // Reload invitations
+        loadInvitations();
+      }
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'completed':
-        return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Hazır</span>;
+      case 'published':
+        return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">✓ Yayında</span>;
       case 'draft':
-        return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">Taslak</span>;
+        return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">📝 Taslak</span>;
+      case 'archived':
+        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">🗄️ Arşivlendi</span>;
       default:
         return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Bilinmiyor</span>;
     }
@@ -83,7 +74,7 @@ const DashboardPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Hoş geldiniz, {user.name}!
+            Hoş geldiniz, {authUser?.fullName || 'Kullanıcı'}!
           </h1>
           <p className="text-gray-600 mt-2">
             Davetiyelerinizi yönetin ve yenilerini oluşturun
@@ -96,32 +87,27 @@ const DashboardPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Toplam Davetiye</p>
-                <p className="text-2xl font-bold text-gray-900">{user.usage.invitations}</p>
+                <p className="text-2xl font-bold text-gray-900">{userStats.totalInvitations}</p>
               </div>
               <div className="bg-primary-100 p-3 rounded-full">
                 <Calendar className="h-6 w-6 text-primary-600" />
               </div>
             </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {userStats.draftInvitations} taslak, {userStats.publishedInvitations} yayında
+            </p>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Bu Ay İndirme</p>
+                <p className="text-sm font-medium text-gray-600">Toplam Görüntüleme</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {user.usage.downloads}/{user.usage.maxDownloads}
+                  {userStats.totalViews}
                 </p>
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
-                <Download className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="mt-2">
-              <div className="bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-blue-600 rounded-full h-2"
-                  style={{ width: `${(user.usage.downloads / user.usage.maxDownloads) * 100}%` }}
-                />
+                <Eye className="h-6 w-6 text-blue-600" />
               </div>
             </div>
           </div>
@@ -131,14 +117,14 @@ const DashboardPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Aktif Plan</p>
                 <p className="text-2xl font-bold text-gray-900 capitalize">
-                  {user.plan === 'free' ? 'Ücretsiz' : user.plan.toUpperCase()}
+                  {authUser?.subscriptionTier === 'free' ? 'Ücretsiz' : authUser?.subscriptionTier.toUpperCase()}
                 </p>
               </div>
               <div className="bg-green-100 p-3 rounded-full">
                 <Share2 className="h-6 w-6 text-green-600" />
               </div>
             </div>
-            {user.plan === 'free' && (
+            {authUser?.subscriptionTier === 'free' && (
               <Link
                 to="/pricing"
                 className="text-sm text-primary-600 hover:text-primary-700 font-medium mt-2 inline-block"
@@ -163,8 +149,15 @@ const DashboardPage: React.FC = () => {
           </button>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          </div>
+        )}
+
         {/* Invitations List */}
-        {invitations.length > 0 ? (
+        {!isLoading && invitations.length > 0 && (
           <div className="bg-white shadow rounded-lg overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Son Davetiyeler</h3>
@@ -181,13 +174,15 @@ const DashboardPage: React.FC = () => {
                           </h4>
                           <div className="flex items-center space-x-4 mt-1">
                             <span className="text-sm text-gray-500">
-                              Şablon: {invitation.template}
+                              Şablon: {invitation.template?.name || 'Bilinmiyor'}
                             </span>
+                            {invitation.event_date && (
+                              <span className="text-sm text-gray-500">
+                                Tarih: {new Date(invitation.event_date).toLocaleDateString('tr-TR')}
+                              </span>
+                            )}
                             <span className="text-sm text-gray-500">
-                              Tarih: {new Date(invitation.eventDate).toLocaleDateString('tr-TR')}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {invitation.downloads} indirme
+                              {invitation.view_count} görüntülenme
                             </span>
                           </div>
                         </div>
@@ -229,9 +224,11 @@ const DashboardPage: React.FC = () => {
               ))}
             </div>
           </div>
-        ) : (
-          /* Empty State */
-          <div className="text-center py-12">
+        )}
+
+        {/* Empty State */}
+        {!isLoading && invitations.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
             <Calendar className="h-24 w-24 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 mb-2">
               Henüz davetiye oluşturmadınız

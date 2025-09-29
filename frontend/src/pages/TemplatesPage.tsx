@@ -1,82 +1,102 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Star, Crown, Search } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, Loader2 } from 'lucide-react';
+import { templateService, type Template, type TemplateCategory } from '../services/templateService';
+import { useAuth } from '../store/authStore';
+import TemplateCard from '../components/Templates/TemplateCard';
+import toast from 'react-hot-toast';
 
 const TemplatesPage: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = React.useState('all');
-  const [searchTerm, setSearchTerm] = React.useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { isAuthenticated } = useAuth();
 
-  const categories = [
-    { id: 'all', name: 'Tümü', count: 5 },
-    { id: 'wedding', name: 'Düğün', count: 2 },
-    { id: 'birthday', name: 'Doğum Günü', count: 1 },
-    { id: 'baby', name: 'Baby Shower', count: 1 },
-    { id: 'corporate', name: 'Kurumsal', count: 1 }
-  ];
+  // State
+  const [categories, setCategories] = useState<TemplateCategory[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [savedTemplates, setSavedTemplates] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const selectedCategory = searchParams.get('category') || 'all';
 
-  // Mock template data - will be replaced with API call
-  const templates = [
-    {
-      id: 1,
-      name: 'Altın Düğün',
-      category: 'wedding',
-      description: 'Lüks altın çerçeveli düğün davetiyesi',
-      isPremium: true,
-      rating: 4.9,
-      downloads: 1250,
-      preview: '/templates/previews/altin-dugun.jpg'
-    },
-    {
-      id: 2,
-      name: 'Vintage Aşk',
-      category: 'wedding',
-      description: 'Romantik pembe tonlarında vintage tarzı',
-      isPremium: true,
-      rating: 4.8,
-      downloads: 980,
-      preview: '/templates/previews/vintage-ask.jpg'
-    },
-    {
-      id: 3,
-      name: 'Renkli Parti',
-      category: 'birthday',
-      description: 'Canlı renklerle eğlenceli doğum günü',
-      isPremium: true,
-      rating: 4.7,
-      downloads: 756,
-      preview: '/templates/previews/renkli-parti.jpg'
-    },
-    {
-      id: 4,
-      name: 'Pastel Bebek',
-      category: 'baby',
-      description: 'Soft pastel renklerde baby shower',
-      isPremium: true,
-      rating: 4.9,
-      downloads: 432,
-      preview: '/templates/previews/pastel-bebek.jpg'
-    },
-    {
-      id: 5,
-      name: 'Kurumsal Etkinlik',
-      category: 'corporate',
-      description: 'Profesyonel mavi-beyaz kurumsal',
-      isPremium: true,
-      rating: 4.6,
-      downloads: 234,
-      preview: '/templates/previews/kurumsal-etkinlik.jpg'
+  // Load categories and templates
+  useEffect(() => {
+    loadData();
+  }, [selectedCategory, searchTerm]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Load categories
+      const categoriesData = await templateService.getCategories();
+      setCategories(categoriesData);
+
+      // Load templates with filters
+      const filters: any = {};
+      
+      if (selectedCategory !== 'all') {
+        filters.categorySlug = selectedCategory;
+      }
+      
+      if (searchTerm) {
+        filters.search = searchTerm;
+      }
+
+      const templatesData = await templateService.getTemplates(filters);
+      setTemplates(templatesData);
+
+      // Load saved templates if authenticated
+      if (isAuthenticated) {
+        const userTemplates = await templateService.getUserTemplates();
+        const savedIds = new Set(userTemplates.map(ut => ut.template_id));
+        setSavedTemplates(savedIds);
+      }
+    } catch (error) {
+      console.error('Error loading templates:', error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
-  const filteredTemplates = templates.filter(template => {
-    const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
-    const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const handleCategoryChange = (categorySlug: string) => {
+    if (categorySlug === 'all') {
+      searchParams.delete('category');
+    } else {
+      searchParams.set('category', categorySlug);
+    }
+    setSearchParams(searchParams);
+  };
 
-  const handleTemplateSelect = (templateId: number) => {
-    navigate(`/editor/${templateId}`);
+  const handleSaveTemplate = async (templateId: string) => {
+    if (!isAuthenticated) {
+      toast.error('Şablon kaydetmek için giriş yapmalısınız');
+      navigate('/auth');
+      return;
+    }
+
+    const isSaved = savedTemplates.has(templateId);
+    
+    if (isSaved) {
+      const success = await templateService.unsaveTemplate(templateId);
+      if (success) {
+        setSavedTemplates(prev => {
+          const next = new Set(prev);
+          next.delete(templateId);
+          return next;
+        });
+      }
+    } else {
+      const success = await templateService.saveTemplate(templateId);
+      if (success) {
+        setSavedTemplates(prev => new Set(prev).add(templateId));
+      }
+    }
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
   };
 
   return (
@@ -102,94 +122,62 @@ const TemplatesPage: React.FC = () => {
               type="text"
               placeholder="Şablon ara..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
           </div>
 
           {/* Category Filter */}
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleCategoryChange('all')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedCategory === 'all'
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-white text-gray-700 hover:bg-primary-50 border border-gray-300'
+              }`}
+            >
+              Tümü
+            </button>
             {categories.map((category) => (
               <button
                 key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
+                onClick={() => handleCategoryChange(category.slug)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedCategory === category.id
+                  selectedCategory === category.slug
                     ? 'bg-primary-500 text-white'
                     : 'bg-white text-gray-700 hover:bg-primary-50 border border-gray-300'
                 }`}
               >
-                {category.name} ({category.count})
+                {category.name}
               </button>
             ))}
           </div>
         </div>
 
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          </div>
+        )}
+
         {/* Templates Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredTemplates.map((template) => (
-            <div
-              key={template.id}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
-              onClick={() => handleTemplateSelect(template.id)}
-            >
-              {/* Template Preview */}
-              <div className="relative h-64 bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center overflow-hidden">
-                {/* Preview placeholder - will be replaced with actual images */}
-                <div className="text-primary-700 font-semibold text-lg text-center">
-                  {template.name}
-                  <div className="text-sm text-primary-600 mt-2">Önizleme</div>
-                </div>
-                
-                {/* Premium Badge */}
-                {template.isPremium && (
-                  <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                    <Crown className="h-3 w-3" />
-                    Premium
-                  </div>
-                )}
-
-                {/* Hover Overlay */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 flex items-center justify-center">
-                  <button className="bg-white text-primary-600 px-6 py-2 rounded-lg font-semibold opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                    Bu Şablonu Kullan
-                  </button>
-                </div>
-              </div>
-
-              {/* Template Info */}
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {template.name}
-                </h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  {template.description}
-                </p>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600">{template.rating}</span>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {template.downloads} kullanım
-                    </div>
-                  </div>
-                  
-                  {template.isPremium ? (
-                    <span className="text-primary-600 font-semibold text-sm">PRO</span>
-                  ) : (
-                    <span className="text-green-600 font-semibold text-sm">Ücretsiz</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {!isLoading && templates.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {templates.map((template) => (
+              <TemplateCard
+                key={template.id}
+                template={template}
+                onSave={handleSaveTemplate}
+                isSaved={savedTemplates.has(template.id)}
+              />
+            ))}
+          </div>
+        )}
 
         {/* No Results */}
-        {filteredTemplates.length === 0 && (
+        {!isLoading && templates.length === 0 && (
           <div className="text-center py-12">
             <div className="text-gray-500 text-lg mb-4">
               Aradığınız kriterlere uygun şablon bulunamadı
@@ -197,7 +185,7 @@ const TemplatesPage: React.FC = () => {
             <button
               onClick={() => {
                 setSearchTerm('');
-                setSelectedCategory('all');
+                handleCategoryChange('all');
               }}
               className="btn-secondary"
             >
