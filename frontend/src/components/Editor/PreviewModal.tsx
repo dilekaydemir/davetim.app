@@ -14,13 +14,27 @@ interface PreviewModalProps {
     location: string;
     message: string;
   };
+  colors?: {
+    primary: string;
+    secondary: string;
+    background: string;
+    text: string;
+    accent: string;
+  };
 }
 
 const PreviewModal: React.FC<PreviewModalProps> = ({
   isOpen,
   onClose,
   invitation,
-  invitationData
+  invitationData,
+  colors = {
+    primary: '#667eea',
+    secondary: '#764ba2',
+    background: '#ffffff',
+    text: '#ffffff',
+    accent: '#f56565'
+  }
 }) => {
   const previewRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = React.useState(false);
@@ -100,58 +114,83 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
             <div 
               ref={previewRef}
-              className="bg-white border-2 border-gray-200 rounded-lg p-8 max-w-2xl mx-auto"
+              className="bg-white rounded-lg shadow-lg overflow-hidden max-w-2xl mx-auto"
               style={{
                 minHeight: '600px',
-                background: invitation?.template?.preview_url 
-                  ? `url(${invitation.template.preview_url}) center/cover no-repeat`
-                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`
               }}
             >
-              {/* Invitation Content */}
-              <div className="text-center space-y-6 text-white">
-                {/* Title */}
-                <h1 className="text-4xl md:text-5xl font-bold mb-8 drop-shadow-lg">
-                  {invitationData.title || 'Davetiye Başlığı'}
-                </h1>
-
-                {/* Date & Time */}
-                {invitationData.eventDate && (
-                  <div className="space-y-2">
-                    <p className="text-2xl font-semibold drop-shadow-md">
-                      📅 {formatDate(invitationData.eventDate)}
-                    </p>
-                    {invitationData.eventTime && (
-                      <p className="text-xl drop-shadow-md">
-                        🕐 {invitationData.eventTime}
-                      </p>
-                    )}
+              <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px]">
+                <div className="text-center space-y-4 max-w-sm" style={{ color: colors.text }}>
+                  {/* Title */}
+                  <div className="text-2xl md:text-4xl font-serif font-bold">
+                    {invitationData.title || 'Davetiye Başlığı'}
                   </div>
-                )}
+                  
+                  {/* Accent Divider */}
+                  <div 
+                    className="w-24 h-1 mx-auto rounded-full"
+                    style={{ backgroundColor: colors.accent }}
+                  />
+                  
+                  {/* Date & Time Card */}
+                  <div 
+                    className="p-4 rounded-lg"
+                    style={{ 
+                      backgroundColor: colors.background,
+                      color: colors.primary
+                    }}
+                  >
+                    <div className="font-medium">
+                      {invitationData.eventDate ? formatDate(invitationData.eventDate) : 'Tarih Seçin'}
+                    </div>
+                    <div className="mt-1">
+                      {invitationData.eventTime || 'Saat Seçin'}
+                    </div>
+                  </div>
+                  
+                  {/* Accent Divider */}
+                  <div 
+                    className="w-24 h-1 mx-auto rounded-full"
+                    style={{ backgroundColor: colors.accent }}
+                  />
+                  
+                  {/* Location */}
+                  <div style={{ opacity: 0.95 }}>
+                    {invitationData.location || 'Konum Belirtin'}
+                  </div>
+                  
+                  {/* Custom Message */}
+                  {invitationData.message && (
+                    <>
+                      <div 
+                        className="w-16 h-1 mx-auto rounded-full"
+                        style={{ backgroundColor: colors.accent }}
+                      />
+                      <div 
+                        className="text-sm italic p-4 rounded-lg"
+                        style={{ 
+                          backgroundColor: colors.background,
+                          color: colors.primary,
+                          border: `2px solid ${colors.accent}`
+                        }}
+                      >
+                        "{invitationData.message}"
+                      </div>
+                    </>
+                  )}
 
-                {/* Location */}
-                {invitationData.location && (
-                  <div className="mt-6">
-                    <p className="text-xl font-medium drop-shadow-md">
-                      📍 {invitationData.location}
+                  {/* Decorative Footer */}
+                  <div 
+                    className="mt-12 pt-8"
+                    style={{ 
+                      borderTop: `2px solid ${colors.accent}40`
+                    }}
+                  >
+                    <p className="text-lg italic opacity-90">
+                      Sizleri aramızda görmekten mutluluk duyarız
                     </p>
                   </div>
-                )}
-
-                {/* Message */}
-                {invitationData.message && (
-                  <div className="mt-8 bg-white bg-opacity-20 backdrop-blur-sm rounded-lg p-6">
-                    <p className="text-lg leading-relaxed whitespace-pre-wrap">
-                      {invitationData.message}
-                    </p>
-                  </div>
-                )}
-
-                {/* Decorative Element */}
-                <div className="mt-12 pt-8 border-t-2 border-white border-opacity-30">
-                  <p className="text-lg italic opacity-90">
-                    Sizleri aramızda görmekten mutluluk duyarız
-                  </p>
                 </div>
               </div>
             </div>

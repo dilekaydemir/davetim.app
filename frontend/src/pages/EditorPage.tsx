@@ -6,6 +6,7 @@ import { invitationService, type Invitation } from '../services/invitationServic
 import { useAuth } from '../store/authStore';
 import { pdfService } from '../services/pdfService';
 import PreviewModal from '../components/Editor/PreviewModal';
+import ColorPicker from '../components/Editor/ColorPicker';
 import toast from 'react-hot-toast';
 
 const EditorPage: React.FC = () => {
@@ -34,7 +35,15 @@ const EditorPage: React.FC = () => {
     customMessage: ''
   });
 
-  const [selectedColor, setSelectedColor] = useState('default');
+  // Color customization
+  const [colors, setColors] = useState({
+    primary: '#667eea',
+    secondary: '#764ba2',
+    background: '#ffffff',
+    text: '#ffffff',
+    accent: '#f56565'
+  });
+
   const [selectedFont, setSelectedFont] = useState('normal');
 
   // Load template or invitation
@@ -73,6 +82,11 @@ const EditorPage: React.FC = () => {
           location: invitationData.event_location_name || '',
           customMessage: invitationData.content?.message || ''
         });
+        
+        // Load colors if exists
+        if (invitationData.content?.colors) {
+          setColors(invitationData.content.colors);
+        }
         
       } else {
         // Creating new invitation from template
@@ -131,17 +145,6 @@ const EditorPage: React.FC = () => {
     }
   };
 
-  const colorOptions = [
-    { id: 'default', name: 'Orijinal', preview: 'bg-gradient-to-r from-yellow-400 to-orange-500' },
-    { id: 'variant1', name: 'Mavi Altın', preview: 'bg-gradient-to-r from-blue-400 to-indigo-500' },
-    { id: 'variant2', name: 'Pembe Altın', preview: 'bg-gradient-to-r from-pink-400 to-rose-500' }
-  ];
-
-  const fontOptions = [
-    { id: 'normal', name: 'Normal' },
-    { id: 'large', name: 'Büyük' }
-  ];
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
@@ -161,10 +164,10 @@ const EditorPage: React.FC = () => {
         event_time: formData.eventTime || null,
         event_location_name: formData.location || null,
         content: {
-          message: formData.customMessage
+          message: formData.customMessage,
+          colors: colors
         },
         custom_design: {
-          color: selectedColor,
           font: selectedFont
         }
       });
@@ -413,59 +416,12 @@ const EditorPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Customization */}
+              {/* Color Customization */}
               <div className="border-t pt-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Görünüm Ayarları
-                </h3>
-
-                {/* Color Options */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Renk Teması
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {colorOptions.map((color) => (
-                      <button
-                        key={color.id}
-                        onClick={() => setSelectedColor(color.id)}
-                        className={`p-3 rounded-lg border-2 transition-colors ${
-                          selectedColor === color.id
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className={`w-full h-8 rounded ${color.preview} mb-2`} />
-                        <span className="text-sm font-medium">{color.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Font Size */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Font Boyutu
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    {fontOptions.map((font) => (
-                      <button
-                        key={font.id}
-                        onClick={() => setSelectedFont(font.id)}
-                        className={`p-3 rounded-lg border-2 transition-colors ${
-                          selectedFont === font.id
-                            ? 'border-primary-500 bg-primary-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <span className={`font-medium ${font.id === 'large' ? 'text-lg' : 'text-base'}`}>
-                          {font.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <ColorPicker
+                  colors={colors}
+                  onChange={setColors}
+                />
               </div>
             </div>
           </div>
@@ -481,43 +437,95 @@ const EditorPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Mock Preview */}
-            <div className="aspect-[3/4] bg-gradient-to-br from-yellow-100 to-orange-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center p-8">
-              <div className="text-center space-y-4 max-w-sm">
-                <div className={`text-2xl font-serif font-bold text-gray-800 ${selectedFont === 'large' ? 'text-3xl' : 'text-2xl'}`}>
-                  {formData.title || 'Etkinlik Başlığı'}
-                </div>
-                
-                <div className="w-24 h-px bg-gray-400 mx-auto" />
-                
-                <div className="text-gray-700">
-                  <div className="font-medium">
-                    {formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('tr-TR', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    }) : 'Tarih Seçin'}
+            {/* Live Preview */}
+            <div 
+              className="rounded-lg shadow-lg overflow-hidden"
+              style={{
+                minHeight: '600px',
+                background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+              }}
+            >
+              <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px]">
+                <div className="text-center space-y-4 max-w-sm">
+                  {/* Title */}
+                  <div 
+                    className="text-2xl md:text-4xl font-serif font-bold"
+                    style={{ color: colors.text }}
+                  >
+                    {formData.title || 'Etkinlik Başlığı'}
                   </div>
-                  <div className="mt-1">
-                    {formData.eventTime || 'Saat Seçin'}
-                  </div>
-                </div>
-                
-                <div className="w-24 h-px bg-gray-400 mx-auto" />
-                
-                <div className="text-gray-600">
-                  {formData.location || 'Konum Belirtin'}
-                </div>
-                
-                {formData.customMessage && (
-                  <>
-                    <div className="w-16 h-px bg-gray-400 mx-auto" />
-                    <div className="text-gray-600 text-sm italic">
-                      "{formData.customMessage}"
+                  
+                  {/* Accent Divider */}
+                  <div 
+                    className="w-24 h-1 mx-auto rounded-full"
+                    style={{ backgroundColor: colors.accent }}
+                  />
+                  
+                  {/* Date & Time Card */}
+                  <div 
+                    className="p-4 rounded-lg"
+                    style={{ 
+                      backgroundColor: colors.background,
+                      color: colors.primary
+                    }}
+                  >
+                    <div className="font-medium">
+                      {formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('tr-TR', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      }) : 'Tarih Seçin'}
                     </div>
-                  </>
-                )}
+                    <div className="mt-1">
+                      {formData.eventTime || 'Saat Seçin'}
+                    </div>
+                  </div>
+                  
+                  {/* Accent Divider */}
+                  <div 
+                    className="w-24 h-1 mx-auto rounded-full"
+                    style={{ backgroundColor: colors.accent }}
+                  />
+                  
+                  {/* Location */}
+                  <div style={{ color: colors.text, opacity: 0.95 }}>
+                    {formData.location || 'Konum Belirtin'}
+                  </div>
+                  
+                  {/* Custom Message */}
+                  {formData.customMessage && (
+                    <>
+                      <div 
+                        className="w-16 h-1 mx-auto rounded-full"
+                        style={{ backgroundColor: colors.accent }}
+                      />
+                      <div 
+                        className="text-sm italic p-4 rounded-lg"
+                        style={{ 
+                          backgroundColor: colors.background,
+                          color: colors.primary,
+                          border: `2px solid ${colors.accent}`
+                        }}
+                      >
+                        "{formData.customMessage}"
+                      </div>
+                    </>
+                  )}
+
+                  {/* Decorative Footer */}
+                  <div 
+                    className="mt-12 pt-8"
+                    style={{ 
+                      borderTop: `2px solid ${colors.accent}40`,
+                      color: colors.text
+                    }}
+                  >
+                    <p className="text-lg italic opacity-90">
+                      Sizleri aramızda görmekten mutluluk duyarız
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -540,6 +548,7 @@ const EditorPage: React.FC = () => {
           location: formData.location,
           message: formData.customMessage
         }}
+        colors={colors}
       />
     </div>
   );

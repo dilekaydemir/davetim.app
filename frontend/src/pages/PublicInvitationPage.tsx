@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Download, Share2, Loader2, Calendar, MapPin, Clock } from 'lucide-react';
+import { Download, Share2, Loader2 } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { pdfService } from '../services/pdfService';
 import toast from 'react-hot-toast';
@@ -190,62 +190,97 @@ const PublicInvitationPage: React.FC = () => {
           id="invitation-preview"
           className="bg-white shadow-2xl rounded-lg overflow-hidden"
           style={{
-            minHeight: '700px',
-            background: invitation.template?.preview_url 
-              ? `url(${invitation.template.preview_url}) center/cover no-repeat`
+            minHeight: '600px',
+            background: invitation.content?.colors 
+              ? `linear-gradient(135deg, ${invitation.content.colors.primary} 0%, ${invitation.content.colors.secondary} 100%)`
               : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
           }}
         >
-          <div className="p-12 md:p-16 text-center text-white">
-            {/* Title */}
-            <h1 className="text-4xl md:text-6xl font-bold mb-8 drop-shadow-2xl">
-              {invitation.title}
-            </h1>
-
-            {/* Event Details */}
-            <div className="space-y-6 max-w-2xl mx-auto">
-              {/* Date */}
+          <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px]">
+            <div 
+              className="text-center space-y-4 max-w-sm"
+              style={{ 
+                color: invitation.content?.colors?.text || '#ffffff'
+              }}
+            >
+              {/* Title */}
+              <div className="text-2xl md:text-4xl font-serif font-bold">
+                {invitation.title}
+              </div>
+              
+              {/* Accent Divider */}
+              <div 
+                className="w-24 h-1 mx-auto rounded-full"
+                style={{ 
+                  backgroundColor: invitation.content?.colors?.accent || '#f56565'
+                }}
+              />
+              
+              {/* Date & Time Card */}
               {invitation.event_date && (
-                <div className="bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-6">
-                  <div className="flex items-center justify-center gap-3 text-xl md:text-2xl font-semibold">
-                    <Calendar className="h-6 w-6" />
-                    <span>{formatDate(invitation.event_date)}</span>
+                <div 
+                  className="p-4 rounded-lg"
+                  style={{ 
+                    backgroundColor: invitation.content?.colors?.background || '#ffffff',
+                    color: invitation.content?.colors?.primary || '#667eea'
+                  }}
+                >
+                  <div className="font-medium">
+                    {formatDate(invitation.event_date)}
                   </div>
+                  {invitation.event_time && (
+                    <div className="mt-1">
+                      {invitation.event_time}
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Time */}
-              {invitation.event_time && (
-                <div className="bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-6">
-                  <div className="flex items-center justify-center gap-3 text-xl md:text-2xl font-semibold">
-                    <Clock className="h-6 w-6" />
-                    <span>{invitation.event_time}</span>
-                  </div>
-                </div>
-              )}
-
+              
+              {/* Accent Divider */}
+              <div 
+                className="w-24 h-1 mx-auto rounded-full"
+                style={{ 
+                  backgroundColor: invitation.content?.colors?.accent || '#f56565'
+                }}
+              />
+              
               {/* Location */}
               {invitation.event_location_name && (
-                <div className="bg-white bg-opacity-20 backdrop-blur-md rounded-lg p-6">
-                  <div className="flex items-center justify-center gap-3 text-xl md:text-2xl font-semibold">
-                    <MapPin className="h-6 w-6" />
-                    <span>{invitation.event_location_name}</span>
-                  </div>
+                <div style={{ opacity: 0.95 }}>
+                  {invitation.event_location_name}
                 </div>
               )}
-
+              
               {/* Custom Message */}
               {invitation.content?.message && (
-                <div className="mt-12 bg-white bg-opacity-30 backdrop-blur-md rounded-lg p-8">
-                  <p className="text-lg md:text-xl leading-relaxed whitespace-pre-wrap">
-                    {invitation.content.message}
-                  </p>
-                </div>
+                <>
+                  <div 
+                    className="w-16 h-1 mx-auto rounded-full"
+                    style={{ 
+                      backgroundColor: invitation.content?.colors?.accent || '#f56565'
+                    }}
+                  />
+                  <div 
+                    className="text-sm italic p-4 rounded-lg"
+                    style={{ 
+                      backgroundColor: invitation.content?.colors?.background || '#ffffff',
+                      color: invitation.content?.colors?.primary || '#667eea',
+                      border: `2px solid ${invitation.content?.colors?.accent || '#f56565'}`
+                    }}
+                  >
+                    "{invitation.content.message}"
+                  </div>
+                </>
               )}
 
               {/* Decorative Footer */}
-              <div className="mt-16 pt-8 border-t-2 border-white border-opacity-40">
-                <p className="text-xl md:text-2xl italic font-light">
+              <div 
+                className="mt-12 pt-8"
+                style={{ 
+                  borderTop: `2px solid ${invitation.content?.colors?.accent || '#ffffff'}40`
+                }}
+              >
+                <p className="text-lg italic opacity-90">
                   Sizleri aramızda görmekten mutluluk duyarız
                 </p>
               </div>
