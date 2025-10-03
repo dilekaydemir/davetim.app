@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Calendar, Download, Share2, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
+import { guestService, type GuestStats } from '../services/guestService';
 import { useAuth } from '../store/authStore';
 
 const DashboardPage: React.FC = () => {
@@ -10,6 +11,7 @@ const DashboardPage: React.FC = () => {
 
   // State
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [guestStats, setGuestStats] = useState<Record<string, GuestStats>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   // Load invitations
@@ -22,6 +24,19 @@ const DashboardPage: React.FC = () => {
     try {
       const data = await invitationService.getUserInvitations();
       setInvitations(data);
+      
+      // Load guest stats for each invitation
+      const statsPromises = data.map(async (invitation) => {
+        const stats = await guestService.getGuestStats(invitation.id);
+        return { invitationId: invitation.id, stats };
+      });
+      
+      const statsResults = await Promise.all(statsPromises);
+      const statsMap: Record<string, GuestStats> = {};
+      statsResults.forEach(({ invitationId, stats }) => {
+        statsMap[invitationId] = stats;
+      });
+      setGuestStats(statsMap);
     } catch (error) {
       console.error('Error loading invitations:', error);
     } finally {
@@ -30,11 +45,16 @@ const DashboardPage: React.FC = () => {
   };
 
   // User stats
+  const totalGuests = Object.values(guestStats).reduce((sum, stats) => sum + stats.total, 0);
+  const totalAttending = Object.values(guestStats).reduce((sum, stats) => sum + stats.total_attending, 0);
+  
   const userStats = {
     totalInvitations: invitations.length,
     draftInvitations: invitations.filter(i => i.status === 'draft').length,
     publishedInvitations: invitations.filter(i => i.status === 'published').length,
     totalViews: invitations.reduce((sum, i) => sum + i.view_count, 0),
+    totalGuests,
+    totalAttending,
   };
 
   const handleCreateNew = () => {
@@ -82,7 +102,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -115,13 +135,43 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between">
               <div>
+                <p className="text-sm font-medium text-gray-600">Toplam Davetli</p>
+                <p className="text-2xl font-bold text-gray-900">{userStats.totalGuests}</p>
+              </div>
+              <div className="bg-purple-100 p-3 rounded-full">
+                <Plus className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Tüm davetiyelerinizde
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Katılımcı</p>
+                <p className="text-2xl font-bold text-gray-900">{userStats.totalAttending}</p>
+              </div>
+              <div className="bg-green-100 p-3 rounded-full">
+                <Share2 className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Davetli + Refakatçi
+            </p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
                 <p className="text-sm font-medium text-gray-600">Aktif Plan</p>
                 <p className="text-2xl font-bold text-gray-900 capitalize">
                   {authUser?.subscriptionTier === 'free' ? 'Ücretsiz' : authUser?.subscriptionTier.toUpperCase()}
                 </p>
               </div>
-              <div className="bg-green-100 p-3 rounded-full">
-                <Share2 className="h-6 w-6 text-green-600" />
+              <div className="bg-orange-100 p-3 rounded-full">
+                <Calendar className="h-6 w-6 text-orange-600" />
               </div>
             </div>
             {authUser?.subscriptionTier === 'free' && (
@@ -185,6 +235,30 @@ const DashboardPage: React.FC = () => {
                               {invitation.view_count} görüntülenme
                             </span>
                           </div>
+                          
+                          {/* Guest Stats */}
+                          {guestStats[invitation.id] && guestStats[invitation.id].total > 0 && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
+                                👥 {guestStats[invitation.id].total} davetli
+                              </span>
+                              {guestStats[invitation.id].attending > 0 && (
+                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                                  ✓ {guestStats[invitation.id].attending} gelecek
+                                </span>
+                              )}
+                              {guestStats[invitation.id].pending > 0 && (
+                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                                  ⏳ {guestStats[invitation.id].pending} bekliyor
+                                </span>
+                              )}
+                              {guestStats[invitation.id].total_attending > guestStats[invitation.id].attending && (
+                                <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700">
+                                  🎉 {guestStats[invitation.id].total_attending} katılımcı
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center space-x-3">
                           {getStatusBadge(invitation.status)}

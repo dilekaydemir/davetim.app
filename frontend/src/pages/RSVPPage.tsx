@@ -13,6 +13,9 @@ const RSVPPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
+  // Prevent duplicate loading in React Strict Mode
+  const hasLoadedRef = React.useRef(false);
+
   const [formData, setFormData] = useState<RSVPData>({
     rsvp_status: 'attending',
     companion_count: 0,
@@ -21,6 +24,10 @@ const RSVPPage: React.FC = () => {
   });
 
   useEffect(() => {
+    // Skip if already loaded
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+    
     loadGuestAndInvitation();
   }, [guestToken]);
 

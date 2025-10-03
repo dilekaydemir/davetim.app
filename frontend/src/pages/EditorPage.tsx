@@ -477,7 +477,10 @@ const EditorPage: React.FC = () => {
 
               {/* Guests Tab */}
               {activeTab === 'guests' && invitation && (
-                <GuestList invitationId={invitation.id} />
+                <GuestList 
+                  invitationId={invitation.id}
+                  invitationTitle={invitation.title}
+                />
               )}
             </div>
           </div>

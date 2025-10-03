@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Mail, Phone, Trash2, Edit2, Link2, Check, X, Loader2 } from 'lucide-react';
+import { UserPlus, Mail, Phone, Trash2, Edit2, Link2, Check, X, Loader2, FileSpreadsheet, Download } from 'lucide-react';
 import { guestService, type Guest, type CreateGuestData, type GuestStats } from '../../services/guestService';
+import { excelService } from '../../services/excelService';
 import toast from 'react-hot-toast';
 
 interface GuestListProps {
   invitationId: string;
+  invitationTitle?: string;
 }
 
-const GuestList: React.FC<GuestListProps> = ({ invitationId }) => {
+const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = 'Davetiye' }) => {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [stats, setStats] = useState<GuestStats>({
     total: 0,
@@ -188,16 +190,40 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId }) => {
         </div>
       </div>
 
-      {/* Add Guest Button */}
-      <div>
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-3">
         {!isAddingGuest && !editingGuestId && (
-          <button
-            onClick={() => setIsAddingGuest(true)}
-            className="btn-primary flex items-center gap-2 w-full md:w-auto"
-          >
-            <UserPlus className="h-4 w-4" />
-            Yeni Davetli Ekle
-          </button>
+          <>
+            <button
+              onClick={() => setIsAddingGuest(true)}
+              className="btn-primary flex items-center gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Yeni Davetli Ekle
+            </button>
+            
+            {guests.length > 0 && (
+              <>
+                <button
+                  onClick={() => excelService.exportGuestsToExcel(guests, invitationTitle)}
+                  className="btn-secondary flex items-center gap-2"
+                  title="Basit Excel listesi indir"
+                >
+                  <Download className="h-4 w-4" />
+                  Excel İndir
+                </button>
+                
+                <button
+                  onClick={() => excelService.exportGuestsWithStats(guests, invitationTitle, stats)}
+                  className="btn-outline flex items-center gap-2"
+                  title="İstatistiklerle birlikte detaylı rapor indir"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Detaylı Rapor
+                </button>
+              </>
+            )}
+          </>
         )}
       </div>
 
