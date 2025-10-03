@@ -13,6 +13,7 @@ interface PreviewModalProps {
     eventTime: string;
     location: string;
     message: string;
+    imageUrl?: string | null;
   };
   colors?: {
     primary: string;
@@ -122,6 +123,18 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
             >
               <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px]">
                 <div className="text-center space-y-4 max-w-sm" style={{ color: colors.text }}>
+                  {/* Image */}
+                  {invitationData.imageUrl && (
+                    <div className="mb-6">
+                      <img
+                        src={invitationData.imageUrl}
+                        alt="Davetiye görseli"
+                        className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
+                        style={{ borderColor: colors.accent }}
+                      />
+                    </div>
+                  )}
+                  
                   {/* Title */}
                   <div className="text-2xl md:text-4xl font-serif font-bold">
                     {invitationData.title || 'Davetiye Başlığı'}

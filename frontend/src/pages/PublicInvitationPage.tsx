@@ -203,6 +203,18 @@ const PublicInvitationPage: React.FC = () => {
                 color: invitation.content?.colors?.text || '#ffffff'
               }}
             >
+              {/* Image */}
+              {invitation.image_url && (
+                <div className="mb-6">
+                  <img
+                    src={invitation.image_url}
+                    alt="Davetiye görseli"
+                    className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
+                    style={{ borderColor: invitation.content?.colors?.accent || '#f56565' }}
+                  />
+                </div>
+              )}
+              
               {/* Title */}
               <div className="text-2xl md:text-4xl font-serif font-bold">
                 {invitation.title}

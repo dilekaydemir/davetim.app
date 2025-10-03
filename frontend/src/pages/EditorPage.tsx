@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Eye, Save, Palette, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Eye, Save, Palette, Loader2, FileText, Users } from 'lucide-react';
 import { templateService, type Template } from '../services/templateService';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { useAuth } from '../store/authStore';
 import { pdfService } from '../services/pdfService';
 import PreviewModal from '../components/Editor/PreviewModal';
 import ColorPicker from '../components/Editor/ColorPicker';
+import ImageUpload from '../components/Editor/ImageUpload';
+import GuestList from '../components/Editor/GuestList';
 import toast from 'react-hot-toast';
 
 const EditorPage: React.FC = () => {
@@ -21,6 +23,7 @@ const EditorPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'guests'>('details');
   
   // Use ref to prevent duplicate creation across re-renders
   const isCreatingRef = useRef(false);
@@ -32,7 +35,8 @@ const EditorPage: React.FC = () => {
     eventDate: '',
     eventTime: '',
     location: '',
-    customMessage: ''
+    customMessage: '',
+    imageUrl: '' as string | null
   });
 
   // Color customization
@@ -80,7 +84,8 @@ const EditorPage: React.FC = () => {
           eventDate: invitationData.event_date?.split('T')[0] || '',
           eventTime: invitationData.event_time || '',
           location: invitationData.event_location_name || '',
-          customMessage: invitationData.content?.message || ''
+          customMessage: invitationData.content?.message || '',
+          imageUrl: invitationData.image_url || null
         });
         
         // Load colors if exists
@@ -325,12 +330,39 @@ const EditorPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Editor Panel */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">
-              Davetiye Bilgileri
-            </h2>
+          <div className="bg-white rounded-lg shadow">
+            {/* Tabs */}
+            <div className="border-b border-gray-200">
+              <div className="flex">
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`flex items-center gap-2 px-6 py-3 font-medium border-b-2 transition-colors ${
+                    activeTab === 'details'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <FileText className="h-4 w-4" />
+                  Davetiye Bilgileri
+                </button>
+                <button
+                  onClick={() => setActiveTab('guests')}
+                  className={`flex items-center gap-2 px-6 py-3 font-medium border-b-2 transition-colors ${
+                    activeTab === 'guests'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  Davetli Listesi
+                </button>
+              </div>
+            </div>
 
-            <div className="space-y-6">
+            <div className="p-6">
+              {/* Details Tab */}
+              {activeTab === 'details' && (
+                <div className="space-y-6">
               {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -416,6 +448,23 @@ const EditorPage: React.FC = () => {
                 </p>
               </div>
 
+              {/* Image Upload */}
+              {invitation && user && (
+                <div className="border-t pt-6">
+                  <ImageUpload
+                    invitationId={invitation.id}
+                    userId={user.id}
+                    currentImageUrl={formData.imageUrl}
+                    onImageUploaded={(imageUrl) => {
+                      setFormData({ ...formData, imageUrl });
+                    }}
+                    onImageRemoved={() => {
+                      setFormData({ ...formData, imageUrl: null });
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Color Customization */}
               <div className="border-t pt-6">
                 <ColorPicker
@@ -423,6 +472,13 @@ const EditorPage: React.FC = () => {
                   onChange={setColors}
                 />
               </div>
+                </div>
+              )}
+
+              {/* Guests Tab */}
+              {activeTab === 'guests' && invitation && (
+                <GuestList invitationId={invitation.id} />
+              )}
             </div>
           </div>
 
@@ -447,6 +503,18 @@ const EditorPage: React.FC = () => {
             >
               <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px]">
                 <div className="text-center space-y-4 max-w-sm">
+                  {/* Image */}
+                  {formData.imageUrl && (
+                    <div className="mb-6">
+                      <img
+                        src={formData.imageUrl}
+                        alt="Davetiye görseli"
+                        className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
+                        style={{ borderColor: colors.accent }}
+                      />
+                    </div>
+                  )}
+                  
                   {/* Title */}
                   <div 
                     className="text-2xl md:text-4xl font-serif font-bold"
@@ -546,7 +614,8 @@ const EditorPage: React.FC = () => {
           eventDate: formData.eventDate,
           eventTime: formData.eventTime,
           location: formData.location,
-          message: formData.customMessage
+          message: formData.customMessage,
+          imageUrl: formData.imageUrl
         }}
         colors={colors}
       />

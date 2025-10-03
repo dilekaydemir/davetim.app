@@ -15,6 +15,7 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import PricingPage from './pages/PricingPage'
 import AccountPage from './pages/AccountPage'
 import PublicInvitationPage from './pages/PublicInvitationPage'
+import RSVPPage from './pages/RSVPPage'
 
 // Protected Route Component
 import ProtectedRoute from './components/Auth/ProtectedRoute'
@@ -26,6 +27,9 @@ function App() {
         <Routes>
           {/* Public Invitation View (No Layout) */}
           <Route path="/i/:invitationId" element={<PublicInvitationPage />} />
+          
+          {/* Public RSVP Page (No Layout) */}
+          <Route path="/rsvp/:guestToken" element={<RSVPPage />} />
 
           {/* Public Routes */}
           <Route path="/" element={<Layout />}>

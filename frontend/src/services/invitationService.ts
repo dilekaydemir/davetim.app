@@ -22,6 +22,7 @@ export interface Invitation {
   password_protected: boolean;
   view_count: number;
   rsvp_count: number;
+  image_url: string | null;
   published_at: string | null;
   expires_at: string | null;
   created_at: string;
@@ -189,6 +190,32 @@ class InvitationService {
       return data;
     } catch (error: any) {
       console.error('Get invitation by slug error:', error);
+      return null;
+    }
+  }
+
+  async getInvitationById(id: string): Promise<Invitation | null> {
+    try {
+      const { data, error } = await supabase
+        .from('invitations')
+        .select(`
+          *,
+          template:templates(*)
+        `)
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        console.error('❌ Error fetching invitation by id:', error);
+        throw error;
+      }
+
+      return data;
+    } catch (error: any) {
+      console.error('Get invitation by id error:', error);
       return null;
     }
   }
