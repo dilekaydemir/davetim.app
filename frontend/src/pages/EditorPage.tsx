@@ -4,6 +4,7 @@ import { ArrowLeft, Download, Share2, Eye, Save, Palette, Loader2, FileText, Use
 import { templateService, type Template } from '../services/templateService';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { useAuth } from '../store/authStore';
+import { useSubscription } from '../hooks/useSubscription';
 import { pdfService } from '../services/pdfService';
 import PreviewModal from '../components/Editor/PreviewModal';
 import ColorPicker from '../components/Editor/ColorPicker';
@@ -16,6 +17,7 @@ const EditorPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuth();
+  const subscription = useSubscription();
 
   // State
   const [template, setTemplate] = useState<Template | null>(null);
@@ -36,7 +38,8 @@ const EditorPage: React.FC = () => {
     eventTime: '',
     location: '',
     customMessage: '',
-    imageUrl: '' as string | null
+    imageUrl: '' as string | null,
+    imagePosition: 'profile' as 'profile' | 'background' | 'banner' | 'watermark'
   });
 
   // Color customization
@@ -85,7 +88,8 @@ const EditorPage: React.FC = () => {
           eventTime: invitationData.event_time || '',
           location: invitationData.event_location_name || '',
           customMessage: invitationData.content?.message || '',
-          imageUrl: invitationData.image_url || null
+          imageUrl: invitationData.image_url || null,
+          imagePosition: invitationData.content?.imagePosition || 'profile'
         });
         
         // Load colors if exists
@@ -116,6 +120,15 @@ const EditorPage: React.FC = () => {
         
         if (!templateData) {
           toast.error('Şablon bulunamadı');
+          navigate('/templates');
+          isCreatingRef.current = false;
+          return;
+        }
+        
+        // Premium/PRO şablon kontrolü - Free plan sadece 'free' tier'a erişebilir
+        const isPremiumOrProTemplate = templateData.tier === 'premium' || templateData.tier === 'pro';
+        if (isPremiumOrProTemplate && !subscription.planConfig?.limits.premiumTemplates) {
+          toast.error('Bu şablon PRO veya PREMIUM plan gerektirir!');
           navigate('/templates');
           isCreatingRef.current = false;
           return;
@@ -170,7 +183,8 @@ const EditorPage: React.FC = () => {
         event_location_name: formData.location || null,
         content: {
           message: formData.customMessage,
-          colors: colors
+          colors: colors,
+          imagePosition: formData.imagePosition
         },
         custom_design: {
           font: selectedFont
@@ -455,11 +469,15 @@ const EditorPage: React.FC = () => {
                     invitationId={invitation.id}
                     userId={user.id}
                     currentImageUrl={formData.imageUrl}
+                    currentPosition={formData.imagePosition}
                     onImageUploaded={(imageUrl) => {
                       setFormData({ ...formData, imageUrl });
                     }}
                     onImageRemoved={() => {
                       setFormData({ ...formData, imageUrl: null });
+                    }}
+                    onPositionChange={(position) => {
+                      setFormData({ ...formData, imagePosition: position });
                     }}
                   />
                 </div>
@@ -498,20 +516,54 @@ const EditorPage: React.FC = () => {
 
             {/* Live Preview */}
             <div 
-              className="rounded-lg shadow-lg overflow-hidden"
+              className="rounded-lg shadow-lg overflow-hidden relative"
               style={{
                 minHeight: '600px',
-                background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+                background: formData.imagePosition === 'background' && formData.imageUrl
+                  ? `url(${formData.imageUrl})` 
+                  : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
               }}
             >
-              <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px]">
+              {/* Gradient overlay for background image */}
+              {formData.imagePosition === 'background' && formData.imageUrl && (
+                <div 
+                  className="absolute inset-0" 
+                  style={{ 
+                    background: `linear-gradient(135deg, ${colors.primary}CC 0%, ${colors.secondary}CC 100%)`
+                  }}
+                />
+              )}
+              
+              {/* Watermark - bottom right */}
+              {formData.imagePosition === 'watermark' && formData.imageUrl && (
+                <img
+                  src={formData.imageUrl}
+                  alt="Logo"
+                  className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+                />
+              )}
+              
+              <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px] relative z-10">
                 <div className="text-center space-y-4 max-w-sm">
-                  {/* Image */}
-                  {formData.imageUrl && (
+                  {/* Banner Image - top */}
+                  {formData.imagePosition === 'banner' && formData.imageUrl && (
+                    <div className="mb-6 -mx-8 -mt-8 mb-8">
+                      <img
+                        src={formData.imageUrl}
+                        alt="Banner"
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Profile Image - circular */}
+                  {formData.imagePosition === 'profile' && formData.imageUrl && (
                     <div className="mb-6">
                       <img
                         src={formData.imageUrl}
-                        alt="Davetiye görseli"
+                        alt="Profil"
                         className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
                         style={{ borderColor: colors.accent }}
                       />
@@ -618,7 +670,8 @@ const EditorPage: React.FC = () => {
           eventTime: formData.eventTime,
           location: formData.location,
           message: formData.customMessage,
-          imageUrl: formData.imageUrl
+          imageUrl: formData.imageUrl,
+          imagePosition: formData.imagePosition
         }}
         colors={colors}
       />

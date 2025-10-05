@@ -3,13 +3,17 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Loader2 } from 'lucide-react';
 import { templateService, type Template, type TemplateCategory } from '../services/templateService';
 import { useAuth } from '../store/authStore';
+import { useSubscription } from '../hooks/useSubscription';
 import TemplateCard from '../components/Templates/TemplateCard';
+import UpgradeModal from '../components/Subscription/UpgradeModal';
+import { TemplatesPageSkeleton } from '../components/Skeleton/Skeleton';
 import toast from 'react-hot-toast';
 
 const TemplatesPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
+  const subscription = useSubscription();
 
   // State
   const [categories, setCategories] = useState<TemplateCategory[]>([]);
@@ -17,6 +21,7 @@ const TemplatesPage: React.FC = () => {
   const [savedTemplates, setSavedTemplates] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   const selectedCategory = searchParams.get('category') || 'all';
 
@@ -98,12 +103,21 @@ const TemplatesPage: React.FC = () => {
   const handleSearch = (value: string) => {
     setSearchTerm(value);
   };
+  
+  const handleUpgradeNeeded = () => {
+    setShowUpgradeModal(true);
+  };
+
+  // Show skeleton while loading
+  if (isLoading) {
+    return <TemplatesPageSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 animate-fade-in">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Davetiye Şablonları
           </h1>
@@ -114,7 +128,7 @@ const TemplatesPage: React.FC = () => {
         </div>
 
         {/* Search & Filter */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+        <div className="flex flex-col lg:flex-row gap-6 mb-8 animate-fade-in">
           {/* Search */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -155,42 +169,49 @@ const TemplatesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-          </div>
-        )}
-
         {/* Templates Grid */}
-        {!isLoading && templates.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {templates.map((template) => (
-              <TemplateCard
+        {templates.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
+            {templates.map((template, index) => (
+              <div
                 key={template.id}
-                template={template}
-                onSave={handleSaveTemplate}
-                isSaved={savedTemplates.has(template.id)}
-              />
+                style={{ animationDelay: `${index * 50}ms` }}
+                className="animate-fade-in"
+              >
+                <TemplateCard
+                  template={template}
+                  onSave={handleSaveTemplate}
+                  isSaved={savedTemplates.has(template.id)}
+                  onUpgradeNeeded={handleUpgradeNeeded}
+                />
+              </div>
             ))}
           </div>
         )}
 
         {/* No Results */}
-        {!isLoading && templates.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg mb-4">
-              Aradığınız kriterlere uygun şablon bulunamadı
+        {templates.length === 0 && (
+          <div className="bg-white rounded-lg shadow-md p-12 text-center animate-fade-in">
+            <div className="max-w-md mx-auto">
+              <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Search className="h-10 w-10 text-gray-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Şablon Bulunamadı
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Aradığınız kriterlere uygun şablon bulunamadı. Filtreleri temizleyerek tüm şablonları görüntüleyebilirsiniz.
+              </p>
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  handleCategoryChange('all');
+                }}
+                className="btn-primary"
+              >
+                Tüm Şablonları Göster
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setSearchTerm('');
-                handleCategoryChange('all');
-              }}
-              className="btn-secondary"
-            >
-              Filtreleri Temizle
-            </button>
           </div>
         )}
 
@@ -211,6 +232,15 @@ const TemplatesPage: React.FC = () => {
           </button>
         </div>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature="premium_templates"
+        featureDescription="Premium şablonlara erişmek için PRO veya PREMIUM plana yükseltin!"
+        currentPlan={subscription.currentPlan}
+      />
     </div>
   );
 };

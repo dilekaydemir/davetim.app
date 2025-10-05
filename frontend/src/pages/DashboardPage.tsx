@@ -1,18 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Download, Share2, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Plus, Calendar, Download, Share2, Edit, Trash2, Eye, Loader2, Crown, Zap } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { guestService, type GuestStats } from '../services/guestService';
 import { useAuth } from '../store/authStore';
+import { useSubscription } from '../hooks/useSubscription';
+import UpgradeModal from '../components/Subscription/UpgradeModal';
+import { DashboardSkeleton } from '../components/Skeleton/Skeleton';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
+  const subscription = useSubscription();
 
   // State
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [guestStats, setGuestStats] = useState<Record<string, GuestStats>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState({ feature: '', description: '' });
 
   // Load invitations
   useEffect(() => {
@@ -61,6 +67,24 @@ const DashboardPage: React.FC = () => {
     navigate('/templates');
   };
 
+  const handleNewInvitation = async () => {
+    // Plan limitini kontrol et
+    const access = await subscription.canCreateInvitation();
+    
+    if (!access.allowed) {
+      // Limit aşıldı - upgrade modal göster
+      setUpgradeFeature({
+        feature: 'create_invitation',
+        description: access.reason || 'Yeni davetiye oluşturabilmek için planınızı yükseltin!'
+      });
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    // Limit OK - editor'a git
+    navigate('/editor');
+  };
+
   const handleEditInvitation = (id: string) => {
     navigate(`/editor/${id}`);
   };
@@ -87,6 +111,11 @@ const DashboardPage: React.FC = () => {
         return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Bilinmiyor</span>;
     }
   };
+
+  // Show skeleton while loading
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -199,22 +228,19 @@ const DashboardPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex justify-center items-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-          </div>
-        )}
-
         {/* Invitations List */}
-        {!isLoading && invitations.length > 0 && (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
+        {invitations.length > 0 && (
+          <div className="bg-white shadow rounded-lg overflow-hidden animate-fade-in">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">Son Davetiyeler</h3>
             </div>
             <div className="divide-y divide-gray-200">
-              {invitations.map((invitation) => (
-                <div key={invitation.id} className="px-6 py-4 hover:bg-gray-50">
+              {invitations.map((invitation, index) => (
+                <div 
+                  key={invitation.id} 
+                  className="px-6 py-4 hover:bg-gray-50 transition-colors"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-4">
@@ -320,6 +346,30 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
 
+        {/* Empty State */}
+        {invitations.length === 0 && (
+          <div className="bg-white shadow rounded-lg p-12 text-center animate-fade-in">
+            <div className="max-w-md mx-auto">
+              <div className="bg-primary-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Calendar className="h-10 w-10 text-primary-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                Henüz davetiye oluşturmadınız
+              </h3>
+              <p className="text-gray-600 mb-8">
+                İlk davetiyenizi oluşturmak için şablonlarımıza göz atın ve sevdiklerinizi etkinliğinize davet edin!
+              </p>
+              <button
+                onClick={handleCreateNew}
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                <Plus className="h-5 w-5" />
+                İlk Davetiyemi Oluştur
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-primary-50 rounded-lg p-6">
@@ -347,6 +397,15 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature={upgradeFeature.feature}
+        featureDescription={upgradeFeature.description}
+        currentPlan={subscription.currentPlan}
+      />
     </div>
   );
 };

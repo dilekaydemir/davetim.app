@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Download, Share2, Loader2 } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { pdfService } from '../services/pdfService';
+import { PublicInvitationSkeleton } from '../components/Skeleton/Skeleton';
 import toast from 'react-hot-toast';
 
 const PublicInvitationPage: React.FC = () => {
@@ -115,14 +116,7 @@ const PublicInvitationPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary-500 mx-auto mb-4" />
-          <p className="text-gray-600">Davetiye yükleniyor...</p>
-        </div>
-      </div>
-    );
+    return <PublicInvitationSkeleton />;
   }
 
   if (!invitation) {
@@ -188,27 +182,63 @@ const PublicInvitationPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4">
         <div 
           id="invitation-preview"
-          className="bg-white shadow-2xl rounded-lg overflow-hidden"
+          className="bg-white shadow-2xl rounded-lg overflow-hidden relative"
           style={{
             minHeight: '600px',
-            background: invitation.content?.colors 
-              ? `linear-gradient(135deg, ${invitation.content.colors.primary} 0%, ${invitation.content.colors.secondary} 100%)`
-              : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+            background: invitation.content?.imagePosition === 'background' && invitation.image_url
+              ? `url(${invitation.image_url})`
+              : invitation.content?.colors 
+                ? `linear-gradient(135deg, ${invitation.content.colors.primary} 0%, ${invitation.content.colors.secondary} 100%)`
+                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
           }}
         >
-          <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px]">
+          {/* Gradient overlay for background image */}
+          {invitation.content?.imagePosition === 'background' && invitation.image_url && (
+            <div 
+              className="absolute inset-0" 
+              style={{ 
+                background: invitation.content?.colors
+                  ? `linear-gradient(135deg, ${invitation.content.colors.primary}CC 0%, ${invitation.content.colors.secondary}CC 100%)`
+                  : 'linear-gradient(135deg, #667eeaCC 0%, #764ba2CC 100%)'
+              }}
+            />
+          )}
+          
+          {/* Watermark - bottom right */}
+          {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
+            <img
+              src={invitation.image_url}
+              alt="Logo"
+              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+            />
+          )}
+          
+          <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px] relative z-10">
             <div 
               className="text-center space-y-4 max-w-sm"
               style={{ 
                 color: invitation.content?.colors?.text || '#ffffff'
               }}
             >
-              {/* Image */}
-              {invitation.image_url && (
+              {/* Banner Image - top */}
+              {invitation.content?.imagePosition === 'banner' && invitation.image_url && (
+                <div className="mb-6 -mx-8 -mt-8 mb-8">
+                  <img
+                    src={invitation.image_url}
+                    alt="Banner"
+                    className="w-full h-32 object-cover"
+                  />
+                </div>
+              )}
+              
+              {/* Profile Image - circular */}
+              {invitation.content?.imagePosition === 'profile' && invitation.image_url && (
                 <div className="mb-6">
                   <img
                     src={invitation.image_url}
-                    alt="Davetiye görseli"
+                    alt="Profil"
                     className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
                     style={{ borderColor: invitation.content?.colors?.accent || '#f56565' }}
                   />

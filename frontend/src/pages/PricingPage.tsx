@@ -6,71 +6,79 @@ const PricingPage: React.FC = () => {
   const navigate = useNavigate();
   const [billingPeriod, setBillingPeriod] = React.useState<'monthly' | 'yearly'>('monthly');
 
+  // Planlar
   const plans = [
     {
       id: 'free',
       name: 'Ücretsiz',
       price: { monthly: 0, yearly: 0 },
-      description: 'Başlangıç için ideal',
+      description: 'Tek kullanım için',
       icon: <Star className="h-6 w-6" />,
       color: 'gray',
       features: [
-        '2 premium şablon',
-        'Ayda 3 indirme',
-        'HD PDF çıktısı',
-        'Temel destek',
-        '10MB depolama'
+        '1 davetiye (tek kullanım)',
+        '5 temel şablon',
+        'Temel özelleştirme',
+        'PDF + PNG indirme (sınırsız)',
+        'Link paylaşımı',
+        'Temel RSVP (max 50 kişi)',
+        '5MB depolama'
       ],
       limitations: [
-        'Sınırlı şablon seçenekleri',
-        'Aylık indirme limiti',
-        'Temel özellikler'
+        'Premium şablonlar yok',
+        'Görsel yükleme yok',
+        'Sosyal medya paylaşımı yok',
+        '"Powered by Davetim" watermark'
       ],
       popular: false,
-      cta: 'Ücretsiz Başla'
+      cta: 'Ücretsiz Başla',
+      badge: null
     },
     {
       id: 'pro',
       name: 'PRO',
-      price: { monthly: 29, yearly: 290 },
-      description: 'Kişisel kullanım için',
+      price: { monthly: 39, yearly: 0 },
+      description: 'Düzenli kullanım için',
       icon: <Zap className="h-6 w-6" />,
       color: 'primary',
       features: [
+        'Aylık 3 davetiye',
         'Tüm premium şablonlar',
-        'Sınırsız indirme',
-        'HD PDF + JPG çıktısı',
-        'WhatsApp direkt paylaşım',
-        'Öncelikli destek',
-        '100MB depolama',
-        'Renk ve font özelleştirme',
-        'Davetiye geçmişi'
+        'Görsel yükleme',
+        'Sosyal medya paylaşımı (WhatsApp, Telegram, Instagram, vb.)',
+        'Sınırsız RSVP',
+        'Excel export',
+        'PDF + PNG indirme (sınırsız)',
+        '100MB depolama'
       ],
       limitations: [],
       popular: true,
-      cta: 'PRO\'ya Başla'
+      cta: 'PRO\'ya Başla',
+      badge: 'Sadece Aylık',
+      hasYearly: false
     },
     {
       id: 'premium',
       name: 'PREMIUM',
-      price: { monthly: 49, yearly: 490 },
-      description: 'Profesyonel kullanım için',
+      price: { monthly: 79, yearly: 790 },
+      description: 'Sınırsız + gelişmiş',
       icon: <Crown className="h-6 w-6" />,
       color: 'gradient',
       features: [
+        'Sınırsız davetiye',
         'PRO\'nun tüm özellikleri',
-        'AI davetiye önerileri',
-        'Özel tasarım talepleri',
-        'Toplu davetiye oluşturma',
+        '🎥 QR medya yükleme (3 ay)',
+        '🎥 Yıllıkta medya 1 yıl saklanır',
+        '🤖 AI tasarım önerileri',
         '7/24 öncelikli destek',
-        '1GB depolama',
-        'Marka logosu ekleme',
-        'Analitik raporları',
-        'API erişimi'
+        '500MB depolama',
+        'Gelişmiş analitik'
       ],
       limitations: [],
       popular: false,
-      cta: 'PREMIUM\'a Başla'
+      cta: 'PREMIUM\'a Başla',
+      badge: 'Yıllık: Medya 1 yıl saklanır',
+      hasYearly: true
     }
   ];
 
@@ -106,7 +114,7 @@ const PricingPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Size Uygun Planı Seçin
           </h1>
@@ -132,16 +140,13 @@ const PricingPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setBillingPeriod('yearly')}
-                className={`px-6 py-2 rounded-md text-sm font-medium transition-colors relative ${
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
                   billingPeriod === 'yearly'
                     ? 'bg-primary-500 text-white'
                     : 'text-gray-700 hover:text-gray-900'
                 }`}
               >
                 Yıllık
-                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                  2 ay bedava
-                </span>
               </button>
             </div>
           </div>
@@ -149,7 +154,7 @@ const PricingPage: React.FC = () => {
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {plans.map((plan) => (
+          {plans.map((plan: any) => (
             <div
               key={plan.id}
               className={`bg-white rounded-2xl p-8 ${getPlanCardClass(plan)}`}
@@ -159,6 +164,15 @@ const PricingPage: React.FC = () => {
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                   <span className="bg-primary-500 text-white px-4 py-2 rounded-full text-sm font-medium">
                     En Popüler
+                  </span>
+                </div>
+              )}
+              
+              {/* Plan Badge */}
+              {plan.badge && !plan.popular && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-xs font-medium">
+                    {plan.badge}
                   </span>
                 </div>
               )}
@@ -184,17 +198,22 @@ const PricingPage: React.FC = () => {
               <div className="text-center mb-8">
                 <div className="flex items-end justify-center">
                   <span className="text-4xl font-bold text-gray-900">
-                    ₺{plan.price[billingPeriod]}
+                    ₺{plan.hasYearly === false || !plan.price.yearly ? plan.price.monthly : plan.price[billingPeriod]}
                   </span>
-                  {plan.price[billingPeriod] > 0 && (
+                  {(plan.hasYearly === false || !plan.price.yearly ? plan.price.monthly : plan.price[billingPeriod]) > 0 && (
                     <span className="text-gray-600 ml-2">
-                      /{billingPeriod === 'monthly' ? 'ay' : 'yıl'}
+                      /{plan.hasYearly === false ? 'ay' : billingPeriod === 'monthly' ? 'ay' : 'yıl'}
                     </span>
                   )}
                 </div>
-                {billingPeriod === 'yearly' && plan.price.yearly > 0 && (
+                {billingPeriod === 'yearly' && plan.hasYearly !== false && plan.price.yearly > 0 && (
                   <p className="text-sm text-gray-500 mt-1">
                     (₺{Math.round(plan.price.yearly / 12)}/ay)
+                  </p>
+                )}
+                {plan.hasYearly === false && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Sadece aylık abonelik
                   </p>
                 )}
               </div>
@@ -274,8 +293,8 @@ const PricingPage: React.FC = () => {
                 Hangi ödeme yöntemlerini kabul ediyorsunuz?
               </h3>
               <p className="text-gray-600">
-                Kredi kartı, banka kartı ve havale ile ödeme alabiliyoruz. 
-                Tüm ödemeler güvenli SSL ile korunur.
+                Kredi kartı ve banka kartı ile güvenli ödeme alabiliyoruz. 
+                Tüm ödemeler SSL ile korunur ve güvenlidir.
               </p>
             </div>
           </div>

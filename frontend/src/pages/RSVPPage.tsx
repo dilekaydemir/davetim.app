@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { guestService, type Guest, type RSVPData } from '../services/guestService';
 import { invitationService, type Invitation } from '../services/invitationService';
+import { RSVPPageSkeleton } from '../components/Skeleton/Skeleton';
 import toast from 'react-hot-toast';
 
 const RSVPPage: React.FC = () => {
@@ -95,14 +96,7 @@ const RSVPPage: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary-500 mx-auto mb-4" />
-          <p className="text-gray-600">Yükleniyor...</p>
-        </div>
-      </div>
-    );
+    return <RSVPPageSkeleton />;
   }
 
   if (!guest || !invitation) {
@@ -136,22 +130,56 @@ const RSVPPage: React.FC = () => {
       <div className="max-w-2xl mx-auto">
         {/* Invitation Preview Header */}
         <div 
-          className="rounded-lg shadow-xl overflow-hidden mb-8"
+          className="rounded-lg shadow-xl overflow-hidden mb-8 relative"
           style={{
-            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`
+            background: invitation.content?.imagePosition === 'background' && invitation.image_url
+              ? `url(${invitation.image_url})`
+              : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
           }}
         >
-          <div className="p-8 md:p-12 text-center">
+          {/* Gradient overlay for background image */}
+          {invitation.content?.imagePosition === 'background' && invitation.image_url && (
+            <div 
+              className="absolute inset-0" 
+              style={{ 
+                background: `linear-gradient(135deg, ${colors.primary}CC 0%, ${colors.secondary}CC 100%)`
+              }}
+            />
+          )}
+          
+          {/* Watermark - bottom right */}
+          {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
+            <img
+              src={invitation.image_url}
+              alt="Logo"
+              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+            />
+          )}
+          
+          <div className="p-8 md:p-12 text-center relative z-10">
             <div 
               className="space-y-4 max-w-sm mx-auto"
               style={{ color: colors.text }}
             >
-              {/* Image */}
-              {invitation.image_url && (
+              {/* Banner Image - top */}
+              {invitation.content?.imagePosition === 'banner' && invitation.image_url && (
+                <div className="mb-6 -mx-8 -mt-8 mb-8">
+                  <img
+                    src={invitation.image_url}
+                    alt="Banner"
+                    className="w-full h-32 object-cover"
+                  />
+                </div>
+              )}
+              
+              {/* Profile Image - circular */}
+              {invitation.content?.imagePosition === 'profile' && invitation.image_url && (
                 <div className="mb-6">
                   <img
                     src={invitation.image_url}
-                    alt="Davetiye görseli"
+                    alt="Profil"
                     className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
                     style={{ borderColor: colors.accent }}
                   />

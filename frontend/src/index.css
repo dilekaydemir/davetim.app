@@ -79,12 +79,38 @@
     animation: slideUp 0.3s ease-out;
   }
 
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-in-out;
+  }
+
   /* Loading Animation */
   .spinner {
     border: 2px solid #f3f3f3;
     border-top: 2px solid #f5702a;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   @keyframes spin {
@@ -131,5 +157,69 @@
 @screen xl {
   .container {
     @apply max-w-6xl mx-auto px-8;
+  }
+}
+
+/* Responsive utilities */
+@layer utilities {
+  /* Mobile-first touch targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Safe area for mobile devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Responsive text */
+  .text-responsive-xs {
+    @apply text-xs sm:text-sm;
+  }
+
+  .text-responsive-sm {
+    @apply text-sm sm:text-base;
+  }
+
+  .text-responsive-base {
+    @apply text-base sm:text-lg;
+  }
+
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl;
+  }
+
+  .text-responsive-xl {
+    @apply text-xl sm:text-2xl lg:text-3xl;
+  }
+
+  /* Mobile navigation spacing */
+  .mobile-nav-space {
+    @apply pb-20 sm:pb-0;
+  }
+}
+
+/* Improve mobile form inputs */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important; /* Prevents iOS zoom */
+  }
+
+  /* Better button sizing on mobile */
+  .btn-primary,
+  .btn-secondary,
+  .btn-outline {
+    @apply py-3 px-4 text-sm;
+  }
+
+  /* Stack flex containers on mobile */
+  .flex-responsive {
+    @apply flex-col sm:flex-row;
   }
 }

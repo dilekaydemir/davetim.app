@@ -30,6 +30,9 @@ export interface Invitation {
   
   // Joined data
   template?: any;
+  
+  // Owner subscription info (for feature gates in public view)
+  owner_subscription_tier?: 'free' | 'pro' | 'premium';
 }
 
 export interface InvitationGuest {
@@ -310,19 +313,6 @@ class InvitationService {
       console.error('Publish invitation error:', error);
       toast.error('Davetiye yayınlanırken hata oluştu');
       return false;
-    }
-  }
-
-  async incrementViewCount(invitationId: string): Promise<void> {
-    try {
-      await supabase.rpc('increment_invitation_views', {
-        invitation_uuid: invitationId,
-        visitor_ip: null,
-        visitor_ua: navigator.userAgent
-      });
-    } catch (error: any) {
-      console.error('Increment view count error:', error);
-      // Don't show toast - not critical
     }
   }
 

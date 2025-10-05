@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Mail, Phone, Trash2, Edit2, Link2, Check, X, Loader2, FileSpreadsheet, Download } from 'lucide-react';
+import { UserPlus, Mail, Phone, Trash2, Edit2, Link2, Check, X, Loader2, FileSpreadsheet, Download, Lock } from 'lucide-react';
 import { guestService, type Guest, type CreateGuestData, type GuestStats } from '../../services/guestService';
 import { excelService } from '../../services/excelService';
+import { useSubscription } from '../../hooks/useSubscription';
 import toast from 'react-hot-toast';
 
 interface GuestListProps {
@@ -10,6 +11,8 @@ interface GuestListProps {
 }
 
 const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = 'Davetiye' }) => {
+  const subscription = useSubscription();
+  
   const [guests, setGuests] = useState<Guest[]>([]);
   const [stats, setStats] = useState<GuestStats>({
     total: 0,
@@ -58,6 +61,13 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
     e.preventDefault();
     if (!formData.full_name.trim()) {
       toast.error('Lütfen ad soyad girin');
+      return;
+    }
+
+    // Guest limit kontrolü
+    const guestCheck = await subscription.canAddGuest(invitationId, guests.length);
+    if (!guestCheck.allowed) {
+      toast.error(guestCheck.reason || 'Davetli limitine ulaştınız!');
       return;
     }
 
@@ -205,19 +215,47 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
             {guests.length > 0 && (
               <>
                 <button
-                  onClick={() => excelService.exportGuestsToExcel(guests, invitationTitle)}
-                  className="btn-secondary flex items-center gap-2"
-                  title="Basit Excel listesi indir"
+                  onClick={async () => {
+                    const access = await subscription.canExportExcel();
+                    if (!access.allowed) {
+                      toast.error(access.reason || 'Excel export için PRO plana yükseltin!');
+                      return;
+                    }
+                    excelService.exportGuestsToExcel(guests, invitationTitle);
+                  }}
+                  className={`btn-secondary flex items-center gap-2 ${
+                    !subscription.planConfig?.limits.excelExport ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  title={
+                    subscription.planConfig?.limits.excelExport 
+                      ? "Basit Excel listesi indir"
+                      : "PRO plana yükseltin"
+                  }
                 >
+                  {!subscription.planConfig?.limits.excelExport && <Lock className="h-4 w-4" />}
                   <Download className="h-4 w-4" />
                   Excel İndir
                 </button>
                 
                 <button
-                  onClick={() => excelService.exportGuestsWithStats(guests, invitationTitle, stats)}
-                  className="btn-outline flex items-center gap-2"
-                  title="İstatistiklerle birlikte detaylı rapor indir"
+                  onClick={async () => {
+                    const access = await subscription.canExportExcel();
+                    if (!access.allowed) {
+                      toast.error(access.reason || 'Excel export için PRO plana yükseltin!');
+                      return;
+                    }
+                    excelService.exportGuestsWithStats(guests, invitationTitle, stats);
+                  }}
+                  className={`btn-outline flex items-center gap-2 ${
+                    !subscription.planConfig?.limits.excelExport ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  title={
+                    subscription.planConfig?.limits.excelExport
+                      ? "İstatistiklerle birlikte detaylı rapor indir"
+                      : "PRO plana yükseltin"
+                  }
                 >
+                  {!subscription.planConfig?.limits.excelExport && <Lock className="h-4 w-4" />}
                   <FileSpreadsheet className="h-4 w-4" />
                   Detaylı Rapor
                 </button>

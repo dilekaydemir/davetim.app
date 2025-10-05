@@ -1,21 +1,45 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, Eye, Star, Crown } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Heart, Eye, Star, Crown, Lock } from 'lucide-react';
 import type { Template } from '../../services/templateService';
+import { useSubscription } from '../../hooks/useSubscription';
 
 interface TemplateCardProps {
   template: Template;
   onSave?: (templateId: string) => void;
   isSaved?: boolean;
+  onUpgradeNeeded?: () => void;
 }
 
-const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved = false }) => {
+const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved = false, onUpgradeNeeded }) => {
+  const navigate = useNavigate();
+  const subscription = useSubscription();
+  
+  // Plan kontrolü - Premium şablonlara erişim var mı?
+  // Free plan sadece 'free' tier şablonlara erişebilir, PRO ve PREMIUM şablonlar kilitli
+  const isPremiumOrProTemplate = template.tier === 'premium' || template.tier === 'pro';
+  const canAccessPremium = subscription.planConfig?.limits.premiumTemplates || false;
+  const isLocked = isPremiumOrProTemplate && !canAccessPremium;
+  
   const handleSaveClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (onSave) {
       onSave(template.id);
     }
+  };
+  
+  const handleClick = (e: React.MouseEvent) => {
+    // Premium şablon ve erişim yoksa engelleyelim
+    if (isLocked) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (onUpgradeNeeded) {
+        onUpgradeNeeded();
+      }
+      return false;
+    }
+    // Erişim varsa normal link çalışır
   };
 
   const getTierBadge = () => {
@@ -42,29 +66,57 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved =
     }
   };
 
+  // Kilitli durumlarda Link yerine div kullan
+  const WrapperComponent = isLocked ? 'div' : Link;
+  const wrapperProps = isLocked 
+    ? {
+        onClick: handleClick,
+        className: `group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer opacity-90`
+      }
+    : {
+        to: `/editor?template=${template.slug}`,
+        className: `group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden`
+      };
+
   return (
-    <Link
-      to={`/editor?template=${template.slug}`}
-      className="group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
-    >
+    <WrapperComponent {...wrapperProps as any}>
       {/* Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
         <img
           src={template.preview_image_url}
           alt={template.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className={`w-full h-full object-cover transition-transform duration-300 ${
+            isLocked ? 'blur-sm' : 'group-hover:scale-105'
+          }`}
           loading="lazy"
         />
         
-        {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2">
-            <button className="btn-primary py-2 px-4 text-sm flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              Önizle
-            </button>
+        {/* Lock Overlay for Premium/PRO Templates */}
+        {isLocked && (
+          <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white">
+            <Lock className="h-12 w-12 mb-3" />
+            <div className="text-lg font-semibold mb-1">
+              {template.tier === 'premium' ? 'PREMIUM Şablon' : 'PRO Şablon'}
+            </div>
+            <div className="text-sm text-center px-4">
+              {template.tier === 'premium' 
+                ? 'PRO veya PREMIUM plana yükseltin' 
+                : 'PRO plana yükseltin'}
+            </div>
           </div>
-        </div>
+        )}
+        
+        {/* Overlay on hover */}
+        {!isLocked && (
+          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center gap-2">
+              <button className="btn-primary py-2 px-4 text-sm flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Önizle
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
@@ -138,7 +190,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved =
           </p>
         )}
       </div>
-    </Link>
+    </WrapperComponent>
   );
 };
 

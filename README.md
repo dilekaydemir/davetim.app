@@ -105,9 +105,8 @@ Visit: http://localhost:3000
   - Advanced layout options
 
 - **Payment Integration**
-  - iyzico & PayTR support
+  - In-App Purchase (Coming Soon)
   - Subscription tiers (Free/Pro/Premium)
-  - Turkish Lira support
 
 ## 🏗️ Project Structure
 
@@ -139,9 +138,8 @@ The database includes tables for:
 - **users** - Extended user profiles
 - **templates** - Invitation templates
 - **invitations** - User-created invitations  
-- **subscriptions** - Payment plans
-- **payment_transactions** - Payment history
-- **usage_tracking** - Analytics
+- **guests** - Guest list & RSVP management
+- **usage_tracking** - Analytics (Coming Soon)
 
 ## 🎯 MVP Goals
 

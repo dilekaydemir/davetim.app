@@ -1,7 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { X, Download, Share2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { pdfService } from '../../services/pdfService';
 import type { Invitation } from '../../services/invitationService';
+import { useSubscription } from '../../hooks/useSubscription';
+import { SocialShareButtons } from '../Invitation/SocialShareButtons';
+import toast from 'react-hot-toast';
 
 interface PreviewModalProps {
   isOpen: boolean;
@@ -14,6 +17,7 @@ interface PreviewModalProps {
     location: string;
     message: string;
     imageUrl?: string | null;
+    imagePosition?: 'profile' | 'background' | 'banner' | 'watermark';
   };
   colors?: {
     primary: string;
@@ -39,6 +43,8 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
 }) => {
   const previewRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const subscription = useSubscription();
 
   if (!isOpen) return null;
 
@@ -72,7 +78,13 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
   };
 
   const handleShare = () => {
-    if (invitation?.id) {
+    if (!invitation?.id) return;
+    
+    // PRO+ kullanıcılar için sosyal medya modal'ı göster
+    if (subscription.planConfig?.limits.socialMediaSharing) {
+      setShowShareModal(true);
+    } else {
+      // Free kullanıcılar için sadece link kopyala
       pdfService.copyShareLink(invitation.id);
     }
   };
@@ -115,20 +127,54 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
           <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
             <div 
               ref={previewRef}
-              className="bg-white rounded-lg shadow-lg overflow-hidden max-w-2xl mx-auto"
+              className="bg-white rounded-lg shadow-lg overflow-hidden max-w-2xl mx-auto relative"
               style={{
                 minHeight: '600px',
-                background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`
+                background: invitationData.imagePosition === 'background' && invitationData.imageUrl
+                  ? `url(${invitationData.imageUrl})`
+                  : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
               }}
             >
-              <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px]">
+              {/* Gradient overlay for background image */}
+              {invitationData.imagePosition === 'background' && invitationData.imageUrl && (
+                <div 
+                  className="absolute inset-0" 
+                  style={{ 
+                    background: `linear-gradient(135deg, ${colors.primary}CC 0%, ${colors.secondary}CC 100%)`
+                  }}
+                />
+              )}
+              
+              {/* Watermark - bottom right */}
+              {invitationData.imagePosition === 'watermark' && invitationData.imageUrl && (
+                <img
+                  src={invitationData.imageUrl}
+                  alt="Logo"
+                  className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+                />
+              )}
+              
+              <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px] relative z-10">
                 <div className="text-center space-y-4 max-w-sm" style={{ color: colors.text }}>
-                  {/* Image */}
-                  {invitationData.imageUrl && (
+                  {/* Banner Image - top */}
+                  {invitationData.imagePosition === 'banner' && invitationData.imageUrl && (
+                    <div className="mb-6 -mx-8 -mt-8 mb-8">
+                      <img
+                        src={invitationData.imageUrl}
+                        alt="Banner"
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Profile Image - circular */}
+                  {invitationData.imagePosition === 'profile' && invitationData.imageUrl && (
                     <div className="mb-6">
                       <img
                         src={invitationData.imageUrl}
-                        alt="Davetiye görseli"
+                        alt="Profil"
                         className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
                         style={{ borderColor: colors.accent }}
                       />
@@ -248,6 +294,32 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Share Modal - PRO+ Feature */}
+      {showShareModal && invitation?.id && (
+        <div className="fixed inset-0 z-[60] overflow-y-auto">
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+            onClick={() => setShowShareModal(false)}
+          />
+          <div className="flex min-h-full items-center justify-center p-4">
+            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              
+              <SocialShareButtons
+                invitationUrl={`${window.location.origin}/i/${invitation.id}`}
+                title={invitationData.title}
+                message={invitationData.message || 'Size özel davetiyem!'}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,29 +1,60 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Loader2, Lock } from 'lucide-react';
 import { uploadService } from '../../services/uploadService';
+import { useSubscription } from '../../hooks/useSubscription';
 import toast from 'react-hot-toast';
 
 interface ImageUploadProps {
   invitationId: string;
   userId: string;
   currentImageUrl?: string | null;
+  currentPosition?: 'profile' | 'background' | 'banner' | 'watermark';
   onImageUploaded: (imageUrl: string) => void;
   onImageRemoved: () => void;
+  onPositionChange?: (position: 'profile' | 'background' | 'banner' | 'watermark') => void;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
   invitationId,
   userId,
   currentImageUrl,
+  currentPosition = 'profile',
   onImageUploaded,
-  onImageRemoved
+  onImageRemoved,
+  onPositionChange
 }) => {
+  const subscription = useSubscription();
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Plan kontrolü - görsel yükleme izni var mı?
+  const canUpload = subscription.planConfig?.limits.imageUpload || false;
 
   const handleFileSelect = async (file: File) => {
     if (!file) return;
+    
+    // Size kontrolü (max 5MB per file)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('Dosya boyutu 5MB\'dan küçük olmalıdır');
+      return;
+    }
+    
+    // Plan kontrolü - Genel upload yetkisi
+    const access = await subscription.canUploadImage();
+    if (!access.allowed) {
+      toast.error(access.reason || 'Görsel yükleme için PRO plana yükseltin!');
+      return;
+    }
+
+    // Storage limiti kontrolü
+    const fileSizeMB = file.size / (1024 * 1024); // Convert to MB
+    const storageCheck = await subscription.canUploadImageWithSize(fileSizeMB);
+    if (!storageCheck.allowed) {
+      toast.error(storageCheck.reason || 'Yetersiz depolama alanı!');
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -35,6 +66,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       
       // Notify parent component
       onImageUploaded(imageUrl);
+      
+      // Refresh subscription to update storage usage
+      await subscription.refreshSubscription();
     } catch (error) {
       console.error('Image upload failed:', error);
     } finally {
@@ -138,12 +172,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       ) : (
         // Show upload area
         <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={handleClickUpload}
+          onDragOver={canUpload ? handleDragOver : undefined}
+          onDragLeave={canUpload ? handleDragLeave : undefined}
+          onDrop={canUpload ? handleDrop : undefined}
+          onClick={canUpload ? handleClickUpload : undefined}
           className={`
-            border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-all
+            relative border-2 border-dashed rounded-lg p-8 text-center transition-all
+            ${!canUpload ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
             ${isDragging 
               ? 'border-primary-500 bg-primary-50' 
               : 'border-gray-300 hover:border-gray-400 bg-gray-50'
@@ -151,6 +186,13 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}
           `}
         >
+          {!canUpload && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 bg-opacity-90 rounded-lg z-10">
+              <Lock className="h-8 w-8 text-gray-400 mb-2" />
+              <div className="text-sm font-medium text-gray-600">PRO Özelliği</div>
+              <div className="text-xs text-gray-500">Görsel yüklemek için yükseltin</div>
+            </div>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -185,8 +227,70 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         </div>
       )}
 
+      {/* Image Position Selector - only show if image exists */}
+      {currentImageUrl && onPositionChange && (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Görsel Konumu
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => onPositionChange('profile')}
+              className={`p-3 rounded-lg border-2 text-sm transition-all ${
+                currentPosition === 'profile'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 hover:border-primary-200'
+              }`}
+            >
+              <div className="font-semibold">👤 Profil</div>
+              <div className="text-xs text-gray-500">Yuvarlak, orta üstte</div>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => onPositionChange('background')}
+              className={`p-3 rounded-lg border-2 text-sm transition-all ${
+                currentPosition === 'background'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 hover:border-primary-200'
+              }`}
+            >
+              <div className="font-semibold">🖼️ Arka Plan</div>
+              <div className="text-xs text-gray-500">Tüm davetiyeyi kaplar</div>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => onPositionChange('banner')}
+              className={`p-3 rounded-lg border-2 text-sm transition-all ${
+                currentPosition === 'banner'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 hover:border-primary-200'
+              }`}
+            >
+              <div className="font-semibold">📋 Üst Banner</div>
+              <div className="text-xs text-gray-500">Üstte dikdörtgen</div>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => onPositionChange('watermark')}
+              className={`p-3 rounded-lg border-2 text-sm transition-all ${
+                currentPosition === 'watermark'
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-gray-200 hover:border-primary-200'
+              }`}
+            >
+              <div className="font-semibold">💧 Logo/Filigran</div>
+              <div className="text-xs text-gray-500">Sağ alt köşede</div>
+            </button>
+          </div>
+        </div>
+      )}
+
       <p className="text-xs text-gray-500">
-        💡 İpucu: Yüklediğiniz görsel, davetiyenizin başlığının üzerinde görünecektir.
+        💡 İpucu: Görsel konumunu değiştirerek farklı görünümler oluşturabilirsiniz.
       </p>
     </div>
   );
