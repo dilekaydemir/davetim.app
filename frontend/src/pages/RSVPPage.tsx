@@ -132,7 +132,7 @@ const RSVPPage: React.FC = () => {
         <div 
           className="rounded-lg shadow-xl overflow-hidden mb-8 relative"
           style={{
-            background: invitation.content?.imagePosition === 'background' && invitation.image_url
+            backgroundImage: invitation.content?.imagePosition === 'background' && invitation.image_url
               ? `url(${invitation.image_url})`
               : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
             backgroundSize: 'cover',

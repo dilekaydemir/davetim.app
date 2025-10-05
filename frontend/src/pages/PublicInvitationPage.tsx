@@ -185,7 +185,7 @@ const PublicInvitationPage: React.FC = () => {
           className="bg-white shadow-2xl rounded-lg overflow-hidden relative"
           style={{
             minHeight: '600px',
-            background: invitation.content?.imagePosition === 'background' && invitation.image_url
+            backgroundImage: invitation.content?.imagePosition === 'background' && invitation.image_url
               ? `url(${invitation.image_url})`
               : invitation.content?.colors 
                 ? `linear-gradient(135deg, ${invitation.content.colors.primary} 0%, ${invitation.content.colors.secondary} 100%)`

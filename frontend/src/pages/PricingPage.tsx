@@ -120,7 +120,7 @@ const PricingPage: React.FC = () => {
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             İhtiyacınıza göre tasarlanmış esnek fiyatlandırma. 
-            İstediğiniz zaman yükseltebilir veya iptal edebilirsiniz.
+            İstediğiniz zaman yükseltebilir, ödeme sonrası 3 gün içinde iptal edebilirsiniz.
           </p>
         </div>
 
@@ -272,20 +272,21 @@ const PricingPage: React.FC = () => {
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">
-                Ücretsiz deneme süresi var mı?
+                İptal politikası nedir?
               </h3>
               <p className="text-gray-600">
-                PRO ve PREMIUM planlar için 7 günlük ücretsiz deneme sunuyoruz. 
-                Kredi kartı bilgisi gereklidir.
+                Ödeme yaptıktan sonra 3 gün içinde iptal ederseniz, ödemeniz iade edilir. 
+                3 günden sonra yapılan iptallerde mevcut dönemin sonuna kadar hizmet almaya 
+                devam edersiniz ancak iade yapılmaz.
               </p>
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">
-                İptal etmek istediğimde ne olur?
+                Ücretsiz plan yeterli mi?
               </h3>
               <p className="text-gray-600">
-                İstediğiniz zaman iptal edebilirsiniz. İptal sonrası mevcut dönemin 
-                sonuna kadar hizmet almaya devam edersiniz.
+                Ücretsiz plan ile tek davetiye oluşturabilir ve temel özellikleri kullanabilirsiniz. 
+                Daha fazla davetiye ve premium özellikler için PRO veya PREMIUM plana yükseltebilirsiniz.
               </p>
             </div>
             <div>

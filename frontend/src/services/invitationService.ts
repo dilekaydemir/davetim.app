@@ -61,6 +61,7 @@ export interface CreateInvitationData {
   event_time?: string;
   event_location_name?: string;
   event_location_address?: string;
+  image_url?: string | null;
   content?: any;
   custom_design?: any;
 }
@@ -71,6 +72,7 @@ export interface UpdateInvitationData {
   event_time?: string;
   event_location_name?: string;
   event_location_address?: string;
+  image_url?: string | null;
   content?: any;
   custom_design?: any;
   settings?: any;
@@ -116,10 +118,17 @@ class InvitationService {
         event_time: data.event_time || null,
         event_location_name: data.event_location_name || null,
         event_location_address: data.event_location_address || null,
+        image_url: data.image_url || null,
         content: data.content || {},
         custom_design: data.custom_design || {},
         status: 'draft'
       };
+
+      console.log('📤 Creating invitation with data:', {
+        ...insertData,
+        image_url: insertData.image_url,
+        has_image: !!insertData.image_url
+      });
 
       const { data: invitation, error } = await supabase
         .from('invitations')
@@ -136,6 +145,7 @@ class InvitationService {
       }
 
       console.log('✅ Invitation created:', invitation.id);
+      console.log('📥 Returned invitation.image_url:', invitation.image_url);
       toast.success('Davetiye oluşturuldu!');
       return invitation;
     } catch (error: any) {
@@ -246,12 +256,17 @@ class InvitationService {
     }
   }
 
-  async updateInvitation(invitationId: string, updates: UpdateInvitationData): Promise<boolean> {
+  async updateInvitation(invitationId: string, updates: UpdateInvitationData): Promise<Invitation | null> {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('invitations')
         .update(updates)
-        .eq('id', invitationId);
+        .eq('id', invitationId)
+        .select(`
+          *,
+          template:templates(*)
+        `)
+        .single();
 
       if (error) {
         console.error('❌ Error updating invitation:', error);
@@ -260,11 +275,11 @@ class InvitationService {
 
       console.log('✅ Invitation updated');
       toast.success('Davetiye güncellendi');
-      return true;
+      return data;
     } catch (error: any) {
       console.error('Update invitation error:', error);
       toast.error('Davetiye güncellenirken hata oluştu');
-      return false;
+      return null;
     }
   }
 

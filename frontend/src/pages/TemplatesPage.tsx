@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, X } from 'lucide-react';
 import { templateService, type Template, type TemplateCategory } from '../services/templateService';
 import { useAuth } from '../store/authStore';
 import { useSubscription } from '../hooks/useSubscription';
@@ -21,16 +21,26 @@ const TemplatesPage: React.FC = () => {
   const [savedTemplates, setSavedTemplates] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   const selectedCategory = searchParams.get('category') || 'all';
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 800); // Wait 800ms after user stops typing
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   // Load categories and templates
   useEffect(() => {
     loadData();
-  }, [selectedCategory, searchTerm]);
+  }, [selectedCategory, debouncedSearchTerm]);
 
-  const loadData = async () => {
+  const loadData = async (overrideSearch?: string, overrideCategory?: string) => {
     setIsLoading(true);
     
     try {
@@ -41,12 +51,15 @@ const TemplatesPage: React.FC = () => {
       // Load templates with filters
       const filters: any = {};
       
-      if (selectedCategory !== 'all') {
-        filters.categorySlug = selectedCategory;
+      const categoryToUse = overrideCategory !== undefined ? overrideCategory : selectedCategory;
+      const searchToUse = overrideSearch !== undefined ? overrideSearch : debouncedSearchTerm;
+      
+      if (categoryToUse !== 'all') {
+        filters.categorySlug = categoryToUse;
       }
       
-      if (searchTerm) {
-        filters.search = searchTerm;
+      if (searchToUse) {
+        filters.search = searchToUse;
       }
 
       const templatesData = await templateService.getTemplates(filters);
@@ -104,9 +117,29 @@ const TemplatesPage: React.FC = () => {
     setSearchTerm(value);
   };
   
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
+    // Immediately reload with empty search
+    loadData('', selectedCategory);
+  };
+  
+  const handleClearAllFilters = () => {
+    setSearchTerm('');
+    setDebouncedSearchTerm('');
+    handleCategoryChange('all');
+    // Immediately reload with empty search and all categories
+    loadData('', 'all');
+  };
+  
   const handleUpgradeNeeded = () => {
     setShowUpgradeModal(true);
   };
+
+  // Calculate search state
+  const isSearching = searchTerm !== debouncedSearchTerm;
+  const hasActiveSearch = debouncedSearchTerm.trim().length > 0;
+  const hasActiveFilters = selectedCategory !== 'all' || hasActiveSearch;
 
   // Show skeleton while loading
   if (isLoading) {
@@ -134,11 +167,29 @@ const TemplatesPage: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
-              placeholder="Şablon ara..."
+              placeholder="Düğün, doğum günü, nişan gibi anahtar kelimeler girin..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className={`w-full pl-10 pr-20 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
+                isSearching ? 'border-primary-300 bg-primary-50/30' : 'border-gray-300 bg-white'
+              }`}
             />
+            
+            {/* Right side icons */}
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+              {isSearching && (
+                <Loader2 className="text-primary-500 h-5 w-5 animate-spin" />
+              )}
+              {searchTerm && !isSearching && (
+                <button
+                  onClick={handleClearSearch}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded"
+                  title="Aramayı temizle"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Category Filter */}
@@ -169,6 +220,29 @@ const TemplatesPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Results Count */}
+        {!isSearching && templates.length > 0 && (
+          <div className="mb-6 flex items-center justify-between animate-fade-in">
+            <p className="text-sm text-gray-600">
+              <span className="font-semibold text-gray-900">{templates.length}</span> şablon bulundu
+              {hasActiveSearch && (
+                <span className="ml-2">
+                  "<span className="font-medium text-primary-600">{debouncedSearchTerm}</span>" için
+                </span>
+              )}
+            </p>
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearAllFilters}
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+              >
+                <X className="h-4 w-4" />
+                Filtreleri Temizle
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Templates Grid */}
         {templates.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
@@ -190,27 +264,49 @@ const TemplatesPage: React.FC = () => {
         )}
 
         {/* No Results */}
-        {templates.length === 0 && (
+        {!isSearching && templates.length === 0 && (
           <div className="bg-white rounded-lg shadow-md p-12 text-center animate-fade-in">
             <div className="max-w-md mx-auto">
-              <div className="bg-gray-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search className="h-10 w-10 text-gray-400" />
+              <div className="bg-gradient-to-br from-primary-50 to-primary-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Search className="h-12 w-12 text-primary-500" />
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                Şablon Bulunamadı
+                {hasActiveSearch ? 'Sonuç Bulunamadı' : 'Şablon Bulunamadı'}
               </h3>
-              <p className="text-gray-600 mb-6">
-                Aradığınız kriterlere uygun şablon bulunamadı. Filtreleri temizleyerek tüm şablonları görüntüleyebilirsiniz.
+              <p className="text-gray-600 mb-2">
+                {hasActiveSearch ? (
+                  <>
+                    "<span className="font-semibold text-gray-900">{debouncedSearchTerm}</span>" için sonuç bulunamadı.
+                  </>
+                ) : (
+                  'Bu kategoride henüz şablon bulunmuyor.'
+                )}
               </p>
-              <button
-                onClick={() => {
-                  setSearchTerm('');
-                  handleCategoryChange('all');
-                }}
-                className="btn-primary"
-              >
-                Tüm Şablonları Göster
-              </button>
+              <p className="text-sm text-gray-500 mb-8">
+                {hasActiveFilters ? (
+                  'Farklı anahtar kelimeler veya kategoriler deneyebilir, ya da tüm şablonları görüntüleyebilirsiniz.'
+                ) : (
+                  'Yakında yeni şablonlar eklenecek. Şimdilik diğer kategorilere göz atabilirsiniz.'
+                )}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {hasActiveFilters && (
+                  <button
+                    onClick={handleClearAllFilters}
+                    className="btn-primary"
+                  >
+                    Tüm Şablonları Göster
+                  </button>
+                )}
+                {hasActiveSearch && !hasActiveFilters && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="btn-primary"
+                  >
+                    Aramayı Temizle
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}

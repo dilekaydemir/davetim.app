@@ -130,7 +130,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
               className="bg-white rounded-lg shadow-lg overflow-hidden max-w-2xl mx-auto relative"
               style={{
                 minHeight: '600px',
-                background: invitationData.imagePosition === 'background' && invitationData.imageUrl
+                backgroundImage: invitationData.imagePosition === 'background' && invitationData.imageUrl
                   ? `url(${invitationData.imageUrl})`
                   : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
                 backgroundSize: 'cover',

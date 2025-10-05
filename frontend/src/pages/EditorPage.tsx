@@ -51,6 +51,13 @@ const EditorPage: React.FC = () => {
     accent: '#f56565'
   });
 
+  // Store template's original design for reset
+  const [templateOriginalDesign, setTemplateOriginalDesign] = useState<{
+    colors?: typeof colors;
+    imageUrl?: string | null;
+    imagePosition?: typeof formData.imagePosition;
+  } | null>(null);
+
   const [selectedFont, setSelectedFont] = useState('normal');
 
   // Load template or invitation
@@ -63,6 +70,14 @@ const EditorPage: React.FC = () => {
     
     loadData();
   }, [invitationId, searchParams, isAuthenticated]);
+
+  // Debug: Log formData changes
+  useEffect(() => {
+    console.log('🖼️ FormData updated:');
+    console.log('  - imagePosition:', formData.imagePosition);
+    console.log('  - imageUrl:', formData.imageUrl);
+    console.log('  - Should show background?', formData.imagePosition === 'background' && formData.imageUrl);
+  }, [formData.imageUrl, formData.imagePosition]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -80,6 +95,10 @@ const EditorPage: React.FC = () => {
         
         setInvitation(invitationData);
         setTemplate(invitationData.template);
+        
+        console.log('📝 Loading invitation data...');
+        console.log('📸 Invitation image_url:', invitationData.image_url);
+        console.log('📍 Invitation imagePosition:', invitationData.content?.imagePosition);
         
         // Load invitation data into form
         setFormData({
@@ -136,13 +155,62 @@ const EditorPage: React.FC = () => {
         
         setTemplate(templateData);
         
-        // Create new invitation
+        // Load template design configuration
+        const templateDesign = templateData.design_config || {};
+        console.log('🎨 Template design config:', templateDesign);
+        
+        // Apply template colors if exists
+        const templateColors = templateDesign.colors ? {
+          primary: templateDesign.colors.primary || '#667eea',
+          secondary: templateDesign.colors.secondary || '#764ba2',
+          background: templateDesign.colors.background || '#ffffff',
+          text: templateDesign.colors.text || '#ffffff',
+          accent: templateDesign.colors.accent || '#f56565'
+        } : null;
+        
+        if (templateColors) {
+          setColors(templateColors);
+        }
+        
+        // Apply template background image and position
+        const templateImageUrl = templateDesign.backgroundImage || null;
+        const templateImagePosition = templateDesign.imagePosition || 'background';
+        
+        // Store original design for reset
+        setTemplateOriginalDesign({
+          colors: templateColors || undefined,
+          imageUrl: templateImageUrl,
+          imagePosition: templateImagePosition
+        });
+        
+        console.log('📸 Template image URL:', templateImageUrl);
+        console.log('📍 Template image position:', templateImagePosition);
+        
+        // Set default form data with template info
+        setFormData({
+          title: `${templateData.category?.name || 'Etkinlik'} Davetiyesi`,
+          eventDate: '',
+          eventTime: '',
+          location: '',
+          customMessage: `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`,
+          imageUrl: templateImageUrl,
+          imagePosition: templateImagePosition
+        });
+        
+        // Create new invitation with template design
         const newInvitation = await invitationService.createInvitation({
           template_id: templateData.id,
-          title: `Yeni ${templateData.category?.name || 'Etkinlik'}`,
+          title: `${templateData.category?.name || 'Etkinlik'} Davetiyesi`,
           event_type: templateData.category?.slug || '',
-          content: {}
+          image_url: templateImageUrl,
+          content: {
+            colors: templateDesign.colors || colors,
+            imagePosition: templateImagePosition,
+            message: `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`
+          }
         });
+        
+        console.log('✅ New invitation created with image_url:', newInvitation?.image_url);
         
         if (newInvitation) {
           setInvitation(newInvitation);
@@ -176,11 +244,12 @@ const EditorPage: React.FC = () => {
     setIsSaving(true);
     
     try {
-      const success = await invitationService.updateInvitation(invitation.id, {
+      const updated = await invitationService.updateInvitation(invitation.id, {
         title: formData.title,
-        event_date: formData.eventDate || null,
-        event_time: formData.eventTime || null,
-        event_location_name: formData.location || null,
+        event_date: formData.eventDate || undefined,
+        event_time: formData.eventTime || undefined,
+        event_location_name: formData.location || undefined,
+        image_url: formData.imageUrl || undefined,
         content: {
           message: formData.customMessage,
           colors: colors,
@@ -191,12 +260,8 @@ const EditorPage: React.FC = () => {
         }
       });
       
-      if (success) {
-        // Reload invitation data
-        const updated = await invitationService.getInvitation(invitation.id);
-        if (updated) {
-          setInvitation(updated);
-        }
+      if (updated) {
+        setInvitation(updated);
       }
     } catch (error) {
       console.error('Save error:', error);
@@ -244,6 +309,27 @@ const EditorPage: React.FC = () => {
     if (invitation?.id) {
       pdfService.copyShareLink(invitation.id);
     }
+  };
+
+  const handleResetToTemplate = () => {
+    if (!templateOriginalDesign) {
+      toast.error('Şablon bilgisi bulunamadı');
+      return;
+    }
+
+    // Reset colors
+    if (templateOriginalDesign.colors) {
+      setColors(templateOriginalDesign.colors);
+    }
+
+    // Reset image
+    setFormData({
+      ...formData,
+      imageUrl: templateOriginalDesign.imageUrl || null,
+      imagePosition: templateOriginalDesign.imagePosition || 'background'
+    });
+
+    toast.success('Şablon varsayılanlarına dönüldü');
   };
 
   // Loading state
@@ -483,11 +569,36 @@ const EditorPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Reset to Template Button */}
+              {templateOriginalDesign && (
+                <div className="border-t pt-6">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-amber-900 mb-1">
+                          Şablon Varsayılanlarına Dön
+                        </h4>
+                        <p className="text-xs text-amber-700">
+                          Renkleri ve görseli şablonun orijinal haline döndürür
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleResetToTemplate}
+                        className="ml-4 px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 transition-colors whitespace-nowrap"
+                      >
+                        Sıfırla
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Color Customization */}
               <div className="border-t pt-6">
                 <ColorPicker
                   colors={colors}
                   onChange={setColors}
+                  defaultColors={templateOriginalDesign?.colors}
                 />
               </div>
                 </div>
@@ -519,7 +630,7 @@ const EditorPage: React.FC = () => {
               className="rounded-lg shadow-lg overflow-hidden relative"
               style={{
                 minHeight: '600px',
-                background: formData.imagePosition === 'background' && formData.imageUrl
+                backgroundImage: formData.imagePosition === 'background' && formData.imageUrl
                   ? `url(${formData.imageUrl})` 
                   : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
                 backgroundSize: 'cover',

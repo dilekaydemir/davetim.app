@@ -328,26 +328,6 @@ const DashboardPage: React.FC = () => {
 
         {/* Empty State */}
         {!isLoading && invitations.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <Calendar className="h-24 w-24 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">
-              Henüz davetiye oluşturmadınız
-            </h3>
-            <p className="text-gray-600 mb-6">
-              İlk davetiyenizi oluşturmak için başlayın
-            </p>
-            <button
-              onClick={handleCreateNew}
-              className="btn-primary flex items-center gap-2 mx-auto"
-            >
-              <Plus className="h-5 w-5" />
-              İlk Davetiyemi Oluştur
-            </button>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {invitations.length === 0 && (
           <div className="bg-white shadow rounded-lg p-12 text-center animate-fade-in">
             <div className="max-w-md mx-auto">
               <div className="bg-primary-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">

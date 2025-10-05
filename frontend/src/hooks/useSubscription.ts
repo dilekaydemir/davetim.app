@@ -43,6 +43,7 @@ export interface UseSubscriptionReturn {
   getRemainingInvitations: () => number | 'unlimited';
   getStorageUsagePercentage: () => number;
   getRemainingStorageMB: () => number;
+  canCancelWithRefund: () => { canRefund: boolean; daysLeft: number };
   
   // Refresh
   refreshSubscription: () => Promise<void>;
@@ -206,6 +207,13 @@ export function useSubscription(): UseSubscriptionReturn {
     await loadSubscription();
   };
   
+  const canCancelWithRefund = () => {
+    if (!subscription?.subscriptionStartDate) {
+      return { canRefund: false, daysLeft: 0 };
+    }
+    return subscriptionService.canCancelWithRefund(subscription.subscriptionStartDate);
+  };
+
   return {
     // Abonelik bilgileri
     subscription,
@@ -239,6 +247,7 @@ export function useSubscription(): UseSubscriptionReturn {
     getRemainingInvitations,
     getStorageUsagePercentage,
     getRemainingStorageMB,
+    canCancelWithRefund,
     
     // Refresh
     refreshSubscription,

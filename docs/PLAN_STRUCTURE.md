@@ -141,9 +141,12 @@ Davetim bireysel kullanıcılara hizmet eder:
 - Veri kaybı olmaz (arşivlenir)
 
 ### İptal:
-- Mevcut dönem sonunda geçerli
+- **3 gün içinde iptal:** Ödeme iade edilir, mevcut dönem sonuna kadar erişim devam eder
+- **3 gün sonra iptal:** İade yapılmaz, mevcut dönem sonuna kadar erişim devam eder
 - Veriler 30 gün arşivde kalır
 - Yeniden abonelikte geri yüklenir
+
+> **Not:** Ücretsiz deneme süresi bulunmamaktadır. Ücretsiz plan ile tüm temel özellikleri deneyebilirsiniz.
 
 ---
 

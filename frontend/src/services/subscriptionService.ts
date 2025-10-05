@@ -285,10 +285,41 @@ class SubscriptionService {
   }
   
   /**
+   * İptal için uygunluk kontrolü (3 gün içinde ise iade hakkı var)
+   */
+  canCancelWithRefund(subscriptionStartDate: string): { canRefund: boolean; daysLeft: number } {
+    try {
+      const startDate = new Date(subscriptionStartDate);
+      const now = new Date();
+      const diffTime = now.getTime() - startDate.getTime();
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      const canRefund = diffDays < 3;
+      const daysLeft = canRefund ? 3 - diffDays : 0;
+      
+      return { canRefund, daysLeft };
+    } catch (error) {
+      console.error('❌ Cancel check error:', error);
+      return { canRefund: false, daysLeft: 0 };
+    }
+  }
+  
+  /**
    * Planı iptal et
    */
   async cancelSubscription(userId: string): Promise<boolean> {
     try {
+      // Önce mevcut abonelik bilgilerini al
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Kullanıcı bilgisi bulunamadı');
+        return false;
+      }
+      
+      const subscriptionStartDate = user.user_metadata?.subscription_start_date;
+      const refundCheck = this.canCancelWithRefund(subscriptionStartDate);
+      
       const { error } = await supabase.auth.updateUser({
         data: {
           subscription_status: 'cancelled',
@@ -302,47 +333,23 @@ class SubscriptionService {
         return false;
       }
       
-      toast.success('Abonelik iptal edildi. Mevcut dönem sonuna kadar erişiminiz devam edecek.');
+      if (refundCheck.canRefund) {
+        toast.success(
+          `Abonelik iptal edildi. Ödemeniz iade edilecektir. 
+          Mevcut dönem sonuna kadar erişiminiz devam edecek.`,
+          { duration: 6000 }
+        );
+      } else {
+        toast.success(
+          'Abonelik iptal edildi. Mevcut dönem sonuna kadar erişiminiz devam edecek.',
+          { duration: 5000 }
+        );
+      }
+      
       return true;
     } catch (error: any) {
       console.error('❌ Cancel subscription error:', error);
       toast.error('Abonelik iptal edilirken hata oluştu');
-      return false;
-    }
-  }
-  
-  /**
-   * Deneme süresi başlat (7 gün)
-   */
-  async startTrial(userId: string, planId: PlanTier): Promise<boolean> {
-    try {
-      const now = new Date();
-      const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 7);
-      
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          subscription_tier: planId,
-          billing_period: 'monthly',
-          subscription_status: 'trial',
-          subscription_start_date: now.toISOString(),
-          subscription_end_date: trialEndDate.toISOString(),
-          auto_renew: false,
-        }
-      });
-      
-      if (error) {
-        console.error('❌ Start trial error:', error);
-        toast.error('Deneme süresi başlatılırken hata oluştu');
-        return false;
-      }
-      
-      const planConfig = getPlanConfig(planId);
-      toast.success(`${planConfig.name} için 7 günlük deneme başladı! 🎉`);
-      return true;
-    } catch (error: any) {
-      console.error('❌ Start trial error:', error);
-      toast.error('Deneme süresi başlatılırken hata oluştu');
       return false;
     }
   }

@@ -13,9 +13,16 @@ interface ColorPickerProps {
     accent: string;
   };
   onChange: (colors: ColorPickerProps['colors']) => void;
+  defaultColors?: {
+    primary: string;
+    secondary: string;
+    background: string;
+    text: string;
+    accent: string;
+  };
 }
 
-const ColorPicker: React.FC<ColorPickerProps> = ({ colors, onChange }) => {
+const ColorPicker: React.FC<ColorPickerProps> = ({ colors, onChange, defaultColors }) => {
   const [activeColor, setActiveColor] = useState<keyof ColorPickerProps['colors'] | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('wedding');
 
@@ -161,18 +168,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ colors, onChange }) => {
         )}
       </div>
 
-      {/* Reset Button */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <button
-          onClick={() => {
-            const defaultPreset = colorPresets[0];
-            onChange(defaultPreset.colors);
-          }}
-          className="w-full btn-outline text-sm"
-        >
-          Varsayılana Dön
-        </button>
-      </div>
     </div>
   );
 };

@@ -202,11 +202,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
             <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">
               <div className="flex items-center">
                 <Check className="h-4 w-4 text-green-500 mr-1" />
-                <span>7 gün deneme</span>
-              </div>
-              <div className="flex items-center">
-                <Check className="h-4 w-4 text-green-500 mr-1" />
-                <span>İstediğin zaman iptal</span>
+                <span>3 gün içinde iptal hakkı</span>
               </div>
               <div className="flex items-center">
                 <Check className="h-4 w-4 text-green-500 mr-1" />

@@ -111,16 +111,25 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     try {
       setIsUploading(true);
       
-      // Delete from storage
-      await uploadService.deleteImage(currentImageUrl, userId);
+      // Check if this is an external image (e.g. from Unsplash, template default)
+      const isExternalImage = currentImageUrl.includes('unsplash.com') || 
+                              !currentImageUrl.includes('supabase');
       
-      // Update invitation
+      if (!isExternalImage) {
+        // Only delete from storage if it's our uploaded image
+        await uploadService.deleteImage(currentImageUrl, userId);
+      }
+      
+      // Always update invitation to remove image reference
       await uploadService.removeInvitationImage(invitationId);
       
       // Notify parent component
       onImageRemoved();
+      
+      toast.success('Görsel kaldırıldı');
     } catch (error) {
       console.error('Image removal failed:', error);
+      toast.error('Görsel kaldırılırken hata oluştu');
     } finally {
       setIsUploading(false);
     }
