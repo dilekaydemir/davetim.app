@@ -1,0 +1,36 @@
+# robots.txt for davetim.app
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow specific paths
+Disallow: /editor/
+Disallow: /dashboard
+Disallow: /account
+Disallow: /rsvp/
+
+# Sitemap location
+Sitemap: https://davetim.app/sitemap.xml
+
+# Crawl delay (optional, be nice to servers)
+Crawl-delay: 0
+
+# Specific rules for common bots
+User-agent: Googlebot
+Allow: /
+Allow: /templates
+Allow: /pricing
+
+User-agent: Bingbot
+Allow: /
+Allow: /templates
+Allow: /pricing
+
+# Block bad bots
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+

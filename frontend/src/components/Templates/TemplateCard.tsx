@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Eye, Star, Crown, Lock } from 'lucide-react';
 import type { Template } from '../../services/templateService';
@@ -12,7 +12,7 @@ interface TemplateCardProps {
   onUpgradeNeeded?: (templateTier: 'pro' | 'premium') => void;
 }
 
-const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved = false, onUpgradeNeeded }) => {
+const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSaved = false, onUpgradeNeeded }) => {
   const navigate = useNavigate();
   const subscription = useSubscription();
   
@@ -30,7 +30,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved =
     }
   };
   
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
     // Şablon erişimi yoksa engelleyelim
     if (isLocked) {
       e.preventDefault();
@@ -41,7 +41,7 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved =
       return false;
     }
     // Erişim varsa normal link çalışır
-  };
+  }, [isLocked, template.tier, onUpgradeNeeded]);
 
   const getTierBadge = () => {
     if (template.tier === 'free') {
@@ -197,6 +197,8 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved =
       </div>
     </WrapperComponent>
   );
-};
+});
+
+TemplateCard.displayName = 'TemplateCard';
 
 export default TemplateCard;

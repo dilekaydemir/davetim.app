@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+<!-- Homepage -->
+<url>
+  <loc>https://davetim.app/</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>daily</changefreq>
+  <priority>1.0</priority>
+</url>
+
+<!-- Templates Page -->
+<url>
+  <loc>https://davetim.app/templates</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.9</priority>
+</url>
+
+<!-- Pricing Page -->
+<url>
+  <loc>https://davetim.app/pricing</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>monthly</changefreq>
+  <priority>0.8</priority>
+</url>
+
+<!-- Auth Pages -->
+<url>
+  <loc>https://davetim.app/login</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>yearly</changefreq>
+  <priority>0.5</priority>
+</url>
+
+<url>
+  <loc>https://davetim.app/signup</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>yearly</changefreq>
+  <priority>0.6</priority>
+</url>
+
+<!-- Template Categories (example - should be generated dynamically) -->
+<url>
+  <loc>https://davetim.app/templates?category=wedding</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.8</priority>
+</url>
+
+<url>
+  <loc>https://davetim.app/templates?category=engagement</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.8</priority>
+</url>
+
+<url>
+  <loc>https://davetim.app/templates?category=birthday</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.8</priority>
+</url>
+
+<url>
+  <loc>https://davetim.app/templates?category=corporate</loc>
+  <lastmod>2025-10-11</lastmod>
+  <changefreq>weekly</changefreq>
+  <priority>0.7</priority>
+</url>
+
+<!--
+  NOTE: In production, this sitemap should be generated dynamically
+  to include all template URLs and be updated automatically.
+  
+  Example dynamic URLs:
+  - https://davetim.app/templates/{template-slug}
+  - https://davetim.app/blog/{article-slug} (if blog exists)
+-->
+
+</urlset>
+

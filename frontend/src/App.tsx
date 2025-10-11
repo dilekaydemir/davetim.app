@@ -1,26 +1,24 @@
 import { Routes, Route } from 'react-router-dom'
-import { Suspense } from 'react'
+import { Suspense, lazy } from 'react'
 
-// Layout Components
+// Layout Components (keep these eager loaded - small and always needed)
 import Layout from './components/Layout/Layout'
 import LoadingSpinner from './components/UI/LoadingSpinner'
 import ErrorBoundary from './components/Common/ErrorBoundary'
 import { NetworkStatus } from './components/Common/NetworkStatus'
-
-// Pages
-import HomePage from './pages/HomePage'
-import TemplatesPage from './pages/TemplatesPage'
-import EditorPage from './pages/EditorPage'
-import DashboardPage from './pages/DashboardPage'
-import AuthPage from './pages/AuthPage'
-import ResetPasswordPage from './pages/ResetPasswordPage'
-import PricingPage from './pages/PricingPage'
-import AccountPage from './pages/AccountPage'
-import PublicInvitationPage from './pages/PublicInvitationPage'
-import RSVPPage from './pages/RSVPPage'
-
-// Protected Route Component
 import ProtectedRoute from './components/Auth/ProtectedRoute'
+
+// Lazy load pages for code splitting
+const HomePage = lazy(() => import('./pages/HomePage'))
+const TemplatesPage = lazy(() => import('./pages/TemplatesPage'))
+const EditorPage = lazy(() => import('./pages/EditorPage'))
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const AuthPage = lazy(() => import('./pages/AuthPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const PricingPage = lazy(() => import('./pages/PricingPage'))
+const AccountPage = lazy(() => import('./pages/AccountPage'))
+const PublicInvitationPage = lazy(() => import('./pages/PublicInvitationPage'))
+const RSVPPage = lazy(() => import('./pages/RSVPPage'))
 
 function App() {
   return (

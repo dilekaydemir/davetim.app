@@ -108,19 +108,24 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
       />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden mx-auto">
+          {/* Close button - mobile friendly */}
+          <button
+            onClick={onClose}
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors touch-target"
+            aria-label="Kapat"
+          >
+            <X className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
+          </button>
+          
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
               Davetiye Önizleme
             </h2>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {/* Spacer for close button */}
+            <div className="w-10"></div>
           </div>
 
           {/* Preview Content */}
@@ -256,19 +261,19 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
             <button
               onClick={handleShare}
-              className="btn-secondary flex items-center gap-2"
+              className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto"
               disabled={!invitation?.id}
             >
               <Share2 className="h-4 w-4" />
-              Link Kopyala
+              <span className="sm:inline">Paylaş</span>
             </button>
             
             <button
               onClick={handleExportImage}
-              className="btn-secondary flex items-center gap-2"
+              className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto"
               disabled={isExporting}
             >
               {isExporting ? (
@@ -276,12 +281,12 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
               ) : (
                 <ImageIcon className="h-4 w-4" />
               )}
-              PNG İndir
+              <span>PNG</span>
             </button>
 
             <button
               onClick={handleExportPDF}
-              className="btn-primary flex items-center gap-2"
+              className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
               disabled={isExporting}
             >
               {isExporting ? (
@@ -289,7 +294,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              PDF İndir
+              <span>PDF</span>
             </button>
           </div>
         </div>

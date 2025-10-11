@@ -96,8 +96,8 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       />
 
       {/* Dialog */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-fade-in">
+      <div className="flex min-h-full items-center justify-center p-3 sm:p-4">
+        <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6 animate-fade-in">
           {/* Close button */}
           <button
             onClick={onClose}
@@ -123,18 +123,18 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           </p>
 
           {/* Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-target"
             >
               {cancelText}
             </button>
             <button
               onClick={handleConfirm}
               disabled={isLoading}
-              className={`flex-1 px-4 py-2 ${colors.button} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+              className={`flex-1 px-4 py-2 sm:py-2.5 ${colors.button} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 touch-target`}
             >
               {isLoading && (
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />

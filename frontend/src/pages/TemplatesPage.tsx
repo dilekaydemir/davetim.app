@@ -4,6 +4,7 @@ import { Search, Loader2, X } from 'lucide-react';
 import { templateService, type Template, type TemplateCategory } from '../services/templateService';
 import { useAuth } from '../store/authStore';
 import { useSubscription } from '../hooks/useSubscription';
+import { SEOHead, CanonicalURL } from '../components/SEO/SEOHead';
 import TemplateCard from '../components/Templates/TemplateCard';
 import UpgradeModal from '../components/Subscription/UpgradeModal';
 import { TemplatesPageSkeleton } from '../components/Skeleton/Skeleton';
@@ -149,9 +150,18 @@ const TemplatesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+    <>
+      <SEOHead
+        title="Davetiye Şablonları - 100+ Hazır Tasarım | Davetim"
+        description="Düğün, nişan, doğum günü ve özel günleriniz için 100+ profesyonel davetiye şablonu. Ücretsiz ve premium seçenekler. Hemen düzenlemeye başlayın!"
+        keywords="davetiye şablonları, düğün davetiyesi şablonu, nişan davetiyesi, doğum günü davetiyesi, hazır davetiye tasarımları"
+        url="https://davetim.app/templates"
+      />
+      <CanonicalURL url="https://davetim.app/templates" />
+      
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Davetiye Şablonları
@@ -344,7 +354,8 @@ const TemplatesPage: React.FC = () => {
         currentPlan={subscription.currentPlan}
         recommendedPlan={upgradeTemplateTier === 'premium' ? 'premium' : 'pro'}
       />
-    </div>
+      </div>
+    </>
   );
 };
 

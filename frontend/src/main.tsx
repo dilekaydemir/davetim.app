@@ -4,7 +4,17 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { AuthProvider } from './components/Auth/AuthProvider'
+import { logWebVitals, logBundleSize, logMemoryUsage } from './utils/performance'
 import './index.css'
+
+// Performance monitoring (development only)
+if (import.meta.env.DEV) {
+  logWebVitals();
+  setTimeout(() => {
+    logBundleSize();
+    logMemoryUsage();
+  }, 3000);
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -197,6 +197,75 @@
     @apply min-h-[44px] min-w-[44px];
   }
 
+  /* Touch-friendly buttons */
+  @media (max-width: 768px) {
+    .btn-primary,
+    .btn-secondary,
+    .btn-outline {
+      @apply min-h-[44px] px-6 text-base;
+    }
+
+    button[type="submit"],
+    button[type="button"] {
+      @apply min-h-[44px];
+    }
+
+    /* Mobile-optimized form inputs - prevent iOS zoom */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="url"],
+    input[type="date"],
+    input[type="time"],
+    input[type="search"],
+    textarea,
+    select {
+      font-size: 16px !important; /* Prevents iOS zoom */
+      @apply min-h-[44px];
+    }
+
+    /* Better spacing for mobile forms */
+    .input-field {
+      @apply text-base;
+    }
+
+    /* Larger tap targets for radio and checkbox */
+    input[type="radio"],
+    input[type="checkbox"] {
+      @apply min-w-[24px] min-h-[24px];
+    }
+  }
+
+  /* Tablet-optimized layouts (768px - 1024px) */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* 2-column grid for template cards */
+    .template-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Optimized spacing for tablets */
+    .container {
+      @apply px-6;
+    }
+
+    /* Better typography for tablets */
+    h1 {
+      @apply text-3xl;
+    }
+
+    h2 {
+      @apply text-2xl;
+    }
+
+    /* Larger touch targets */
+    button,
+    a {
+      @apply min-h-[48px];
+    }
+  }
+
   /* Safe area for mobile devices */
   .safe-top {
     padding-top: env(safe-area-inset-top);

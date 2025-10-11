@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, LogOut, Settings } from 'lucide-react';
+import { Menu, X, User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../store/authStore';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { isAuthenticated, user, signOut } = useAuth();
 
@@ -25,6 +26,28 @@ const Navbar: React.FC = () => {
       console.error('Sign out error:', error);
     }
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [navigate]);
 
   return (
     <nav className="bg-white shadow-lg border-b sticky top-0 z-50">
@@ -63,10 +86,10 @@ const Navbar: React.FC = () => {
                 >
                   Panel
                 </Link>
-                <div className="relative">
+                <div className="relative" ref={dropdownRef}>
                   <button 
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium transition-colors touch-target"
                   >
                     <User className="h-4 w-4" />
                     <span>{user?.fullName || 'Kullanıcı'}</span>
@@ -74,7 +97,7 @@ const Navbar: React.FC = () => {
                   
                   {/* Dropdown menu */}
                   {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50 animate-fade-in">
                       <div className="px-4 py-3 border-b border-gray-200">
                         <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
                         <p className="text-sm text-gray-500">{user?.email}</p>
@@ -179,14 +202,26 @@ const Navbar: React.FC = () => {
                     <div className="ml-3">
                       <div className="text-base font-medium text-gray-800">{user?.fullName}</div>
                       <div className="text-sm text-gray-500">{user?.email}</div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 mt-1">
+                        {user?.subscriptionTier?.toUpperCase() || 'FREE'}
+                      </span>
                     </div>
                   </div>
                   <div className="space-y-1 px-3">
                     <Link
-                      to="/account"
-                      className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 transition-colors"
+                      to="/dashboard"
+                      className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 transition-colors touch-target"
                       onClick={() => setIsMenuOpen(false)}
                     >
+                      <LayoutDashboard className="h-4 w-4 mr-2" />
+                      Panel
+                    </Link>
+                    <Link
+                      to="/account"
+                      className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50 transition-colors touch-target"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
                       Hesap Ayarları
                     </Link>
                     <button
@@ -194,8 +229,9 @@ const Navbar: React.FC = () => {
                         handleSignOut();
                         setIsMenuOpen(false);
                       }}
-                      className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-700 hover:bg-red-50 transition-colors"
+                      className="w-full text-left flex items-center px-3 py-2 rounded-md text-base font-medium text-red-700 hover:bg-red-50 transition-colors touch-target"
                     >
+                      <LogOut className="h-4 w-4 mr-2" />
                       Çıkış Yap
                     </button>
                   </div>

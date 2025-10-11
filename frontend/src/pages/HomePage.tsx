@@ -1,9 +1,32 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Star, Users, Clock, Download } from 'lucide-react';
+import { SEOHead, JSONLDSchema, CanonicalURL, ResourceHints } from '../components/SEO/SEOHead';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+
+  // Schema.org structured data
+  const schemaData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Davetim',
+    applicationCategory: 'DesignApplication',
+    operatingSystem: 'Web',
+    offers: {
+      '@type': 'AggregateOffer',
+      lowPrice: '0',
+      highPrice: '49',
+      priceCurrency: 'TRY',
+      offerCount: '3',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.9',
+      reviewCount: '10000',
+    },
+    description: 'Özel günleriniz için profesyonel dijital davetiyeler oluşturun. Hazır şablonlar, kolay düzenleme, RSVP takibi.',
+  };
 
   const features = [
     {
@@ -30,8 +53,21 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
+    <>
+      {/* SEO Meta Tags */}
+      <SEOHead
+        title="Davetim - Profesyonel Dijital Davetiye Oluşturucu | Ücretsiz Dene"
+        description="Özel günleriniz için profesyonel dijital davetiyeler oluşturun. 100+ hazır şablon, kolay düzenleme, RSVP takibi, WhatsApp paylaşım. Ücretsiz başlayın!"
+        keywords="dijital davetiye, online davetiye, davetiye tasarımı, düğün davetiyesi, nişan davetiyesi, doğum günü davetiyesi, ücretsiz davetiye"
+        url="https://davetim.app"
+        type="website"
+      />
+      <JSONLDSchema data={schemaData} />
+      <CanonicalURL url="https://davetim.app" />
+      <ResourceHints />
+
+      <div className="min-h-screen">
+        {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary-50 to-orange-50 pt-20 pb-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
@@ -168,7 +204,8 @@ const HomePage: React.FC = () => {
           </button>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 };
 
