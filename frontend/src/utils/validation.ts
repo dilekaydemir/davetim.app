@@ -108,6 +108,154 @@ export function formatPhoneNumber(value: string): string {
 }
 
 /**
+ * URL validation
+ */
+export function validateUrl(url: string): ValidationResult {
+  if (!url || url.trim() === '') {
+    return { isValid: true }; // Optional field
+  }
+
+  try {
+    new URL(url);
+    return { isValid: true };
+  } catch {
+    return { isValid: false, error: 'Geçerli bir URL girin' };
+  }
+}
+
+/**
+ * Name validation (Turkish characters support)
+ */
+export function validateName(name: string, fieldName: string = 'İsim'): ValidationResult {
+  if (!name || name.trim() === '') {
+    return { isValid: false, error: `${fieldName} gerekli` };
+  }
+
+  if (name.trim().length < 2) {
+    return { isValid: false, error: `${fieldName} en az 2 karakter olmalı` };
+  }
+
+  if (name.trim().length > 100) {
+    return { isValid: false, error: `${fieldName} en fazla 100 karakter olabilir` };
+  }
+
+  // Allow Turkish characters and spaces
+  const nameRegex = /^[a-zA-ZğüşıöçĞÜŞİÖÇ\s]+$/;
+  if (!nameRegex.test(name)) {
+    return { isValid: false, error: `${fieldName} sadece harf içermelidir` };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Title validation
+ */
+export function validateTitle(title: string, minLength: number = 3, maxLength: number = 100): ValidationResult {
+  if (!title || title.trim() === '') {
+    return { isValid: false, error: 'Başlık gerekli' };
+  }
+
+  if (title.trim().length < minLength) {
+    return { isValid: false, error: `Başlık en az ${minLength} karakter olmalı` };
+  }
+
+  if (title.trim().length > maxLength) {
+    return { isValid: false, error: `Başlık en fazla ${maxLength} karakter olabilir` };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Location/Address validation
+ */
+export function validateLocation(location: string): ValidationResult {
+  if (!location || location.trim() === '') {
+    return { isValid: true }; // Optional field
+  }
+
+  if (location.trim().length < 5) {
+    return { isValid: false, error: 'Konum en az 5 karakter olmalı' };
+  }
+
+  if (location.trim().length > 200) {
+    return { isValid: false, error: 'Konum en fazla 200 karakter olabilir' };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Time validation (HH:MM format)
+ */
+export function validateTime(time: string): ValidationResult {
+  if (!time || time.trim() === '') {
+    return { isValid: true }; // Optional field
+  }
+
+  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  if (!timeRegex.test(time)) {
+    return { isValid: false, error: 'Geçerli bir saat girin (ÖR: 14:30)' };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Guest count validation
+ */
+export function validateGuestCount(count: number, max?: number): ValidationResult {
+  if (count < 0) {
+    return { isValid: false, error: 'Misafir sayısı negatif olamaz' };
+  }
+
+  if (max && count > max) {
+    return { isValid: false, error: `En fazla ${max} misafir ekleyebilirsiniz` };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Password confirmation validation
+ */
+export function validatePasswordMatch(password: string, confirmPassword: string): ValidationResult {
+  if (password !== confirmPassword) {
+    return { isValid: false, error: 'Şifreler eşleşmiyor' };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Strong password validation (for account security)
+ */
+export function validateStrongPassword(password: string): ValidationResult {
+  if (!password || password.trim() === '') {
+    return { isValid: false, error: 'Şifre gerekli' };
+  }
+
+  if (password.length < 8) {
+    return { isValid: false, error: 'Şifre en az 8 karakter olmalı' };
+  }
+
+  // Check for at least one uppercase, one lowercase, and one number
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+
+  if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+    return { 
+      isValid: false, 
+      error: 'Şifre en az bir büyük harf, bir küçük harf ve bir rakam içermelidir' 
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
  * Debounce function for validation
  */
 export function debounce<T extends (...args: any[]) => any>(

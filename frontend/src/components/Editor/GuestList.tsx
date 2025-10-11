@@ -4,6 +4,8 @@ import { guestService, type Guest, type CreateGuestData, type GuestStats } from 
 import { excelService } from '../../services/excelService';
 import { useSubscription } from '../../hooks/useSubscription';
 import toast from 'react-hot-toast';
+import { validateName, validateEmail, validatePhone, formatPhoneNumber } from '../../utils/validation';
+import ConfirmDialog from '../Common/ConfirmDialog';
 
 interface GuestListProps {
   invitationId: string;
@@ -36,6 +38,18 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
     notes: ''
   });
 
+  // Form validation errors
+  const [errors, setErrors] = useState({
+    full_name: '',
+    email: '',
+    phone: ''
+  });
+
+  // Confirm dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [guestToDelete, setGuestToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Load guests
   useEffect(() => {
     loadGuests();
@@ -57,10 +71,54 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
     }
   };
 
+  // Validate guest form
+  const validateGuestForm = (): boolean => {
+    const newErrors = {
+      full_name: '',
+      email: '',
+      phone: ''
+    };
+
+    // Name validation (required)
+    const nameResult = validateName(formData.full_name, 'Ad Soyad');
+    if (!nameResult.isValid) {
+      newErrors.full_name = nameResult.error!;
+    }
+
+    // Email validation (optional)
+    if (formData.email && formData.email.trim() !== '') {
+      const emailResult = validateEmail(formData.email);
+      if (!emailResult.isValid) {
+        newErrors.email = emailResult.error!;
+      }
+    }
+
+    // Phone validation (optional)
+    if (formData.phone && formData.phone.trim() !== '') {
+      const phoneResult = validatePhone(formData.phone);
+      if (!phoneResult.isValid) {
+        newErrors.phone = phoneResult.error!;
+      }
+    }
+
+    setErrors(newErrors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(newErrors).some(error => error !== '');
+    
+    if (hasErrors) {
+      const firstError = Object.values(newErrors).find(error => error !== '');
+      toast.error(firstError || 'Lütfen formu kontrol edin', { duration: 5000 });
+    }
+
+    return !hasErrors;
+  };
+
   const handleAddGuest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.full_name.trim()) {
-      toast.error('Lütfen ad soyad girin');
+    
+    // Validate form
+    if (!validateGuestForm()) {
       return;
     }
 
@@ -91,7 +149,12 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
   };
 
   const handleUpdateGuest = async (guestId: string) => {
-    try {
+    // Validate form
+    if (!validateGuestForm()) {
+      return;
+    }
+
+    try{
       await guestService.updateGuest(guestId, {
         full_name: formData.full_name,
         email: formData.email,
@@ -114,14 +177,24 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
     }
   };
 
-  const handleDeleteGuest = async (guestId: string) => {
-    if (!confirm('Bu davetliyi silmek istediğinize emin misiniz?')) return;
+  const handleDeleteClick = (guest: Guest) => {
+    setGuestToDelete({ id: guest.id, name: guest.full_name });
+    setShowDeleteDialog(true);
+  };
 
+  const handleDeleteConfirm = async () => {
+    if (!guestToDelete) return;
+
+    setIsDeleting(true);
     try {
-      await guestService.deleteGuest(guestId);
+      await guestService.deleteGuest(guestToDelete.id);
       await loadGuests();
+      setShowDeleteDialog(false);
+      setGuestToDelete(null);
     } catch (error) {
       console.error('Error deleting guest:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -275,16 +348,26 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Ad Soyad *
+                  Ad Soyad <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="input-field"
+                  onChange={(e) => {
+                    setFormData({ ...formData, full_name: e.target.value });
+                    if (errors.full_name) setErrors({ ...errors, full_name: '' });
+                  }}
+                  onBlur={(e) => {
+                    const result = validateName(e.target.value, 'Ad Soyad');
+                    setErrors({ ...errors, full_name: result.isValid ? '' : result.error! });
+                  }}
+                  className={`input-field ${errors.full_name ? 'input-error' : ''}`}
                   placeholder="Örn: Ahmet Yılmaz"
                   required
                 />
+                {errors.full_name && (
+                  <p className="text-xs text-red-600 mt-1">{errors.full_name}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -293,10 +376,22 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="input-field"
+                  onChange={(e) => {
+                    setFormData({ ...formData, email: e.target.value });
+                    if (errors.email) setErrors({ ...errors, email: '' });
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value.trim()) {
+                      const result = validateEmail(e.target.value);
+                      setErrors({ ...errors, email: result.isValid ? '' : result.error! });
+                    }
+                  }}
+                  className={`input-field ${errors.email ? 'input-error' : ''}`}
                   placeholder="ahmet@example.com"
                 />
+                {errors.email && (
+                  <p className="text-xs text-red-600 mt-1">{errors.email}</p>
+                )}
               </div>
             </div>
 
@@ -308,10 +403,24 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="input-field"
-                  placeholder="+90 555 123 4567"
+                  onChange={(e) => {
+                    const formatted = formatPhoneNumber(e.target.value);
+                    setFormData({ ...formData, phone: formatted });
+                    if (errors.phone) setErrors({ ...errors, phone: '' });
+                  }}
+                  onBlur={(e) => {
+                    if (e.target.value.trim()) {
+                      const result = validatePhone(e.target.value);
+                      setErrors({ ...errors, phone: result.isValid ? '' : result.error! });
+                    }
+                  }}
+                  className={`input-field ${errors.phone ? 'input-error' : ''}`}
+                  placeholder="05XX XXX XX XX"
+                  maxLength={15}
                 />
+                {errors.phone && (
+                  <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -443,7 +552,7 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDeleteGuest(guest.id)}
+                    onClick={() => handleDeleteClick(guest)}
                     className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
                     title="Sil"
                   >
@@ -455,6 +564,22 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
           ))
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setGuestToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Davetliyi Sil"
+        message={`"${guestToDelete?.name}" isimli davetliyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`}
+        confirmText="Evet, Sil"
+        cancelText="İptal"
+        type="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

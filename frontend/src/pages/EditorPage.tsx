@@ -11,6 +11,7 @@ import ColorPicker from '../components/Editor/ColorPicker';
 import ImageUpload from '../components/Editor/ImageUpload';
 import GuestList from '../components/Editor/GuestList';
 import toast from 'react-hot-toast';
+import { validateTitle, validateLocation, validateTime, validateFutureDate } from '../utils/validation';
 
 const EditorPage: React.FC = () => {
   const { templateId: invitationId } = useParams();
@@ -59,6 +60,14 @@ const EditorPage: React.FC = () => {
   } | null>(null);
 
   const [selectedFont, setSelectedFont] = useState('normal');
+
+  // Form validation errors
+  const [errors, setErrors] = useState({
+    title: '',
+    eventDate: '',
+    eventTime: '',
+    location: ''
+  });
 
   // Load template or invitation
   useEffect(() => {
@@ -144,10 +153,11 @@ const EditorPage: React.FC = () => {
           return;
         }
         
-        // Premium/PRO şablon kontrolü - Free plan sadece 'free' tier'a erişebilir
-        const isPremiumOrProTemplate = templateData.tier === 'premium' || templateData.tier === 'pro';
-        if (isPremiumOrProTemplate && !subscription.planConfig?.limits.premiumTemplates) {
-          toast.error('Bu şablon PRO veya PREMIUM plan gerektirir!');
+        // Şablon erişim kontrolü - Kullanıcının bu tier'a erişimi var mı?
+        const templateTier = templateData.tier as 'free' | 'pro' | 'premium';
+        if (!subscription.canAccessTemplate(templateTier)) {
+          const tierNames = { free: 'Ücretsiz', pro: 'PRO', premium: 'PREMIUM' };
+          toast.error(`Bu şablon ${tierNames[templateTier]} plan gerektirir!`);
           navigate('/templates');
           isCreatingRef.current = false;
           return;
@@ -232,14 +242,108 @@ const EditorPage: React.FC = () => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
+    }
+  };
+
+  // Real-time validation on blur
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newErrors = { ...errors };
+
+    switch (name) {
+      case 'title':
+        const titleResult = validateTitle(value, 3, 40);
+        newErrors.title = titleResult.isValid ? '' : titleResult.error!;
+        break;
+      case 'eventDate':
+        const dateResult = validateFutureDate(value);
+        newErrors.eventDate = dateResult.isValid ? '' : dateResult.error!;
+        break;
+      case 'eventTime':
+        const timeResult = validateTime(value);
+        newErrors.eventTime = timeResult.isValid ? '' : timeResult.error!;
+        break;
+      case 'location':
+        const locationResult = validateLocation(value);
+        newErrors.location = locationResult.isValid ? '' : locationResult.error!;
+        break;
+    }
+
+    setErrors(newErrors);
+  };
+
+  // Validate form before saving
+  const validateForm = (): boolean => {
+    const newErrors = {
+      title: '',
+      eventDate: '',
+      eventTime: '',
+      location: ''
+    };
+
+    // Title validation (required)
+    const titleResult = validateTitle(formData.title, 3, 40);
+    if (!titleResult.isValid) {
+      newErrors.title = titleResult.error!;
+    }
+
+    // Date validation (optional, but must be future if provided)
+    if (formData.eventDate) {
+      const dateResult = validateFutureDate(formData.eventDate);
+      if (!dateResult.isValid) {
+        newErrors.eventDate = dateResult.error!;
+      }
+    }
+
+    // Time validation (optional, but must be valid format if provided)
+    if (formData.eventTime) {
+      const timeResult = validateTime(formData.eventTime);
+      if (!timeResult.isValid) {
+        newErrors.eventTime = timeResult.error!;
+      }
+    }
+
+    // Location validation (optional)
+    if (formData.location) {
+      const locationResult = validateLocation(formData.location);
+      if (!locationResult.isValid) {
+        newErrors.location = locationResult.error!;
+      }
+    }
+
+    setErrors(newErrors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(newErrors).some(error => error !== '');
+    
+    if (hasErrors) {
+      const firstError = Object.values(newErrors).find(error => error !== '');
+      toast.error(firstError || 'Lütfen formu kontrol edin', { duration: 5000 });
+    }
+
+    return !hasErrors;
   };
 
   const handleSave = async () => {
     if (!invitation) return;
+    
+    // Validate form before saving
+    if (!validateForm()) {
+      return;
+    }
     
     setIsSaving(true);
     
@@ -466,20 +570,26 @@ const EditorPage: React.FC = () => {
               {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Etkinlik Başlığı
+                  Etkinlik Başlığı <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
-                  className="input-field"
+                  onBlur={handleBlur}
+                  className={`input-field ${errors.title ? 'input-error' : ''}`}
                   placeholder="Örn: Sevgi & Ahmet Düğünü"
                   maxLength={40}
+                  required
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.title.length}/40 karakter
-                </p>
+                {errors.title ? (
+                  <p className="text-xs text-red-600 mt-1">{errors.title}</p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.title.length}/40 karakter
+                  </p>
+                )}
               </div>
 
               {/* Date & Time */}
@@ -493,8 +603,13 @@ const EditorPage: React.FC = () => {
                     name="eventDate"
                     value={formData.eventDate}
                     onChange={handleInputChange}
-                    className="input-field"
+                    onBlur={handleBlur}
+                    className={`input-field ${errors.eventDate ? 'input-error' : ''}`}
+                    min={new Date().toISOString().split('T')[0]}
                   />
+                  {errors.eventDate && (
+                    <p className="text-xs text-red-600 mt-1">{errors.eventDate}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -505,8 +620,12 @@ const EditorPage: React.FC = () => {
                     name="eventTime"
                     value={formData.eventTime}
                     onChange={handleInputChange}
-                    className="input-field"
+                    onBlur={handleBlur}
+                    className={`input-field ${errors.eventTime ? 'input-error' : ''}`}
                   />
+                  {errors.eventTime && (
+                    <p className="text-xs text-red-600 mt-1">{errors.eventTime}</p>
+                  )}
                 </div>
               </div>
 
@@ -520,13 +639,18 @@ const EditorPage: React.FC = () => {
                   name="location"
                   value={formData.location}
                   onChange={handleInputChange}
-                  className="input-field"
+                  onBlur={handleBlur}
+                  className={`input-field ${errors.location ? 'input-error' : ''}`}
                   placeholder="Örn: Grand Hotel, İstanbul"
                   maxLength={60}
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {formData.location.length}/60 karakter
-                </p>
+                {errors.location ? (
+                  <p className="text-xs text-red-600 mt-1">{errors.location}</p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.location.length}/60 karakter
+                  </p>
+                )}
               </div>
 
               {/* Custom Message */}

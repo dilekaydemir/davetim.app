@@ -23,6 +23,7 @@ const TemplatesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeTemplateTier, setUpgradeTemplateTier] = useState<'pro' | 'premium'>('pro');
   
   const selectedCategory = searchParams.get('category') || 'all';
 
@@ -132,7 +133,8 @@ const TemplatesPage: React.FC = () => {
     loadData('', 'all');
   };
   
-  const handleUpgradeNeeded = () => {
+  const handleUpgradeNeeded = (templateTier: 'pro' | 'premium') => {
+    setUpgradeTemplateTier(templateTier);
     setShowUpgradeModal(true);
   };
 
@@ -334,8 +336,13 @@ const TemplatesPage: React.FC = () => {
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         feature="premium_templates"
-        featureDescription="Premium şablonlara erişmek için PRO veya PREMIUM plana yükseltin!"
+        featureDescription={
+          upgradeTemplateTier === 'premium' 
+            ? "Premium şablonlara erişmek için PREMIUM plana yükseltin!"
+            : "PRO şablonlara erişmek için PRO plana yükseltin!"
+        }
         currentPlan={subscription.currentPlan}
+        recommendedPlan={upgradeTemplateTier === 'premium' ? 'premium' : 'pro'}
       />
     </div>
   );

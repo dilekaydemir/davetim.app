@@ -4,6 +4,8 @@ import { Suspense } from 'react'
 // Layout Components
 import Layout from './components/Layout/Layout'
 import LoadingSpinner from './components/UI/LoadingSpinner'
+import ErrorBoundary from './components/Common/ErrorBoundary'
+import { NetworkStatus } from './components/Common/NetworkStatus'
 
 // Pages
 import HomePage from './pages/HomePage'
@@ -22,9 +24,11 @@ import ProtectedRoute from './components/Auth/ProtectedRoute'
 
 function App() {
   return (
-    <div className="App">
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
+    <ErrorBoundary>
+      <div className="App">
+        <NetworkStatus />
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
           {/* Public Invitation View (No Layout) */}
           <Route path="/i/:invitationId" element={<PublicInvitationPage />} />
           
@@ -59,9 +63,10 @@ function App() {
               </ProtectedRoute>
             } />
           </Route>
-        </Routes>
-      </Suspense>
-    </div>
+          </Routes>
+        </Suspense>
+      </div>
+    </ErrorBoundary>
   )
 }
 

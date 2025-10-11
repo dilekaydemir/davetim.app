@@ -7,6 +7,7 @@ import { useAuth } from '../store/authStore';
 import { useSubscription } from '../hooks/useSubscription';
 import UpgradeModal from '../components/Subscription/UpgradeModal';
 import { DashboardSkeleton } from '../components/Skeleton/Skeleton';
+import ConfirmDialog from '../components/Common/ConfirmDialog';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +20,11 @@ const DashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState({ feature: '', description: '' });
+  
+  // Confirm dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [invitationToDelete, setInvitationToDelete] = useState<{ id: string; title: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Load invitations
   useEffect(() => {
@@ -89,13 +95,25 @@ const DashboardPage: React.FC = () => {
     navigate(`/editor/${id}`);
   };
 
-  const handleDeleteInvitation = async (id: string) => {
-    if (confirm('Bu davetiyeyi silmek istediğinizden emin misiniz?')) {
-      const success = await invitationService.deleteInvitation(id);
+  const handleDeleteClick = (invitation: Invitation) => {
+    setInvitationToDelete({ id: invitation.id, title: invitation.title });
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!invitationToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const success = await invitationService.deleteInvitation(invitationToDelete.id);
       if (success) {
         // Reload invitations
-        loadInvitations();
+        await loadInvitations();
+        setShowDeleteDialog(false);
+        setInvitationToDelete(null);
       }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -312,7 +330,7 @@ const DashboardPage: React.FC = () => {
                         <Download className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleDeleteInvitation(invitation.id)}
+                        onClick={() => handleDeleteClick(invitation)}
                         className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                         title="Sil"
                       >
@@ -385,6 +403,22 @@ const DashboardPage: React.FC = () => {
         feature={upgradeFeature.feature}
         featureDescription={upgradeFeature.description}
         currentPlan={subscription.currentPlan}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => {
+          setShowDeleteDialog(false);
+          setInvitationToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Davetiyeyi Sil"
+        message={`"${invitationToDelete?.title}" davetiyesini silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm misafir bilgileri de silinecektir.`}
+        confirmText="Evet, Sil"
+        cancelText="İptal"
+        type="danger"
+        isLoading={isDeleting}
       />
     </div>
   );

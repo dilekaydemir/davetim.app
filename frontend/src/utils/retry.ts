@@ -1,19 +1,26 @@
 /**
- * Retry utility for handling network failures
+ * Retry utility for handling network failures with exponential backoff
  */
 
 export interface RetryOptions {
   maxRetries?: number;
   delayMs?: number;
   backoff?: boolean;
+  retryOn?: (error: any) => boolean; // Custom retry condition
   onRetry?: (attempt: number, error: Error) => void;
+  timeout?: number; // Request timeout in ms
 }
 
 const DEFAULT_OPTIONS: Required<RetryOptions> = {
   maxRetries: 3,
   delayMs: 1000,
   backoff: true,
+  retryOn: (error: any) => {
+    // Retry on network errors and 5xx server errors
+    return isNetworkError(error) || (error.status >= 500 && error.status < 600);
+  },
   onRetry: () => {},
+  timeout: 30000, // 30 seconds default timeout
 };
 
 /**
@@ -28,17 +35,20 @@ export async function retry<T>(
 
   for (let attempt = 1; attempt <= opts.maxRetries; attempt++) {
     try {
-      return await fn();
+      // Add timeout to the request
+      return await withTimeout(fn(), opts.timeout);
     } catch (error: any) {
       lastError = error;
       
-      // Don't retry on client errors (4xx)
-      if (error.status >= 400 && error.status < 500) {
+      // Check if we should retry this error
+      if (!opts.retryOn(error)) {
+        console.log(`❌ Not retrying error (attempt ${attempt}):`, error.message || error);
         throw error;
       }
 
       // Don't retry on last attempt
       if (attempt === opts.maxRetries) {
+        console.log(`❌ Max retries (${opts.maxRetries}) reached, giving up`);
         throw error;
       }
 
@@ -47,6 +57,7 @@ export async function retry<T>(
         ? opts.delayMs * Math.pow(2, attempt - 1)
         : opts.delayMs;
 
+      console.log(`🔄 Retry attempt ${attempt}/${opts.maxRetries} after ${delay}ms...`);
       opts.onRetry(attempt, error);
 
       // Wait before retrying
@@ -55,6 +66,18 @@ export async function retry<T>(
   }
 
   throw lastError!;
+}
+
+/**
+ * Add timeout to a promise
+ */
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+    )
+  ]);
 }
 
 /**
@@ -68,6 +91,35 @@ export function isNetworkError(error: any): boolean {
     error.name === 'NetworkError' ||
     error.code === 'NETWORK_ERROR'
   );
+}
+
+/**
+ * Check if browser is online
+ */
+export function isOnline(): boolean {
+  return navigator.onLine;
+}
+
+/**
+ * Wait for network to become available
+ */
+export async function waitForOnline(timeoutMs: number = 30000): Promise<boolean> {
+  if (isOnline()) return true;
+  
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      window.removeEventListener('online', onlineHandler);
+      resolve(false);
+    }, timeoutMs);
+    
+    const onlineHandler = () => {
+      clearTimeout(timeout);
+      window.removeEventListener('online', onlineHandler);
+      resolve(true);
+    };
+    
+    window.addEventListener('online', onlineHandler);
+  });
 }
 
 /**

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, Trash2, CheckCircle, X, Info } from 'lucide-react';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -9,10 +9,23 @@ interface ConfirmDialogProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
-  isDestructive?: boolean;
+  type?: 'danger' | 'warning' | 'info' | 'success';
   isLoading?: boolean;
 }
 
+/**
+ * Reusable Confirmation Dialog Component
+ * 
+ * Usage:
+ * <ConfirmDialog
+ *   isOpen={showDialog}
+ *   onClose={() => setShowDialog(false)}
+ *   onConfirm={handleDelete}
+ *   title="Davetiyeyi Sil"
+ *   message="Bu davetiyeyi silmek istediğinize emin misiniz?"
+ *   type="danger"
+ * />
+ */
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   isOpen,
   onClose,
@@ -21,7 +34,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   message,
   confirmText = 'Onayla',
   cancelText = 'İptal',
-  isDestructive = false,
+  type = 'warning',
   isLoading = false,
 }) => {
   if (!isOpen) return null;
@@ -30,10 +43,54 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
     onConfirm();
   };
 
+  const getIcon = () => {
+    switch (type) {
+      case 'danger':
+        return <Trash2 className="h-6 w-6 text-red-600" />;
+      case 'warning':
+        return <AlertTriangle className="h-6 w-6 text-amber-600" />;
+      case 'success':
+        return <CheckCircle className="h-6 w-6 text-green-600" />;
+      case 'info':
+        return <Info className="h-6 w-6 text-blue-600" />;
+    }
+  };
+
+  const getColors = () => {
+    switch (type) {
+      case 'danger':
+        return {
+          bg: 'bg-red-100',
+          text: 'text-red-900',
+          button: 'bg-red-600 hover:bg-red-700 focus:ring-red-500',
+        };
+      case 'warning':
+        return {
+          bg: 'bg-amber-100',
+          text: 'text-amber-900',
+          button: 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500',
+        };
+      case 'success':
+        return {
+          bg: 'bg-green-100',
+          text: 'text-green-900',
+          button: 'bg-green-600 hover:bg-green-700 focus:ring-green-500',
+        };
+      case 'info':
+        return {
+          bg: 'bg-blue-100',
+          text: 'text-blue-900',
+          button: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
+        };
+    }
+  };
+
+  const colors = getColors();
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={onClose}
       />
@@ -51,41 +108,38 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           </button>
 
           {/* Icon */}
-          <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${
-            isDestructive ? 'bg-red-100' : 'bg-yellow-100'
-          }`}>
-            <AlertTriangle className={`h-6 w-6 ${
-              isDestructive ? 'text-red-600' : 'text-yellow-600'
-            }`} />
+          <div className={`${colors.bg} w-12 h-12 rounded-full flex items-center justify-center mb-4`}>
+            {getIcon()}
           </div>
 
-          {/* Content */}
+          {/* Title */}
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             {title}
           </h3>
+
+          {/* Message */}
           <p className="text-gray-600 mb-6">
             {message}
           </p>
 
-          {/* Actions */}
+          {/* Buttons */}
           <div className="flex gap-3">
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {cancelText}
             </button>
             <button
               onClick={handleConfirm}
               disabled={isLoading}
-              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                isDestructive
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : 'bg-primary-600 hover:bg-primary-700 text-white'
-              }`}
+              className={`flex-1 px-4 py-2 ${colors.button} text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
             >
-              {isLoading ? 'İşleniyor...' : confirmText}
+              {isLoading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              )}
+              {confirmText}
             </button>
           </div>
         </div>
@@ -95,4 +149,3 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 };
 
 export default ConfirmDialog;
-

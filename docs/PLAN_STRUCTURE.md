@@ -85,7 +85,7 @@ Davetim bireysel kullanıcılara hizmet eder:
 | Özellik | Ücretsiz | Pro | Premium |
 |---------|----------|-----|---------|
 | **Davetiye Sayısı** | 1 (tek kullanım) | 3/ay | ∞ |
-| **Premium Şablonlar** | ❌ (5 temel) | ✅ | ✅ |
+| **Şablon Erişimi** | ❌ Sadece 5 temel şablon | ✅ Temel + PRO şablonlar | ✅ Tüm şablonlar (Temel + PRO + PREMIUM) |
 | **Görsel Yükleme** | ❌ | ✅ | ✅ |
 | **RSVP Sistemi** | 50 kişi | ∞ | ∞ |
 | **Sosyal Medya Paylaşımı** | ❌ | ✅ (WhatsApp, Telegram, Instagram, vb.) | ✅ |

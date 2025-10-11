@@ -9,7 +9,7 @@ interface UpgradeModalProps {
   feature: string;
   featureDescription: string;
   currentPlan: PlanTier;
-  recommendedPlan?: PlanTier;
+  recommendedPlan?: 'free' | 'pro' | 'premium';
 }
 
 const UpgradeModal: React.FC<UpgradeModalProps> = ({
@@ -24,8 +24,9 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
   
   if (!isOpen) return null;
   
-  // Önerilen planı belirle
+  // Önerilen planı belirle - Premium şablonlar için sadece PREMIUM plan öner
   const suggestedPlan = recommendedPlan || (
+    feature === 'premium_templates' && currentPlan !== 'premium' ? 'premium' :
     currentPlan === 'free' ? 'pro' : 
     currentPlan === 'pro' ? 'premium' : 
     'premium'
@@ -103,7 +104,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
               <div className="flex-1">
                 <div className="text-sm text-gray-500 mb-1">Önerilen Plan</div>
                 <div className="font-semibold text-primary-600 flex items-center">
-                  {suggestedPlan === 'premium' || suggestedPlan === 'business-premium' ? (
+                  {suggestedPlan === 'premium' ? (
                     <Crown className="h-4 w-4 mr-1" />
                   ) : (
                     <Zap className="h-4 w-4 mr-1" />
@@ -152,7 +153,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
                   </li>
                 </>
               )}
-              {(suggestedPlan === 'premium' || suggestedPlan === 'business-premium') && (
+              {suggestedPlan === 'premium' && (
                 <>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -160,7 +161,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700">🎥 QR kodlu medya yükleme (3 ay / yıllıkta 1 yıl)</span>
+                    <span className="text-gray-700">🎥 QR kodlu medya yükleme (3 ay / yıllıkta 1 yıl saklanır)</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="h-5 w-5 text-green-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -181,7 +182,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
               onClick={handleUpgrade}
               className="w-full btn-primary flex items-center justify-center gap-2"
             >
-              {suggestedPlan === 'premium' || suggestedPlan === 'business-premium' ? (
+              {suggestedPlan === 'premium' ? (
                 <Crown className="h-5 w-5" />
               ) : (
                 <Zap className="h-5 w-5" />

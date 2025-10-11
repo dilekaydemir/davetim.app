@@ -3,23 +3,24 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Eye, Star, Crown, Lock } from 'lucide-react';
 import type { Template } from '../../services/templateService';
 import { useSubscription } from '../../hooks/useSubscription';
+import { getOptimizedUnsplashUrl, getResponsiveImageSrcSet } from '../../utils/imageOptimization';
 
 interface TemplateCardProps {
   template: Template;
   onSave?: (templateId: string) => void;
   isSaved?: boolean;
-  onUpgradeNeeded?: () => void;
+  onUpgradeNeeded?: (templateTier: 'pro' | 'premium') => void;
 }
 
 const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved = false, onUpgradeNeeded }) => {
   const navigate = useNavigate();
   const subscription = useSubscription();
   
-  // Plan kontrolü - Premium şablonlara erişim var mı?
-  // Free plan sadece 'free' tier şablonlara erişebilir, PRO ve PREMIUM şablonlar kilitli
-  const isPremiumOrProTemplate = template.tier === 'premium' || template.tier === 'pro';
-  const canAccessPremium = subscription.planConfig?.limits.premiumTemplates || false;
-  const isLocked = isPremiumOrProTemplate && !canAccessPremium;
+  // Plan kontrolü - Bu tier şablona erişim var mı?
+  // FREE: sadece 'free' şablonlar, PRO: 'free'+'pro', PREMIUM: tüm şablonlar
+  const templateTier = template.tier as 'free' | 'pro' | 'premium';
+  const canAccess = subscription.canAccessTemplate(templateTier);
+  const isLocked = !canAccess;
   
   const handleSaveClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -30,12 +31,12 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved =
   };
   
   const handleClick = (e: React.MouseEvent) => {
-    // Premium şablon ve erişim yoksa engelleyelim
+    // Şablon erişimi yoksa engelleyelim
     if (isLocked) {
       e.preventDefault();
       e.stopPropagation();
-      if (onUpgradeNeeded) {
-        onUpgradeNeeded();
+      if (onUpgradeNeeded && (template.tier === 'pro' || template.tier === 'premium')) {
+        onUpgradeNeeded(template.tier);
       }
       return false;
     }
@@ -83,7 +84,9 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved =
       {/* Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
         <img
-          src={template.preview_image_url}
+          src={getOptimizedUnsplashUrl(template.preview_image_url, { width: 400, quality: 85 })}
+          srcSet={getResponsiveImageSrcSet(template.preview_image_url, [320, 480, 640])}
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           alt={template.name}
           className={`w-full h-full object-cover transition-transform duration-300 ${
             isLocked ? 'blur-sm' : 'group-hover:scale-105'
@@ -100,8 +103,10 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, onSave, isSaved =
             </div>
             <div className="text-sm text-center px-4">
               {template.tier === 'premium' 
-                ? 'PRO veya PREMIUM plana yükseltin' 
-                : 'PRO plana yükseltin'}
+                ? 'PREMIUM plana yükseltin' 
+                : template.tier === 'pro'
+                ? 'PRO plana yükseltin'
+                : 'Yükseltme gerekli'}
             </div>
           </div>
         )}

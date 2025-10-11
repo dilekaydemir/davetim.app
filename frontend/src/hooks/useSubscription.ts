@@ -26,7 +26,8 @@ export interface UseSubscriptionReturn {
   
   // Özellik kontrolleri
   canCreateInvitation: () => Promise<{ allowed: boolean; reason?: string }>;
-  canAccessPremiumTemplates: () => Promise<{ allowed: boolean; reason?: string }>;
+  canAccessPremiumTemplates: () => Promise<{ allowed: boolean; reason?: string }>; // PRO+ şablonlara erişim
+  canAccessTemplate: (templateTier: 'free' | 'pro' | 'premium') => boolean; // Belirli tier şablona erişim
   canUploadImage: () => Promise<{ allowed: boolean; reason?: string }>;
   canShareWhatsApp: () => Promise<{ allowed: boolean; reason?: string }>;
   canExportExcel: () => Promise<{ allowed: boolean; reason?: string }>;
@@ -214,6 +215,32 @@ export function useSubscription(): UseSubscriptionReturn {
     return subscriptionService.canCancelWithRefund(subscription.subscriptionStartDate);
   };
 
+  /**
+   * Belirli bir tier'daki şablona erişebilir mi?
+   * 
+   * FREE user: sadece 'free' şablonlara erişebilir
+   * PRO user: 'free' ve 'pro' şablonlara erişebilir
+   * PREMIUM user: tüm şablonlara erişebilir
+   */
+  const canAccessTemplate = (templateTier: 'free' | 'pro' | 'premium'): boolean => {
+    if (!planConfig) return templateTier === 'free';
+    
+    const userAccessLevel = planConfig.limits.templateAccessLevel;
+    
+    // FREE user
+    if (userAccessLevel === 'free') {
+      return templateTier === 'free';
+    }
+    
+    // PRO user
+    if (userAccessLevel === 'pro') {
+      return templateTier === 'free' || templateTier === 'pro';
+    }
+    
+    // PREMIUM user - tüm şablonlara erişebilir
+    return true;
+  };
+
   return {
     // Abonelik bilgileri
     subscription,
@@ -231,6 +258,7 @@ export function useSubscription(): UseSubscriptionReturn {
     // Özellik kontrolleri
     canCreateInvitation,
     canAccessPremiumTemplates,
+    canAccessTemplate,
     canUploadImage,
     canShareWhatsApp,
     canExportExcel,

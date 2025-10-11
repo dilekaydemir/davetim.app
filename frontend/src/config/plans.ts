@@ -14,7 +14,7 @@ export interface PlanLimits {
   invitationsLifetime?: number; // Sadece free için (tek kullanım)
   
   // Şablon erişimi
-  premiumTemplates: boolean;
+  templateAccessLevel: 'free' | 'pro' | 'premium'; // Hangi tier şablonlara erişebilir
   basicTemplatesCount?: number; // Free için
   
   // RSVP & Davetli limitleri
@@ -90,8 +90,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       invitationsPerMonth: 0, // Aylık yenileme yok
       invitationsLifetime: 1, // Toplam 1 davetiye hakkı
       
-      // Temel şablonlar
-      premiumTemplates: false,
+      // Sadece temel şablonlar
+      templateAccessLevel: 'free',
       basicTemplatesCount: 5,
       
       // RSVP limiti
@@ -138,8 +138,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       // Aylık 3 davetiye
       invitationsPerMonth: 3,
       
-      // Tüm premium şablonlar
-      premiumTemplates: true,
+      // Free + PRO şablonlar (Premium şablonlar YOK)
+      templateAccessLevel: 'pro',
       
       // Sınırsız RSVP
       maxGuestsPerInvitation: 'unlimited',
@@ -186,8 +186,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       // Sınırsız davetiye
       invitationsPerMonth: 'unlimited',
       
-      // Tüm premium şablonlar
-      premiumTemplates: true,
+      // Tüm şablonlar (Free + PRO + Premium)
+      templateAccessLevel: 'premium',
       
       // Sınırsız RSVP
       maxGuestsPerInvitation: 'unlimited',

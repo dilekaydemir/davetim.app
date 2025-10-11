@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import toast from 'react-hot-toast';
+import { retry, getUserFriendlyErrorMessage } from '../utils/retry';
 
 // Types
 export interface TemplateCategory {
@@ -69,21 +70,29 @@ class TemplateService {
   
   async getCategories(): Promise<TemplateCategory[]> {
     try {
-      const { data, error } = await supabase
-        .from('template_categories')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
+      return await retry(async () => {
+        const { data, error } = await supabase
+          .from('template_categories')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
 
-      if (error) {
-        console.error('❌ Error fetching categories:', error);
-        throw error;
-      }
+        if (error) {
+          console.error('❌ Error fetching categories:', error);
+          throw error;
+        }
 
-      return data || [];
+        return data || [];
+      }, {
+        maxRetries: 3,
+        onRetry: (attempt) => {
+          console.log(`🔄 Retrying getCategories (attempt ${attempt}/3)...`);
+        }
+      });
     } catch (error: any) {
       console.error('Get categories error:', error);
-      toast.error('Kategoriler yüklenirken hata oluştu');
+      const errorMessage = getUserFriendlyErrorMessage(error);
+      toast.error(errorMessage);
       return [];
     }
   }
@@ -119,58 +128,66 @@ class TemplateService {
   
   async getTemplates(filters?: TemplateFilters): Promise<Template[]> {
     try {
-      let query = supabase
-        .from('templates')
-        .select(`
-          *,
-          category:template_categories(*)
-        `)
-        .eq('is_active', true);
+      return await retry(async () => {
+        let query = supabase
+          .from('templates')
+          .select(`
+            *,
+            category:template_categories(*)
+          `)
+          .eq('is_active', true);
 
-      // Apply filters
-      if (filters?.categorySlug) {
-        const category = await this.getCategoryBySlug(filters.categorySlug);
-        if (category) {
-          query = query.eq('category_id', category.id);
+        // Apply filters
+        if (filters?.categorySlug) {
+          const category = await this.getCategoryBySlug(filters.categorySlug);
+          if (category) {
+            query = query.eq('category_id', category.id);
+          }
         }
-      }
 
-      if (filters?.tier) {
-        query = query.eq('tier', filters.tier);
-      }
+        if (filters?.tier) {
+          query = query.eq('tier', filters.tier);
+        }
 
-      if (filters?.isFeatured !== undefined) {
-        query = query.eq('is_featured', filters.isFeatured);
-      }
+        if (filters?.isFeatured !== undefined) {
+          query = query.eq('is_featured', filters.isFeatured);
+        }
 
-      if (filters?.isPopular !== undefined) {
-        query = query.eq('is_popular', filters.isPopular);
-      }
+        if (filters?.isPopular !== undefined) {
+          query = query.eq('is_popular', filters.isPopular);
+        }
 
-      if (filters?.tags && filters.tags.length > 0) {
-        query = query.contains('tags', filters.tags);
-      }
+        if (filters?.tags && filters.tags.length > 0) {
+          query = query.contains('tags', filters.tags);
+        }
 
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
+        if (filters?.search) {
+          query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+        }
 
-      // Order by featured first, then popular, then by usage
-      query = query.order('is_featured', { ascending: false })
-                   .order('is_popular', { ascending: false })
-                   .order('usage_count', { ascending: false });
+        // Order by featured first, then popular, then by usage
+        query = query.order('is_featured', { ascending: false })
+                     .order('is_popular', { ascending: false })
+                     .order('usage_count', { ascending: false });
 
-      const { data, error } = await query;
+        const { data, error } = await query;
 
-      if (error) {
-        console.error('❌ Error fetching templates:', error);
-        throw error;
-      }
+        if (error) {
+          console.error('❌ Error fetching templates:', error);
+          throw error;
+        }
 
-      return data || [];
+        return data || [];
+      }, {
+        maxRetries: 3,
+        onRetry: (attempt) => {
+          console.log(`🔄 Retrying getTemplates (attempt ${attempt}/3)...`);
+        }
+      });
     } catch (error: any) {
       console.error('Get templates error:', error);
-      toast.error('Şablonlar yüklenirken hata oluştu');
+      const errorMessage = getUserFriendlyErrorMessage(error);
+      toast.error(errorMessage);
       return [];
     }
   }

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import toast from 'react-hot-toast';
+import { retry, getUserFriendlyErrorMessage } from '../utils/retry';
 
 // Types
 export interface Invitation {
@@ -235,23 +236,31 @@ class InvitationService {
 
   async getUserInvitations(): Promise<Invitation[]> {
     try {
-      const { data, error } = await supabase
-        .from('invitations')
-        .select(`
-          *,
-          template:templates(*)
-        `)
-        .order('updated_at', { ascending: false });
+      return await retry(async () => {
+        const { data, error } = await supabase
+          .from('invitations')
+          .select(`
+            *,
+            template:templates(*)
+          `)
+          .order('updated_at', { ascending: false });
 
-      if (error) {
-        console.error('❌ Error fetching user invitations:', error);
-        throw error;
-      }
+        if (error) {
+          console.error('❌ Error fetching user invitations:', error);
+          throw error;
+        }
 
-      return data || [];
+        return data || [];
+      }, {
+        maxRetries: 3,
+        onRetry: (attempt) => {
+          console.log(`🔄 Retrying getUserInvitations (attempt ${attempt}/3)...`);
+        }
+      });
     } catch (error: any) {
       console.error('Get user invitations error:', error);
-      toast.error('Davetiyeler yüklenirken hata oluştu');
+      const errorMessage = getUserFriendlyErrorMessage(error);
+      toast.error(errorMessage);
       return [];
     }
   }

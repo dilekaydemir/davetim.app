@@ -240,7 +240,8 @@ class SubscriptionService {
         }
         
         case 'premium_templates':
-          if (!limits.premiumTemplates) {
+          // PRO veya PREMIUM template'lere erişebilir mi?
+          if (limits.templateAccessLevel === 'free') {
             return { allowed: false, reason: 'Premium şablonlar için yükseltme yapın!' };
           }
           return { allowed: true };

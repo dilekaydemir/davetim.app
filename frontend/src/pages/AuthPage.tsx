@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Loader2 } from 'lucide-react';
 import { useAuth } from '../store/authStore';
 import toast from 'react-hot-toast';
+import { validateEmail, validatePassword, validateName, validatePasswordMatch } from '../utils/validation';
 
 interface AuthPageProps {
   mode: 'login' | 'signup' | 'forgot';
@@ -20,9 +21,67 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
     fullName: '',
     confirmPassword: ''
   });
+  
+  // Form validation errors
+  const [errors, setErrors] = React.useState({
+    email: '',
+    password: '',
+    fullName: '',
+    confirmPassword: ''
+  });
 
   // Get the return URL from location state
   const from = (location.state as any)?.from?.pathname || '/dashboard';
+
+  // Validate form before submission
+  const validateForm = (): boolean => {
+    const newErrors = {
+      email: '',
+      password: '',
+      fullName: '',
+      confirmPassword: ''
+    };
+
+    // Email validation
+    const emailResult = validateEmail(formData.email);
+    if (!emailResult.isValid) {
+      newErrors.email = emailResult.error!;
+    }
+
+    // Password validation
+    if (mode !== 'forgot') {
+      const passwordResult = validatePassword(formData.password);
+      if (!passwordResult.isValid) {
+        newErrors.password = passwordResult.error!;
+      }
+    }
+
+    // Full name validation (signup only)
+    if (mode === 'signup') {
+      const nameResult = validateName(formData.fullName, 'Ad Soyad');
+      if (!nameResult.isValid) {
+        newErrors.fullName = nameResult.error!;
+      }
+
+      // Confirm password validation
+      const matchResult = validatePasswordMatch(formData.password, formData.confirmPassword);
+      if (!matchResult.isValid) {
+        newErrors.confirmPassword = matchResult.error!;
+      }
+    }
+
+    setErrors(newErrors);
+
+    // Check if there are any errors
+    const hasErrors = Object.values(newErrors).some(error => error !== '');
+    
+    if (hasErrors) {
+      const firstError = Object.values(newErrors).find(error => error !== '');
+      toast.error(firstError || 'Lütfen formu kontrol edin', { duration: 5000 });
+    }
+
+    return !hasErrors;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,25 +93,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
       return;
     }
 
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       if (mode === 'signup') {
-        // Validate confirm password
-        if (formData.password !== formData.confirmPassword) {
-          toast.error('Şifreler eşleşmiyor', { duration: 6000 });
-          return;
-        }
-
-        // Validate password length
-        if (formData.password.length < 6) {
-          toast.error('Şifre en az 6 karakter olmalıdır', { duration: 6000 });
-          return;
-        }
-
-        // Validate email
-        if (!formData.email || !formData.fullName.trim()) {
-          toast.error('Lütfen tüm alanları doldurun', { duration: 6000 });
-          return;
-        }
 
         console.log('📝 Attempting signup...');
         const result = await signUp({
@@ -113,10 +160,53 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    // Clear error for this field when user starts typing
+    if (errors[name as keyof typeof errors]) {
+      setErrors({
+        ...errors,
+        [name]: ''
+      });
+    }
+  };
+
+  // Real-time validation on blur
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const newErrors = { ...errors };
+
+    switch (name) {
+      case 'email':
+        const emailResult = validateEmail(value);
+        newErrors.email = emailResult.isValid ? '' : emailResult.error!;
+        break;
+      case 'password':
+        if (mode !== 'forgot') {
+          const passwordResult = validatePassword(value);
+          newErrors.password = passwordResult.isValid ? '' : passwordResult.error!;
+        }
+        break;
+      case 'fullName':
+        if (mode === 'signup') {
+          const nameResult = validateName(value, 'Ad Soyad');
+          newErrors.fullName = nameResult.isValid ? '' : nameResult.error!;
+        }
+        break;
+      case 'confirmPassword':
+        if (mode === 'signup') {
+          const matchResult = validatePasswordMatch(formData.password, value);
+          newErrors.confirmPassword = matchResult.isValid ? '' : matchResult.error!;
+        }
+        break;
+    }
+
+    setErrors(newErrors);
   };
 
   const getTitle = () => {
@@ -162,7 +252,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
             {mode === 'signup' && (
               <div>
                 <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                  Ad Soyad
+                  Ad Soyad <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1 relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -173,16 +263,20 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
                     required={mode === 'signup'}
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="input-field pl-10"
+                    onBlur={handleBlur}
+                    className={`input-field pl-10 ${errors.fullName ? 'input-error' : ''}`}
                     placeholder="Ad Soyad"
                   />
                 </div>
+                {errors.fullName && (
+                  <p className="mt-1.5 text-sm text-red-600">{errors.fullName}</p>
+                )}
               </div>
             )}
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                E-posta Adresi
+                E-posta Adresi <span className="text-red-500">*</span>
               </label>
               <div className="mt-1 relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -193,16 +287,21 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="input-field pl-10"
+                  onBlur={handleBlur}
+                  className={`input-field pl-10 ${errors.email ? 'input-error' : ''}`}
                   placeholder="ornek@email.com"
+                  autoComplete="email"
                 />
               </div>
+              {errors.email && (
+                <p className="mt-1.5 text-sm text-red-600">{errors.email}</p>
+              )}
             </div>
 
             {mode !== 'forgot' && (
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Şifre
+                  Şifre <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1 relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -213,24 +312,30 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="input-field pl-10 pr-10"
+                    onBlur={handleBlur}
+                    className={`input-field pl-10 pr-10 ${errors.password ? 'input-error' : ''}`}
                     placeholder="En az 6 karakter"
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
+                {errors.password && (
+                  <p className="mt-1.5 text-sm text-red-600">{errors.password}</p>
+                )}
               </div>
             )}
 
             {mode === 'signup' && (
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                  Şifre Tekrar
+                  Şifre Tekrar <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1 relative">
                   <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
@@ -241,10 +346,15 @@ const AuthPage: React.FC<AuthPageProps> = ({ mode }) => {
                     required={mode === 'signup'}
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="input-field pl-10"
+                    onBlur={handleBlur}
+                    className={`input-field pl-10 ${errors.confirmPassword ? 'input-error' : ''}`}
                     placeholder="Şifrenizi tekrar girin"
+                    autoComplete="new-password"
                   />
                 </div>
+                {errors.confirmPassword && (
+                  <p className="mt-1.5 text-sm text-red-600">{errors.confirmPassword}</p>
+                )}
               </div>
             )}
 
