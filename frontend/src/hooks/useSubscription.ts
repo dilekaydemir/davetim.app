@@ -97,7 +97,16 @@ export function useSubscription(): UseSubscriptionReturn {
       return { allowed: false, reason: 'Lütfen giriş yapın' };
     }
     
-    return await subscriptionService.canAccessFeature(user.id, feature);
+    // Get current subscription
+    const currentSubscription = await subscriptionService.getUserSubscription(user.id);
+    
+    // Check feature access
+    const allowed = subscriptionService.canAccessFeature(feature, currentSubscription);
+    
+    return { 
+      allowed, 
+      reason: allowed ? 'Erişim izni var' : 'Bu özellik için premium plan gerekli' 
+    };
   };
   
   const canCreateInvitation = () => checkFeatureAccess('create_invitation');

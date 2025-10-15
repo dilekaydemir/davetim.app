@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Eye, Save, Palette, Loader2, FileText, Users } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Eye, Save, Palette, Loader2, FileText, Users, QrCode } from 'lucide-react';
+import { mediaService, type Media } from '../services/mediaService';
 import { templateService, type Template } from '../services/templateService';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { useAuth } from '../store/authStore';
@@ -27,6 +28,7 @@ const EditorPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'guests'>('details');
+  const [qrMedia, setQrMedia] = useState<Media | null>(null);
   
   // Use ref to prevent duplicate creation across re-renders
   const isCreatingRef = useRef(false);
@@ -60,6 +62,9 @@ const EditorPage: React.FC = () => {
   } | null>(null);
 
   const [selectedFont, setSelectedFont] = useState('normal');
+  const [showQrOnDesign, setShowQrOnDesign] = useState(false);
+  const [qrPosition, setQrPosition] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('top-right');
+  const [qrSize, setQrSize] = useState<number>(96);
 
   // Form validation errors
   const [errors, setErrors] = useState({
@@ -103,6 +108,11 @@ const EditorPage: React.FC = () => {
         }
         
         setInvitation(invitationData);
+        // Load existing QR media (optional)
+        try {
+          const media = await mediaService.getMediaByInvitationId(invitationData.id);
+          setQrMedia(media);
+        } catch {}
         setTemplate(invitationData.template);
         
         console.log('📝 Loading invitation data...');
@@ -725,6 +735,88 @@ const EditorPage: React.FC = () => {
                   defaultColors={templateOriginalDesign?.colors}
                 />
               </div>
+
+              {/* QR Media (Optional) */}
+              <div className="border-t pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <QrCode className="h-5 w-5 text-gray-700" />
+                    <h3 className="font-medium text-gray-900">QR Medya (Opsiyonel)</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {qrMedia && (
+                      <button
+                        onClick={() => navigate(`/media/manage?invitationId=${invitation.id}`)}
+                        className="btn-outline"
+                      >
+                        Yönet
+                      </button>
+                    )}
+                    <button
+                      onClick={() => navigate(`/media/upload?invitationId=${invitation.id}`)}
+                      className="btn-primary"
+                    >
+                      {qrMedia ? 'Güncelle' : 'Oluştur'}
+                    </button>
+                  </div>
+                </div>
+                {qrMedia ? (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-gray-700">QR Kod:</p>
+                        <p className="font-mono text-gray-900 break-all">{qrMedia.qr_code}</p>
+                      </div>
+                      {qrMedia.qr_image_url && (
+                        <img src={qrMedia.qr_image_url} alt="QR" className="w-20 h-20 object-contain" />
+                      )}
+                    </div>
+                    <div className="mt-2 text-sm text-gray-600">
+                      {qrMedia.allow_guest_upload ? 'Davetliler yükleyebilir' : 'Davetli yüklemeleri kapalı'}
+                    </div>
+                    <label className="mt-3 flex items-center gap-2">
+                      <input type="checkbox" checked={showQrOnDesign} onChange={() => setShowQrOnDesign(!showQrOnDesign)} />
+                      <span>Davetiyede QR kodu göster</span>
+                    </label>
+                    {showQrOnDesign && (
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">Konum</label>
+                          <select
+                            className="input-field"
+                            value={qrPosition}
+                            onChange={(e) => setQrPosition(e.target.value as any)}
+                          >
+                            <option value="top-left">Sol Üst</option>
+                            <option value="top-right">Sağ Üst</option>
+                            <option value="bottom-left">Sol Alt</option>
+                            <option value="bottom-right">Sağ Alt</option>
+                          </select>
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-xs text-gray-600 mb-1">
+                            Boyut ({qrSize}px)
+                          </label>
+                          <input
+                            type="range"
+                            min={72}
+                            max={160}
+                            step={4}
+                            value={qrSize}
+                            onChange={(e) => setQrSize(Number(e.target.value))}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <div className="mt-2 text-xs text-gray-500">
+                      Saklama: {qrMedia.storage_plan === '1_year' ? '1 yıl' : '3 ay'} • Görüntüleme: {qrMedia.view_count} • Tarama: {qrMedia.scan_count}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-gray-600">Bu davetiye için henüz QR oluşturulmadı. İsterseniz oluşturabilirsiniz.</p>
+                )}
+              </div>
                 </div>
               )}
 
@@ -761,6 +853,21 @@ const EditorPage: React.FC = () => {
                 backgroundPosition: 'center'
               }}
             >
+              {/* Show QR on design */}
+              {showQrOnDesign && qrMedia?.qr_image_url && (
+                <img
+                  src={qrMedia.qr_image_url}
+                  alt="QR"
+                  style={{ width: `${qrSize}px`, height: `${qrSize}px` }}
+                  className={
+                    `absolute bg-white p-2 rounded-md shadow ` +
+                    (qrPosition === 'top-left' ? 'top-4 left-4' : '') +
+                    (qrPosition === 'top-right' ? 'top-4 right-4' : '') +
+                    (qrPosition === 'bottom-left' ? 'bottom-4 left-4' : '') +
+                    (qrPosition === 'bottom-right' ? 'bottom-4 right-4' : '')
+                  }
+                />
+              )}
               {/* Gradient overlay for background image */}
               {formData.imagePosition === 'background' && formData.imageUrl && (
                 <div 

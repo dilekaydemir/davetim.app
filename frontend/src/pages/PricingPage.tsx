@@ -1,10 +1,23 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Crown, Star, Zap } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import PaymentModal from '../components/Payment/PaymentModal';
+import toast from 'react-hot-toast';
 
 const PricingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [billingPeriod, setBillingPeriod] = React.useState<'monthly' | 'yearly'>('monthly');
+  const { user } = useAuthStore();
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const [paymentModal, setPaymentModal] = useState<{
+    isOpen: boolean;
+    planTier: 'pro' | 'premium';
+    amount: number;
+  }>({
+    isOpen: false,
+    planTier: 'pro',
+    amount: 0,
+  });
 
   // Planlar
   const plans = [
@@ -82,14 +95,32 @@ const PricingPage: React.FC = () => {
     }
   ];
 
-  const handlePlanSelect = (planId: string) => {
+  const handlePlanSelect = (planId: string, planPrice: { monthly: number; yearly: number }, hasYearly?: boolean) => {
     if (planId === 'free') {
-      navigate('/signup');
-    } else {
-      // TODO: Navigate to payment page with selected plan
-      console.log('Selected plan:', planId, 'billing:', billingPeriod);
-      alert(`${planId.toUpperCase()} planı seçildi! Ödeme sayfası yakında eklenecek.`);
+      if (!user) {
+        navigate('/signup');
+      } else {
+        toast.info('Zaten ücretsiz plandasınız');
+      }
+      return;
     }
+
+    // Check if user is logged in
+    if (!user) {
+      toast.error('Ödeme yapmak için giriş yapmalısınız');
+      navigate('/auth');
+      return;
+    }
+
+    // Calculate amount based on plan and billing period
+    const amount = hasYearly === false ? planPrice.monthly : planPrice[billingPeriod];
+
+    // Open payment modal
+    setPaymentModal({
+      isOpen: true,
+      planTier: planId as 'pro' | 'premium',
+      amount,
+    });
   };
 
   const getPlanCardClass = (plan: any) => {
@@ -232,7 +263,7 @@ const PricingPage: React.FC = () => {
 
               {/* CTA Button */}
               <button
-                onClick={() => handlePlanSelect(plan.id)}
+                onClick={() => handlePlanSelect(plan.id, plan.price, plan.hasYearly)}
                 className={getButtonClass(plan)}
               >
                 {plan.cta}
@@ -320,6 +351,15 @@ const PricingPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModal.isOpen}
+        onClose={() => setPaymentModal({ ...paymentModal, isOpen: false })}
+        planTier={paymentModal.planTier}
+        billingPeriod={billingPeriod}
+        amount={paymentModal.amount}
+      />
     </div>
   );
 };

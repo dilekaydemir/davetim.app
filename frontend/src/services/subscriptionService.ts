@@ -1,360 +1,351 @@
-/**
- * Subscription Service
- * 
- * Kullanıcı abonelik ve plan yönetimi için servis.
- * Database'den plan bilgilerini okur, günceller ve kullanım limitlerini kontrol eder.
- */
-
 import { supabase } from './supabase';
-import { PlanTier, getPlanConfig, DEFAULT_PLAN } from '../config/plans';
 import toast from 'react-hot-toast';
+import type { PlanTier } from '../config/plans';
 
-export interface UserSubscription {
+export interface Subscription {
+  id: string;
   userId: string;
-  planId: PlanTier;
-  billingPeriod: 'monthly' | 'yearly' | 'lifetime';
+  tier: PlanTier;
+  status: 'active' | 'cancelled' | 'expired' | 'trialing';
   startDate: string;
-  endDate: string | null;
-  status: 'active' | 'cancelled' | 'expired' | 'trial';
-  autoRenew: boolean;
-  
-  // Kullanım istatistikleri
+  endDate?: string;
+  cancelledAt?: string;
   invitationsCreatedThisMonth: number;
   invitationsCreatedLifetime: number;
-  storageUsedMB: number;
-  
-  // Ödeme bilgisi (opsiyonel)
-  lastPaymentDate?: string;
-  nextBillingDate?: string;
+  storageUsedMb: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface UsageStats {
-  invitationsThisMonth: number;
-  invitationsLifetime: number;
-  storageUsedMB: number;
-  guestsTotal: number;
+export interface PaymentHistory {
+  id: string;
+  userId: string;
+  transactionId: string;
+  providerTransactionId?: string;
+  provider: string;
+  amount: number;
+  currency: string;
+  status: string;
+  planTier: PlanTier;
+  billingPeriod: 'monthly' | 'yearly';
+  description?: string;
+  errorMessage?: string;
+  processedAt: string;
+  createdAt: string;
 }
 
 class SubscriptionService {
   /**
-   * Kullanıcının mevcut abonelik bilgisini getir
+   * Get user's subscription
    */
-  async getUserSubscription(userId: string): Promise<UserSubscription | null> {
+  async getUserSubscription(userId: string): Promise<Subscription | null> {
     try {
-      // Önce auth.users tablosundan user_metadata'yı kontrol et
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        console.error('❌ User not found:', userError);
-        return null;
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No subscription found - create free tier
+          return this.createFreeSubscription(userId);
+        }
+        throw error;
       }
-      
-      // user_metadata'dan plan bilgisini al
-      const planId = (user.user_metadata?.subscription_tier as PlanTier) || DEFAULT_PLAN;
-      const billingPeriod = user.user_metadata?.billing_period || 'monthly';
-      const subscriptionStatus = user.user_metadata?.subscription_status || 'active';
-      
-      // Kullanım istatistiklerini al
-      const stats = await this.getUserUsageStats(userId);
-      
-      // Abonelik bilgisini oluştur
-      const subscription: UserSubscription = {
-        userId: user.id,
-        planId: planId,
-        billingPeriod: billingPeriod,
-        startDate: user.user_metadata?.subscription_start_date || user.created_at,
-        endDate: user.user_metadata?.subscription_end_date || null,
-        status: subscriptionStatus,
-        autoRenew: user.user_metadata?.auto_renew !== false,
-        invitationsCreatedThisMonth: stats.invitationsThisMonth,
-        invitationsCreatedLifetime: stats.invitationsLifetime,
-        storageUsedMB: stats.storageUsedMB,
-        lastPaymentDate: user.user_metadata?.last_payment_date,
-        nextBillingDate: user.user_metadata?.next_billing_date,
-      };
-      
-      return subscription;
+
+      return data ? this.mapToSubscription(data) : null;
     } catch (error: any) {
       console.error('❌ Get subscription error:', error);
       return null;
     }
   }
-  
+
   /**
-   * Kullanıcının kullanım istatistiklerini getir
+   * Create free tier subscription for new users
    */
-  async getUserUsageStats(userId: string): Promise<UsageStats> {
+  async createFreeSubscription(userId: string): Promise<Subscription> {
     try {
-      // Bu ay oluşturulan davetiye sayısı
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-      
-      const { count: monthlyCount } = await supabase
-        .from('invitations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .gte('created_at', startOfMonth.toISOString());
-      
-      // Toplam davetiye sayısı
-      const { count: lifetimeCount } = await supabase
-        .from('invitations')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId);
-      
-      // Toplam davetli sayısı
-      const { data: invitations } = await supabase
-        .from('invitations')
-        .select('id')
-        .eq('user_id', userId);
-      
-      let totalGuests = 0;
-      if (invitations && invitations.length > 0) {
-        const invitationIds = invitations.map(inv => inv.id);
-        const { count: guestCount } = await supabase
-          .from('guests')
-          .select('*', { count: 'exact', head: true })
-          .in('invitation_id', invitationIds);
-        
-        totalGuests = guestCount || 0;
-      }
-      
-      // Kullanılan depolama (yaklaşık - görsel dosya boyutları)
-      // TODO: Gerçek depolama hesabı için Supabase Storage API kullanılabilir
-      const storageUsedMB = 0; // Şimdilik 0, ileride implement edilecek
-      
-      return {
-        invitationsThisMonth: monthlyCount || 0,
-        invitationsLifetime: lifetimeCount || 0,
-        storageUsedMB: storageUsedMB,
-        guestsTotal: totalGuests,
-      };
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .insert({
+          user_id: userId,
+          tier: 'free',
+          status: 'active',
+          start_date: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Ücretsiz hesabınız oluşturuldu!');
+      return this.mapToSubscription(data);
     } catch (error: any) {
-      console.error('❌ Get usage stats error:', error);
-      return {
-        invitationsThisMonth: 0,
-        invitationsLifetime: 0,
-        storageUsedMB: 0,
-        guestsTotal: 0,
-      };
+      console.error('❌ Create free subscription error:', error);
+      throw error;
     }
   }
-  
+
   /**
-   * Kullanıcının planını güncelle
+   * Upgrade subscription after successful payment
    */
-  async updateUserPlan(
+  async upgradeSubscription(
     userId: string,
-    newPlan: PlanTier,
-    billingPeriod: 'monthly' | 'yearly' | 'lifetime'
-  ): Promise<boolean> {
+    tier: 'pro' | 'premium',
+    billingPeriod: 'monthly' | 'yearly',
+    _transactionId: string
+  ): Promise<Subscription> {
     try {
-      const now = new Date();
-      const endDate = new Date();
+      console.log('🔄 Upgrading subscription:', { userId, tier, billingPeriod });
       
-      // Bitiş tarihini hesapla
+      const endDate = new Date();
       if (billingPeriod === 'monthly') {
         endDate.setMonth(endDate.getMonth() + 1);
-      } else if (billingPeriod === 'yearly') {
+      } else {
         endDate.setFullYear(endDate.getFullYear() + 1);
-      } else {
-        // lifetime - bitiş tarihi yok
-        endDate.setFullYear(endDate.getFullYear() + 100);
       }
-      
-      // user_metadata'yı güncelle
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          subscription_tier: newPlan,
-          billing_period: billingPeriod,
-          subscription_status: 'active',
-          subscription_start_date: now.toISOString(),
-          subscription_end_date: endDate.toISOString(),
-          last_payment_date: now.toISOString(),
-          next_billing_date: endDate.toISOString(),
-          auto_renew: true,
-        }
-      });
-      
+
+      const updateData = {
+        tier,
+        status: 'active',
+        start_date: new Date().toISOString(),
+        end_date: endDate.toISOString(),
+        cancelled_at: null,
+      };
+
+      console.log('📝 Update data:', updateData);
+
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update(updateData)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
       if (error) {
-        console.error('❌ Update plan error:', error);
-        toast.error('Plan güncellenirken hata oluştu');
-        return false;
+        console.error('❌ Supabase error:', error);
+        throw error;
       }
-      
-      const planConfig = getPlanConfig(newPlan);
-      toast.success(`${planConfig.name} planına yükseltildiniz! 🎉`);
-      return true;
+
+      console.log('✅ Subscription updated:', data);
+      toast.success(`${tier.toUpperCase()} planına yükseltildiniz! 🎉`);
+      return this.mapToSubscription(data);
     } catch (error: any) {
-      console.error('❌ Update plan error:', error);
-      toast.error('Plan güncellenirken hata oluştu');
-      return false;
+      console.error('❌ Upgrade subscription error:', error);
+      toast.error('Abonelik güncellenemedi');
+      throw error;
     }
   }
-  
+
   /**
-   * Kullanıcının belirli bir özelliğe erişimi var mı?
+   * Cancel subscription
    */
-  async canAccessFeature(
-    userId: string,
-    feature: string
-  ): Promise<{ allowed: boolean; reason?: string }> {
+  async cancelSubscription(userId: string): Promise<Subscription> {
     try {
-      const subscription = await this.getUserSubscription(userId);
-      if (!subscription) {
-        return { allowed: false, reason: 'Abonelik bilgisi bulunamadı' };
-      }
-      
-      const planConfig = getPlanConfig(subscription.planId);
-      const limits = planConfig.limits;
-      
-      // Özellik kontrolü
-      switch (feature) {
-        case 'create_invitation': {
-          // Davetiye oluşturma kontrolü
-          const limit = limits.invitationsPerMonth;
-          
-          if (limit === 'unlimited') {
-            return { allowed: true };
-          }
-          
-          if (limit === 0 && limits.invitationsLifetime) {
-            // Free plan - lifetime kontrolü
-            if (subscription.invitationsCreatedLifetime >= limits.invitationsLifetime) {
-              return { 
-                allowed: false, 
-                reason: `Ücretsiz planda sadece ${limits.invitationsLifetime} davetiye hakkınız var. Yükseltme yapın!` 
-              };
-            }
-            return { allowed: true };
-          }
-          
-          if (typeof limit === 'number' && subscription.invitationsCreatedThisMonth >= limit) {
-            return { 
-              allowed: false, 
-              reason: `Bu ay ${limit} davetiye limitine ulaştınız. Yükseltme yapın veya gelecek ay için bekleyin!` 
-            };
-          }
-          
-          return { allowed: true };
-        }
-        
-        case 'premium_templates':
-          // PRO veya PREMIUM template'lere erişebilir mi?
-          if (limits.templateAccessLevel === 'free') {
-            return { allowed: false, reason: 'Premium şablonlar için yükseltme yapın!' };
-          }
-          return { allowed: true };
-        
-        case 'image_upload':
-          if (!limits.imageUpload) {
-            return { allowed: false, reason: 'Görsel yükleme için PRO plana yükseltin!' };
-          }
-          return { allowed: true };
-        
-        case 'whatsapp_sharing':
-          if (!limits.whatsappSharing) {
-            return { allowed: false, reason: 'WhatsApp paylaşım için PRO plana yükseltin!' };
-          }
-          return { allowed: true };
-        
-        case 'excel_export':
-          if (!limits.excelExport) {
-            return { allowed: false, reason: 'Excel export için PRO plana yükseltin!' };
-          }
-          return { allowed: true };
-        
-        case 'qr_media':
-          if (!limits.qrMediaUpload) {
-            return { allowed: false, reason: 'QR medya yükleme için PREMIUM plana yükseltin!' };
-          }
-          return { allowed: true };
-        
-        case 'ai_design':
-          if (!limits.aiDesign) {
-            return { allowed: false, reason: 'AI tasarım için PREMIUM plana yükseltin!' };
-          }
-          return { allowed: true };
-        
-        default:
-          return { allowed: true };
-      }
-    } catch (error: any) {
-      console.error('❌ Feature access check error:', error);
-      return { allowed: false, reason: 'Kontrol hatası' };
-    }
-  }
-  
-  /**
-   * İptal için uygunluk kontrolü (3 gün içinde ise iade hakkı var)
-   */
-  canCancelWithRefund(subscriptionStartDate: string): { canRefund: boolean; daysLeft: number } {
-    try {
-      const startDate = new Date(subscriptionStartDate);
-      const now = new Date();
-      const diffTime = now.getTime() - startDate.getTime();
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
-      const canRefund = diffDays < 3;
-      const daysLeft = canRefund ? 3 - diffDays : 0;
-      
-      return { canRefund, daysLeft };
-    } catch (error) {
-      console.error('❌ Cancel check error:', error);
-      return { canRefund: false, daysLeft: 0 };
-    }
-  }
-  
-  /**
-   * Planı iptal et
-   */
-  async cancelSubscription(userId: string): Promise<boolean> {
-    try {
-      // Önce mevcut abonelik bilgilerini al
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast.error('Kullanıcı bilgisi bulunamadı');
-        return false;
-      }
-      
-      const subscriptionStartDate = user.user_metadata?.subscription_start_date;
-      const refundCheck = this.canCancelWithRefund(subscriptionStartDate);
-      
-      const { error } = await supabase.auth.updateUser({
-        data: {
-          subscription_status: 'cancelled',
-          auto_renew: false,
-        }
-      });
-      
-      if (error) {
-        console.error('❌ Cancel subscription error:', error);
-        toast.error('Abonelik iptal edilirken hata oluştu');
-        return false;
-      }
-      
-      if (refundCheck.canRefund) {
-        toast.success(
-          `Abonelik iptal edildi. Ödemeniz iade edilecektir. 
-          Mevcut dönem sonuna kadar erişiminiz devam edecek.`,
-          { duration: 6000 }
-        );
-      } else {
-        toast.success(
-          'Abonelik iptal edildi. Mevcut dönem sonuna kadar erişiminiz devam edecek.',
-          { duration: 5000 }
-        );
-      }
-      
-      return true;
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Aboneliğiniz iptal edildi');
+      return this.mapToSubscription(data);
     } catch (error: any) {
       console.error('❌ Cancel subscription error:', error);
-      toast.error('Abonelik iptal edilirken hata oluştu');
-      return false;
+      toast.error('Abonelik iptal edilemedi');
+      throw error;
     }
+  }
+
+  /**
+   * Reactivate cancelled subscription
+   */
+  async reactivateSubscription(userId: string): Promise<Subscription> {
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update({
+          status: 'active',
+          cancelled_at: null,
+        })
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast.success('Aboneliğiniz yeniden aktif edildi!');
+      return this.mapToSubscription(data);
+    } catch (error: any) {
+      console.error('❌ Reactivate subscription error:', error);
+      toast.error('Abonelik aktif edilemedi');
+      throw error;
+    }
+  }
+
+  /**
+   * Increment invitation counter
+   */
+  async incrementInvitationCount(userId: string): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('increment_invitation_count', {
+        p_user_id: userId,
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('❌ Increment invitation count error:', error);
+    }
+  }
+
+  /**
+   * Update storage usage
+   */
+  async updateStorageUsage(userId: string, usageMb: number): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({ storage_used_mb: usageMb })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('❌ Update storage usage error:', error);
+    }
+  }
+
+  /**
+   * Get payment history for user
+   */
+  async getPaymentHistory(userId: string): Promise<PaymentHistory[]> {
+    try {
+      const { data, error } = await supabase
+        .from('payment_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map(this.mapToPaymentHistory);
+    } catch (error: any) {
+      console.error('❌ Get payment history error:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Save payment to history
+   */
+  async savePaymentHistory(
+    userId: string,
+    transactionId: string,
+    providerTransactionId: string | undefined,
+    provider: string,
+    amount: number,
+    currency: string,
+    status: string,
+    planTier: 'pro' | 'premium',
+    billingPeriod: 'monthly' | 'yearly',
+    description?: string,
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('payment_history')
+        .insert({
+          user_id: userId,
+          transaction_id: transactionId,
+          provider_transaction_id: providerTransactionId,
+          provider,
+          amount,
+          currency,
+          status,
+          plan_tier: planTier,
+          billing_period: billingPeriod,
+          description,
+          error_message: errorMessage,
+          processed_at: new Date().toISOString(),
+        });
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('❌ Save payment history error:', error);
+    }
+  }
+
+  /**
+   * Map database subscription to typed object
+   */
+  private mapToSubscription(data: any): Subscription {
+    return {
+      id: data.id,
+      userId: data.user_id,
+      tier: data.tier,
+      status: data.status,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      cancelledAt: data.cancelled_at,
+      invitationsCreatedThisMonth: data.invitations_created_this_month || 0,
+      invitationsCreatedLifetime: data.invitations_created_lifetime || 0,
+      storageUsedMb: data.storage_used_mb || 0,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  }
+
+  /**
+   * Check if user can access a specific feature
+   */
+  canAccessFeature(feature: string, subscription?: Subscription | null): boolean {
+    if (!subscription) return false;
+
+    switch (feature) {
+      case 'qr_media':
+        return subscription.tier === 'premium';
+      case 'premium_templates':
+        return subscription.tier === 'pro' || subscription.tier === 'premium';
+      case 'image_upload':
+        return subscription.tier === 'pro' || subscription.tier === 'premium';
+      case 'whatsapp_sharing':
+        return subscription.tier === 'pro' || subscription.tier === 'premium';
+      case 'excel_export':
+        return subscription.tier === 'pro' || subscription.tier === 'premium';
+      case 'unlimited_invitations':
+        return subscription.tier === 'premium';
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Map database payment history to typed object
+   */
+  private mapToPaymentHistory(data: any): PaymentHistory {
+    return {
+      id: data.id,
+      userId: data.user_id,
+      transactionId: data.transaction_id,
+      providerTransactionId: data.provider_transaction_id,
+      provider: data.provider,
+      amount: data.amount,
+      currency: data.currency,
+      status: data.status,
+      planTier: data.plan_tier,
+      billingPeriod: data.billing_period,
+      description: data.description,
+      errorMessage: data.error_message,
+      processedAt: data.processed_at,
+      createdAt: data.created_at,
+    };
   }
 }
 
 export const subscriptionService = new SubscriptionService();
-

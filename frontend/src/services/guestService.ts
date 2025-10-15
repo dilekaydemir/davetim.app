@@ -289,6 +289,28 @@ class GuestService {
   }
 
   /**
+   * Get guest count for an invitation
+   */
+  async getGuestCount(invitationId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('guests')
+        .select('*', { count: 'exact', head: true })
+        .eq('invitation_id', invitationId);
+
+      if (error) {
+        console.error('Get guest count error:', error);
+        return 0;
+      }
+
+      return count || 0;
+    } catch (error) {
+      console.error('Get guest count error:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Generate RSVP link for a guest
    */
   getGuestRSVPLink(guestToken: string): string {

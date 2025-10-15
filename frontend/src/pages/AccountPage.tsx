@@ -5,6 +5,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { authService } from '../services/authService';
 import { invitationService } from '../services/invitationService';
 import { guestService } from '../services/guestService';
+import { subscriptionService, type PaymentHistory } from '../services/subscriptionService';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import ConfirmDialog from '../components/Common/ConfirmDialog';
@@ -44,9 +45,14 @@ const AccountPage: React.FC = () => {
     storageUsed: 0,
   });
 
+  // Payment history
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
   const tabs = [
     { id: 'profile', name: 'Profil', icon: <User className="h-5 w-5" /> },
     { id: 'subscription', name: 'Abonelik', icon: <CreditCard className="h-5 w-5" /> },
+    { id: 'payments', name: 'Ödemeler', icon: <FileText className="h-5 w-5" /> },
     { id: 'usage', name: 'Kullanım', icon: <Download className="h-5 w-5" /> },
     { id: 'settings', name: 'Ayarlar', icon: <Settings className="h-5 w-5" /> },
   ];
@@ -55,6 +61,28 @@ const AccountPage: React.FC = () => {
   useEffect(() => {
     loadUsageStats();
   }, []);
+
+  // Load payment history when tab is selected
+  useEffect(() => {
+    if (activeTab === 'payments' && authUser?.id && paymentHistory.length === 0) {
+      loadPaymentHistory();
+    }
+  }, [activeTab, authUser?.id]);
+
+  const loadPaymentHistory = async () => {
+    if (!authUser?.id) return;
+    
+    setLoadingPayments(true);
+    try {
+      const history = await subscriptionService.getPaymentHistory(authUser.id);
+      setPaymentHistory(history);
+    } catch (error) {
+      console.error('Error loading payment history:', error);
+      toast.error('Ödeme geçmişi yüklenemedi');
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
 
   const loadUsageStats = async () => {
     if (!authUser?.id) return;
@@ -414,6 +442,162 @@ const AccountPage: React.FC = () => {
                 >
                   Aboneliği İptal Et
                 </button>
+              </div>
+            )}
+          </div>
+        );
+
+      case 'payments':
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Ödeme Geçmişi
+              </h3>
+              
+              {loadingPayments ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                </div>
+              ) : paymentHistory.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-lg">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">Henüz ödeme geçmişiniz yok</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Premium özelliklerden faydalanmak için bir plan seçin
+                  </p>
+                  <button
+                    onClick={() => navigate('/pricing')}
+                    className="btn-primary"
+                  >
+                    Planları Görüntüle
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tarih
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Plan
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Tutar
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Durum
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          İşlem No
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {paymentHistory.map((payment) => (
+                        <tr key={payment.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(payment.processedAt).toLocaleDateString('tr-TR', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              {payment.planTier === 'premium' ? (
+                                <Crown className="h-4 w-4 text-purple-600 mr-2" />
+                              ) : (
+                                <Zap className="h-4 w-4 text-primary-600 mr-2" />
+                              )}
+                              <span className="text-sm font-medium text-gray-900">
+                                {payment.planTier.toUpperCase()}
+                              </span>
+                              <span className="ml-2 text-xs text-gray-500">
+                                ({payment.billingPeriod === 'monthly' ? 'Aylık' : 'Yıllık'})
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ₺{payment.amount.toFixed(2)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {payment.status === 'SUCCESS' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ✓ Başarılı
+                              </span>
+                            ) : payment.status === 'FAILURE' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                ✗ Başarısız
+                              </span>
+                            ) : payment.status === 'PENDING' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                ⏳ Beklemede
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                {payment.status}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono">
+                            {payment.transactionId}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Payment Summary */}
+            {paymentHistory.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Toplam Ödeme</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {paymentHistory.length}
+                      </p>
+                    </div>
+                    <FileText className="h-8 w-8 text-gray-400" />
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Başarılı</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {paymentHistory.filter((p) => p.status === 'SUCCESS').length}
+                      </p>
+                    </div>
+                    <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                      <span className="text-green-600 text-lg">✓</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center justify-center">
+                    <div>
+                      <p className="text-sm text-gray-600">Toplam Harcama</p>
+                      <p className="text-2xl font-bold text-primary-600">
+                        ₺{paymentHistory
+                          .filter((p) => p.status === 'SUCCESS')
+                          .reduce((sum, p) => sum + p.amount, 0)
+                          .toFixed(2)}
+                      </p>
+                    </div>
+                    <CreditCard className="h-8 w-8 text-gray-400 ml-4" />
+                  </div>
+                </div>
               </div>
             )}
           </div>

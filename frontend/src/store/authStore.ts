@@ -18,6 +18,7 @@ interface AuthState {
   signOut: () => Promise<void>
   resetPassword: (data: { email: string }) => Promise<void>
   updateProfile: (data: { fullName?: string; phone?: string; avatarUrl?: string }) => Promise<void>
+  updateUser: (user: AuthUser | null) => void
   clearError: () => void
 }
 
@@ -183,6 +184,11 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: false })
           throw error
         }
+      },
+
+      // Update user data
+      updateUser: (user: AuthUser | null) => {
+        set({ user })
       },
 
       // Clear any errors (if needed for UI feedback)

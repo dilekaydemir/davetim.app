@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
 
 // Layout Components (keep these eager loaded - small and always needed)
@@ -19,6 +19,11 @@ const PricingPage = lazy(() => import('./pages/PricingPage'))
 const AccountPage = lazy(() => import('./pages/AccountPage'))
 const PublicInvitationPage = lazy(() => import('./pages/PublicInvitationPage'))
 const RSVPPage = lazy(() => import('./pages/RSVPPage'))
+const MediaGalleryPage = lazy(() => import('./pages/MediaGalleryPage'))
+const MediaUploadPage = lazy(() => import('./pages/MediaUploadPage'))
+const PublicMediaPage = lazy(() => import('./pages/PublicMediaPage'))
+const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'))
+const QRManagePage = lazy(() => import('./pages/QRManagePage'))
 
 function App() {
   return (
@@ -32,6 +37,15 @@ function App() {
           
           {/* Public RSVP Page (No Layout) */}
           <Route path="/rsvp/:guestToken" element={<RSVPPage />} />
+
+          {/* Public Media View (No Layout) */}
+          <Route path="/media/:qrCode" element={<PublicMediaPage />} />
+          {/* Typo redirects */}
+          <Route path="/meedia" element={<Navigate to="/media" replace />} />
+          <Route path="/meedia/upload" element={<Navigate to="/media/upload" replace />} />
+
+          {/* Payment Callback (No Layout - handles 3D Secure redirect) */}
+          <Route path="/payment/callback" element={<PaymentCallbackPage />} />
 
           {/* Public Routes */}
           <Route path="/" element={<Layout />}>
@@ -58,6 +72,21 @@ function App() {
             <Route path="account" element={
               <ProtectedRoute>
                 <AccountPage />
+              </ProtectedRoute>
+            } />
+            <Route path="media" element={
+              <ProtectedRoute>
+                <MediaGalleryPage />
+              </ProtectedRoute>
+            } />
+            <Route path="media/upload" element={
+              <ProtectedRoute>
+                <MediaUploadPage />
+              </ProtectedRoute>
+            } />
+            <Route path="media/manage" element={
+              <ProtectedRoute>
+                <QRManagePage />
               </ProtectedRoute>
             } />
           </Route>

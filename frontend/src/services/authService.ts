@@ -203,6 +203,31 @@ class AuthService {
         return null;
       }
 
+      // Get subscription from database (not from metadata)
+      let subscriptionTier: 'free' | 'pro' | 'premium' = 'free';
+      let subscriptionEndDate: string | undefined = undefined;
+
+      try {
+        console.log('🔍 Fetching subscription for user:', user.id);
+        const { data: subscription, error: subError } = await supabase
+          .from('subscriptions')
+          .select('tier, end_date')
+          .eq('user_id', user.id)
+          .single();
+
+        console.log('📊 Subscription data:', subscription, 'Error:', subError);
+
+        if (subscription) {
+          subscriptionTier = subscription.tier || 'free';
+          subscriptionEndDate = subscription.end_date || undefined;
+          console.log('✅ Subscription tier set to:', subscriptionTier);
+        } else {
+          console.log('⚠️ No subscription found, defaulting to free');
+        }
+      } catch (subError) {
+        console.warn('❌ Could not fetch subscription, defaulting to free:', subError);
+      }
+
       // Map Supabase user to our AuthUser format
       const authUser: AuthUser = {
         id: user.id,
@@ -210,8 +235,8 @@ class AuthService {
         fullName: user.user_metadata?.full_name || user.email || '',
         phone: user.user_metadata?.phone || undefined,
         avatarUrl: user.user_metadata?.avatar_url || undefined,
-        subscriptionTier: user.user_metadata?.subscription_tier || 'free',
-        subscriptionEndDate: user.user_metadata?.subscription_end_date || undefined,
+        subscriptionTier,
+        subscriptionEndDate,
       };
       
       return authUser;
