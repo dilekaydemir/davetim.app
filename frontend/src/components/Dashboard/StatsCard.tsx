@@ -30,12 +30,15 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   iconColor,
   trend,
 }) => {
+  // Ensure value is never NaN
+  const displayValue = isNaN(Number(value)) ? 0 : value;
+  
   return (
     <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
       <div className="flex items-center justify-between mb-4">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-3xl font-bold text-gray-900">{displayValue}</p>
           {subtitle && (
             <p className="text-xs text-gray-500 mt-2">{subtitle}</p>
           )}

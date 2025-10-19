@@ -3,8 +3,8 @@
 ## Docker Yapısı
 
 ### Development
-- **Dosya:** `docker-compose.local.yml`
-- **Dockerfile:** `frontend/Dockerfile.dev`
+- **Docker:** ❌ Kullanılmıyor
+- **Yöntem:** `npm run dev` (Native development)
 - **Port:** 5173
 - **Server:** Vite dev server
 - **Hot Reload:** Aktif
@@ -20,22 +20,18 @@
 
 ## 🚀 Hızlı Başlangıç
 
-### Development (Önerilen: Native)
+### Development (Native - Önerilen) ⭐
 
 ```bash
-# Native development (en hızlı)
+# 1. Environment setup
 ./setup-env.sh
+
+# 2. Install dependencies
 cd frontend
 npm install
+
+# 3. Start development server
 npm run dev
-```
-
-### Development (Docker)
-
-```bash
-# Docker development
-./setup-env.sh
-docker-compose -f docker-compose.local.yml up
 ```
 
 **URL:** http://localhost:5173

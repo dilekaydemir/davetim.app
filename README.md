@@ -115,16 +115,13 @@ frontend/
 # Development
 npm run dev              # Start dev server (port 5173)
 npm run build            # Build for production
-npm run build:prod       # Build with production mode
 npm run preview          # Preview build locally
-npm run preview:prod     # Preview on port 4173
 npm run lint             # Run ESLint
 npm run type-check       # TypeScript check
 npm run clean            # Clean dist and cache
 
-# Docker
-npm run docker:dev       # Run with Docker (development)
-npm run docker:prod      # Run with Docker (production)
+# Production (Docker)
+docker-compose up -d     # Run with Docker (production only)
 ```
 
 ### Environment Variables

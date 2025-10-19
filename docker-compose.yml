@@ -1,8 +1,4 @@
-# Docker Compose for PRODUCTION
-# Usage: docker-compose up
-
 services:
-  # React Frontend (Vite) - Production Build
   frontend:
     build:
       context: ./frontend

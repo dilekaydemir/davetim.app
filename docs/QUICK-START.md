@@ -43,6 +43,8 @@ npm run dev
 
 **URL:** http://localhost:5173
 
+**Not:** Development için Docker gerekli değil! Sadece `npm run dev` yeterli.
+
 ---
 
 ## ✅ Test Et

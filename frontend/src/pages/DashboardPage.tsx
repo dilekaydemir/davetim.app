@@ -166,17 +166,17 @@ const DashboardPage: React.FC = () => {
     setViewsData(viewsTimeline);
   };
 
-  // User stats
-  const totalGuests = Object.values(guestStats).reduce((sum, stats) => sum + stats.total, 0);
-  const totalAttending = Object.values(guestStats).reduce((sum, stats) => sum + stats.total_attending, 0);
-  const totalNotAttending = Object.values(guestStats).reduce((sum, stats) => sum + stats.declined, 0);
-  const totalPending = Object.values(guestStats).reduce((sum, stats) => sum + stats.pending, 0);
+  // User stats - with safe calculations
+  const totalGuests = Object.values(guestStats).reduce((sum, stats) => sum + (stats?.total || 0), 0);
+  const totalAttending = Object.values(guestStats).reduce((sum, stats) => sum + (stats?.total_attending || 0), 0);
+  const totalNotAttending = Object.values(guestStats).reduce((sum, stats) => sum + (stats?.declined || 0), 0);
+  const totalPending = Object.values(guestStats).reduce((sum, stats) => sum + (stats?.pending || 0), 0);
   
   const userStats = {
     totalInvitations: invitations.length,
     draftInvitations: invitations.filter(i => i.status === 'draft').length,
     publishedInvitations: invitations.filter(i => i.status === 'published').length,
-    totalViews: invitations.reduce((sum, i) => sum + i.view_count, 0),
+    totalViews: invitations.reduce((sum, i) => sum + (i.view_count || 0), 0),
     totalGuests,
     totalAttending,
     totalNotAttending,
@@ -273,8 +273,6 @@ const DashboardPage: React.FC = () => {
           </h1>
           <p className="text-gray-600 mt-2">
             Davetiyelerinizi yönetin ve yenilerini oluşturun
-
-            Deneme Deneme Deneme
           </p>
         </div>
 

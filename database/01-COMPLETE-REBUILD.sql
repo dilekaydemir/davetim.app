@@ -1079,7 +1079,10 @@ CREATE POLICY "Users can delete own files in invitation-images"
 -- PART 9: SEED INITIAL DATA
 -- =====================================================
 
--- Seed Template Categories
+-- ⚠️ NOTE: For complete realistic template catalog, run: database/05-seed-templates.sql
+-- This section only creates minimal sample data for basic testing.
+
+-- Seed Template Categories (Minimal)
 INSERT INTO public.template_categories (name, slug, description, display_order) VALUES
     ('Düğün', 'dugun', 'Düğün davetiyeleri için özel tasarımlar', 1),
     ('Doğum Günü', 'dogum-gunu', 'Doğum günü kutlamaları için eğlenceli tasarımlar', 2),
@@ -1089,7 +1092,7 @@ INSERT INTO public.template_categories (name, slug, description, display_order) 
     ('İş Etkinliği', 'is-etkinligi', 'Kurumsal etkinlikler için profesyonel tasarımlar', 6)
 ON CONFLICT (slug) DO NOTHING;
 
--- Seed Sample Templates
+-- Seed Sample Templates (Minimal)
 DO $$
 DECLARE
     category_dugun UUID;
@@ -1099,18 +1102,20 @@ BEGIN
     SELECT id INTO category_dugun FROM public.template_categories WHERE slug = 'dugun';
     SELECT id INTO category_dogum FROM public.template_categories WHERE slug = 'dogum-gunu';
     
-    -- Insert sample templates
+    -- Insert minimal sample templates
     INSERT INTO public.templates (
         category_id, name, slug, description, preview_image_url, 
         tier, is_featured, is_popular
     ) VALUES
         (category_dugun, 'Klasik Zarif', 'klasik-zarif', 'Zarif ve klasik düğün davetiyesi', 
-         'https://via.placeholder.com/800x600', 'free', true, true),
+         'https://images.unsplash.com/photo-1519741497674-611481863552?w=800', 'free', true, true),
         (category_dugun, 'Modern Minimalist', 'modern-minimalist', 'Modern ve minimalist düğün tasarımı', 
-         'https://via.placeholder.com/800x600', 'pro', true, false),
+         'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=800', 'pro', true, false),
         (category_dogum, 'Renkli Balon', 'renkli-balon', 'Rengarenk balonlarla doğum günü', 
-         'https://via.placeholder.com/800x600', 'free', false, true)
+         'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800', 'free', false, true)
     ON CONFLICT (slug) DO NOTHING;
+    
+    RAISE NOTICE '📝 Minimal sample data created. For full realistic template catalog with Canva-style designs, run: database/05-seed-templates.sql';
 END $$;
 
 -- =====================================================

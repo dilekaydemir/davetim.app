@@ -193,7 +193,8 @@ const EditorPage: React.FC = () => {
         }
         
         // Apply template background image and position
-        const templateImageUrl = templateDesign.backgroundImage || null;
+        // Use design_config.backgroundImage if available, otherwise use preview_image_url
+        const templateImageUrl = templateDesign.backgroundImage || templateData.preview_image_url || null;
         const templateImagePosition = templateDesign.imagePosition || 'background';
         
         // Store original design for reset

@@ -321,26 +321,107 @@ class SubscriptionService {
 
   /**
    * Check if user can access a specific feature
+   * NOTE: This is for FEATURE access, not USAGE LIMIT checks!
+   * For usage limits (invitation count, storage, etc.), use separate methods.
    */
   canAccessFeature(feature: string, subscription?: Subscription | null): boolean {
     if (!subscription) return false;
 
     switch (feature) {
+      // QR Media - Only PREMIUM
       case 'qr_media':
         return subscription.tier === 'premium';
+      
+      // Premium Templates - PRO+
       case 'premium_templates':
         return subscription.tier === 'pro' || subscription.tier === 'premium';
+      
+      // Image Upload - PRO+
       case 'image_upload':
         return subscription.tier === 'pro' || subscription.tier === 'premium';
+      
+      // WhatsApp Sharing - PRO+
       case 'whatsapp_sharing':
         return subscription.tier === 'pro' || subscription.tier === 'premium';
+      
+      // Excel Export - PRO+
       case 'excel_export':
         return subscription.tier === 'pro' || subscription.tier === 'premium';
+      
+      // AI Design - PREMIUM only
+      case 'ai_design':
+        return subscription.tier === 'premium';
+      
+      // Unlimited Invitations - PREMIUM only
       case 'unlimited_invitations':
         return subscription.tier === 'premium';
+      
       default:
         return false;
     }
+  }
+
+  /**
+   * Check if user has reached their invitation creation limit
+   * Returns: { allowed: boolean, reason?: string, remaining?: number | 'unlimited' }
+   */
+  canCreateInvitation(subscription?: Subscription | null): { allowed: boolean; reason?: string; remaining?: number | 'unlimited' } {
+    if (!subscription) {
+      return { allowed: false, reason: 'Abonelik bilgisi bulunamadı' };
+    }
+
+    // PREMIUM - Unlimited
+    if (subscription.tier === 'premium') {
+      return { allowed: true, remaining: 'unlimited' };
+    }
+
+    // PRO - Monthly limit
+    if (subscription.tier === 'pro') {
+      const PLAN_CONFIGS = {
+        pro: {
+          invitationsPerMonth: 3,
+        }
+      };
+      
+      const limit = PLAN_CONFIGS.pro.invitationsPerMonth;
+      const used = subscription.invitationsCreatedThisMonth;
+      const remaining = limit - used;
+
+      if (remaining <= 0) {
+        return {
+          allowed: false,
+          reason: `Bu ay ${limit} davetiye hakkınızı kullandınız. Daha fazla davetiye için PREMIUM plana yükseltin veya ay sonunu bekleyin.`,
+          remaining: 0
+        };
+      }
+
+      return { allowed: true, remaining };
+    }
+
+    // FREE - Lifetime limit
+    if (subscription.tier === 'free') {
+      const PLAN_CONFIGS = {
+        free: {
+          invitationsLifetime: 1,
+        }
+      };
+      
+      const limit = PLAN_CONFIGS.free.invitationsLifetime;
+      const used = subscription.invitationsCreatedLifetime;
+      const remaining = limit - used;
+
+      if (remaining <= 0) {
+        return {
+          allowed: false,
+          reason: `Ücretsiz planda ${limit} davetiye hakkınızı kullandınız. Daha fazla davetiye için PRO veya PREMIUM plana yükseltin.`,
+          remaining: 0
+        };
+      }
+
+      return { allowed: true, remaining };
+    }
+
+    return { allowed: false, reason: 'Geçersiz abonelik planı' };
   }
 
   /**

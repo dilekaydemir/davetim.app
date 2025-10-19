@@ -125,7 +125,27 @@ export function useSubscription(): UseSubscriptionReturn {
     };
   };
   
-  const canCreateInvitation = () => checkFeatureAccess('create_invitation');
+  // Davetiye oluşturma limiti kontrolü - USAGE LIMIT check
+  const canCreateInvitation = async (): Promise<{ allowed: boolean; reason?: string }> => {
+    if (!user?.id) {
+      return { allowed: false, reason: 'Lütfen giriş yapın' };
+    }
+    
+    // Get current subscription
+    const currentSubscription = await subscriptionService.getUserSubscription(user.id);
+    
+    if (!currentSubscription) {
+      return { allowed: false, reason: 'Abonelik bilgisi bulunamadı' };
+    }
+    
+    // Check invitation creation limit (usage limit, not feature access)
+    const result = subscriptionService.canCreateInvitation(currentSubscription);
+    
+    return {
+      allowed: result.allowed,
+      reason: result.reason
+    };
+  };
   const canAccessPremiumTemplates = () => checkFeatureAccess('premium_templates');
   const canUploadImage = () => checkFeatureAccess('image_upload');
   const canShareWhatsApp = () => checkFeatureAccess('whatsapp_sharing');
