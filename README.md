@@ -20,7 +20,7 @@
 
 ## 🚀 Quick Start
 
-### ⭐ **Start Here:** [BASLA-BURADAN-V2.md](./BASLA-BURADAN-V2.md)
+### ⭐ **Start Here:** [docs/QUICK-START.md](./docs/QUICK-START.md)
 
 Complete step-by-step guide (in Turkish).
 
@@ -68,40 +68,24 @@ frontend/
 └── Dockerfile.dev              → Development (vite dev server)
 ```
 
-## 🗄️ Database Setup
-
-### Quick Setup (20 minutes)
-
-```bash
-# 1. Create Supabase project at https://supabase.com
-# 2. Get API credentials (Settings > API)
-# 3. Add to frontend/.env.local
-# 4. Run migrations in SQL Editor:
-```
-
-- `database/00-COMPLETE-CLEANUP.sql`
-- `database/01-COMPLETE-REBUILD.sql`
-
-**Detailed guide:** [database/HIZLI-BASLANGIÇ.md](./database/HIZLI-BASLANGIÇ.md)
-
 ## 📚 Documentation
 
 ### Essential Guides
 
 | Document | Description | Time |
 |----------|-------------|------|
-| **[BASLA-BURADAN-V2.md](./BASLA-BURADAN-V2.md)** | Quick start guide ⭐ | 5 min |
-| **[ENV-SETUP-GUIDE.md](./frontend/ENV-SETUP-GUIDE.md)** | Environment setup | 10 min |
-| **[DOCKER-GUIDE.md](./DOCKER-GUIDE.md)** | Docker usage | 10 min |
-| **[DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)** | Production deployment | 45 min |
-| **[PROJECT-SUMMARY.md](./PROJECT-SUMMARY.md)** | Project overview | 5 min |
+| **[docs/QUICK-START.md](./docs/QUICK-START.md)** | Quick start guide ⭐ | 30 min |
+| **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)** | Environment setup | 10 min |
+| **[docs/DATABASE.md](./docs/DATABASE.md)** | Database setup | 20 min |
+| **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** | Production deployment | 45 min |
+| **[docs/DOCKER.md](./docs/DOCKER.md)** | Docker usage | 10 min |
 
-### Database
+### Project Information
 
 | Document | Description |
 |----------|-------------|
-| **[database/README.md](./database/README.md)** | Database documentation |
-| **[database/HIZLI-BASLANGIÇ.md](./database/HIZLI-BASLANGIÇ.md)** | Quick start (Turkish) |
+| **[docs/PROJECT-OVERVIEW.md](./docs/PROJECT-OVERVIEW.md)** | Project overview |
+| **[docs/README.md](./docs/README.md)** | Complete documentation index |
 
 ## 🏗️ Tech Stack
 
@@ -155,7 +139,7 @@ VITE_APP_ENV=development
 
 **Production:** Set in Vercel/Netlify dashboard
 
-See [ENV-SETUP-GUIDE.md](./frontend/ENV-SETUP-GUIDE.md) for details.
+See [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md) for details.
 
 ## 🚀 Deployment
 
@@ -180,7 +164,7 @@ docker-compose up -d
 docker-compose -f docker-compose.local.yml up
 ```
 
-**Detailed guide:** [DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)
+**Detailed guide:** [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
 
 ## 🧪 Testing
 
@@ -239,11 +223,12 @@ This project is proprietary. All rights reserved.
 
 ## 📞 Support
 
-- **Quick Start:** [BASLA-BURADAN-V2.md](./BASLA-BURADAN-V2.md)
-- **Environment:** [ENV-SETUP-GUIDE.md](./frontend/ENV-SETUP-GUIDE.md)
-- **Docker:** [DOCKER-GUIDE.md](./DOCKER-GUIDE.md)
-- **Database:** [database/HIZLI-BASLANGIÇ.md](./database/HIZLI-BASLANGIÇ.md)
-- **Deployment:** [DEPLOYMENT-GUIDE.md](./DEPLOYMENT-GUIDE.md)
+- **Quick Start:** [docs/QUICK-START.md](./docs/QUICK-START.md)
+- **Environment:** [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)
+- **Docker:** [docs/DOCKER.md](./docs/DOCKER.md)
+- **Database:** [docs/DATABASE.md](./docs/DATABASE.md)
+- **Deployment:** [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+- **Complete Docs:** [docs/README.md](./docs/README.md)
 
 ## 🎯 Roadmap
 
