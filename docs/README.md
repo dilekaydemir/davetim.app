@@ -29,6 +29,24 @@ Database kurulum ve yönetim
 
 **Süre:** 20 dakika
 
+### [TEMPLATES.md](./TEMPLATES.md) 🎨 **YENİ!**
+Template sistem rehberi
+- 32 Canva-style template
+- 10 kategori (Düğün, Nişan, vb.)
+- Design config yapısı
+- Plan bazlı erişim kontrolü
+
+**Süre:** 15 dakika
+
+### [QUICK-SETUP-TEMPLATES.md](./QUICK-SETUP-TEMPLATES.md) ⚡ **YENİ!**
+Template hızlı kurulum
+- Database seed
+- Template verification
+- Frontend testing
+- Özelleştirme
+
+**Süre:** 10 dakika
+
 ## 🔧 Technical Guides
 
 ### [ENVIRONMENT.md](./ENVIRONMENT.md)
@@ -152,24 +170,26 @@ Support information
 
 ```
 docs/
-├── README.md              → Bu dosya (ana index)
-├── QUICK-START.md         → Hızlı başlangıç ⭐
-├── DEPLOYMENT.md          → Production deploy
-├── DATABASE.md            → Database setup
-├── ENVIRONMENT.md         → Environment setup
-├── DOCKER.md              → Docker guide
-├── PROJECT-OVERVIEW.md    → Proje özeti
-├── CHANGELOG.md           → Versiyon değişiklikleri
-├── TESTING.md             → Test rehberi
-├── PERFORMANCE.md         → Performance
-├── SECURITY.md            → Security
-├── RESPONSIVE.md           → Mobile/Responsive
-├── DESIGN-SYSTEM.md       → UI/UX
-├── ANALYTICS.md           → Analytics
-├── PAYMENT.md             → Payment
-├── SEO.md                 → SEO
-├── TROUBLESHOOTING.md     → Sorun giderme
-└── SUPPORT.md             → Destek
+├── README.md                  → Bu dosya (ana index)
+├── QUICK-START.md             → Hızlı başlangıç ⭐
+├── TEMPLATES.md               → Template sistem rehberi 🎨 YENİ
+├── QUICK-SETUP-TEMPLATES.md   → Template hızlı kurulum ⚡ YENİ
+├── DEPLOYMENT.md              → Production deploy
+├── DATABASE.md                → Database setup
+├── ENVIRONMENT.md             → Environment setup
+├── DOCKER.md                  → Docker guide
+├── PROJECT-OVERVIEW.md        → Proje özeti
+├── CHANGELOG.md               → Versiyon değişiklikleri
+├── TESTING.md                 → Test rehberi
+├── PERFORMANCE.md             → Performance
+├── SECURITY.md                → Security
+├── RESPONSIVE.md              → Mobile/Responsive
+├── DESIGN-SYSTEM.md           → UI/UX
+├── ANALYTICS.md               → Analytics
+├── PAYMENT.md                 → Payment
+├── SEO.md                     → SEO
+├── TROUBLESHOOTING.md         → Sorun giderme
+└── SUPPORT.md                 → Destek
 ```
 
 ---
@@ -180,6 +200,7 @@ docs/
 1. **QUICK-START.md** ⭐
 2. **ENVIRONMENT.md**
 3. **DATABASE.md**
+4. **QUICK-SETUP-TEMPLATES.md** 🎨 (Template setup)
 
 ### Production Deploy
 1. **DEPLOYMENT.md**
@@ -200,10 +221,19 @@ docs/
 
 ## 📊 Documentation Stats
 
-- **Total Files:** 18
-- **Total Pages:** ~200
-- **Reading Time:** ~4 hours (all docs)
+- **Total Files:** 20
+- **Total Pages:** ~220
+- **Reading Time:** ~4.5 hours (all docs)
 - **Setup Time:** ~2 hours (practical)
+
+## 🎨 Template Stats (YENİ!)
+
+- **Total Templates:** 32 adet
+- **Categories:** 10 kategori
+- **FREE Templates:** 15 adet
+- **PRO Templates:** 12 adet
+- **PREMIUM Templates:** 5 adet
+- **Real Images:** Unsplash (high quality)
 
 ---
 

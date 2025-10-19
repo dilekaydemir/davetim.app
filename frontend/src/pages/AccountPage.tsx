@@ -635,7 +635,15 @@ const AccountPage: React.FC = () => {
                     <FileText className="h-10 w-10 text-blue-600" />
                   </div>
                   <p className="text-sm text-blue-700 mt-2">
-                    / {subscription.planConfig?.limits.invitationsPerMonth === 999 ? '∞' : subscription.planConfig?.limits.invitationsPerMonth} limit
+                    {subscription.planConfig?.limits.invitationsPerMonth === 'unlimited' ? (
+                      '/ ∞ sınırsız'
+                    ) : subscription.planConfig?.limits.invitationsPerMonth === 0 ? (
+                      // FREE plan - lifetime limit göster
+                      `/ ${subscription.planConfig?.limits.invitationsLifetime || 1} limit (toplam)`
+                    ) : (
+                      // PRO plan - monthly limit göster
+                      `/ ${subscription.planConfig?.limits.invitationsPerMonth} limit (aylık)`
+                    )}
                   </p>
                 </div>
                 
@@ -663,7 +671,7 @@ const AccountPage: React.FC = () => {
                     <HardDrive className="h-10 w-10 text-purple-600" />
                   </div>
                   <p className="text-sm text-purple-700 mt-2">
-                    / {subscription.planConfig?.limits.storageLimit}MB limit
+                    / {subscription.planConfig?.limits.storageMB}MB limit
                   </p>
                 </div>
               </div>
@@ -673,19 +681,19 @@ const AccountPage: React.FC = () => {
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-gray-900">Depolama Kullanımı</h4>
                   <span className="text-sm text-gray-600">
-                    {Math.round((usageStats.storageUsed / (subscription.planConfig?.limits.storageLimit || 1)) * 100)}%
+                    {Math.round((usageStats.storageUsed / (subscription.planConfig?.limits.storageMB || 1)) * 100)}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-primary-600 to-blue-600 h-3 rounded-full transition-all duration-500"
                     style={{
-                      width: `${Math.min((usageStats.storageUsed / (subscription.planConfig?.limits.storageLimit || 1)) * 100, 100)}%`
+                      width: `${Math.min((usageStats.storageUsed / (subscription.planConfig?.limits.storageMB || 1)) * 100, 100)}%`
                     }}
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {formatFileSize(usageStats.storageUsed * 1024 * 1024)} / {subscription.planConfig?.limits.storageLimit}MB kullanıldı
+                  {formatFileSize(usageStats.storageUsed * 1024 * 1024)} / {subscription.planConfig?.limits.storageMB}MB kullanıldı
                 </p>
               </div>
             </div>

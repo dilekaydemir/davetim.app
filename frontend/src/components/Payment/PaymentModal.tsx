@@ -141,14 +141,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       });
 
       if (result.success && (result.status === 'WAITING_3D' || result.status === 1)) {
-        // Open 3D Secure in popup
-        const popup = window.open('', '3DSecure', 'width=600,height=800,scrollbars=yes');
-        if (popup) {
-          popup.document.write(result.threeDSecureHtmlContent || '');
-          toast.success('3D Secure doğrulaması açıldı');
+        // Handle 3D Secure with improved method
+        toast.success('3D Secure doğrulaması başlatıl\u0131yor...');
+        
+        if (result.threeDSecureHtmlContent) {
+          // Use the improved 3D Secure handler from paymentService
+          paymentService.handle3DSecure(result.threeDSecureHtmlContent, 'popup');
         } else {
-          toast.error('Popup engellendi. Lütfen popup engelleyicisini kapatın.');
+          toast.error('3D Secure içeriği alınamadı');
         }
+        
+        // Close modal after opening 3D Secure
+        onClose();
       } else if (result.success && (result.status === 'SUCCESS' || result.status === 0)) {
         // Direct success (without 3D Secure)
         await subscriptionService.upgradeSubscription(

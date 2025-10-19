@@ -118,8 +118,8 @@ class PaymentService {
 
     // Calculate amount based on plan and period
     const planPrices = {
-      pro: { monthly: 99, yearly: 990 },
-      premium: { monthly: 199, yearly: 1990 },
+      pro: { monthly: 39, yearly: 390 },
+      premium: { monthly: 79, yearly: 790 },
     };
 
     const amount = planPrices[planTier][billingPeriod];
@@ -152,12 +152,76 @@ class PaymentService {
         },
       ],
       cardInfo,
-      use3DSecure: false, // TODO: Enable for production with public callback URL
+      use3DSecure: true, // ✅ Production: 3D Secure enabled
       installment: installment || 1,
       callbackUrl: `${window.location.origin}/payment/callback`,
     };
 
     return this.processPayment(paymentRequest);
+  }
+
+  /**
+   * Handle 3D Secure redirect (open in popup or iframe)
+   */
+  handle3DSecure(htmlContent: string, mode: '3d' | 'popup' | 'iframe' = 'popup'): void {
+    if (mode === 'popup') {
+      // Open 3D Secure in popup window
+      const popup = window.open('', '_blank', 'width=600,height=800,resizable=yes,scrollbars=yes');
+      if (popup) {
+        popup.document.write(htmlContent);
+        popup.document.close();
+      } else {
+        toast.error('Pop-up engelleyici nedeniyle 3D Secure sayfası açılamadı');
+        // Fallback to iframe
+        this.handle3DSecure(htmlContent, 'iframe');
+      }
+    } else if (mode === 'iframe') {
+      // Create fullscreen iframe overlay
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = `
+        width: 90%;
+        max-width: 600px;
+        height: 90%;
+        max-height: 800px;
+        border: none;
+        border-radius: 8px;
+      `;
+      iframe.srcdoc = htmlContent;
+
+      overlay.appendChild(iframe);
+      document.body.appendChild(overlay);
+
+      // Remove overlay when payment is complete
+      const checkComplete = setInterval(() => {
+        try {
+          if (iframe.contentWindow?.location.href.includes('/payment/callback')) {
+            clearInterval(checkComplete);
+            document.body.removeChild(overlay);
+          }
+        } catch (e) {
+          // Cross-origin error is expected
+        }
+      }, 500);
+    } else {
+      // Full page redirect
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      window.location.href = url;
+    }
   }
 
   /**

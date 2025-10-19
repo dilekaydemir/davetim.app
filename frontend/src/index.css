@@ -1,3 +1,6 @@
+/* Import Design Tokens FIRST (before @tailwind) */
+@import './styles/design-tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,45 +10,111 @@
     @apply box-border;
   }
   
-  body {
-    @apply bg-white text-gray-900 font-sans;
-  }
-
   html {
     scroll-behavior: smooth;
+    /* Better text rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Better font rendering on Windows */
+    text-rendering: optimizeLegibility;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-900 font-sans;
+    /* Minimum font size for better readability */
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
   }
 
-  /* Custom scrollbar */
+  /* Focus visible for better accessibility */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+  }
+
+  /* Remove focus ring when not needed (mouse users) */
+  *:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* Better default for images */
+  img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* Custom scrollbar - Modern minimal design */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-gray-100;
+    @apply bg-transparent;
   }
 
   ::-webkit-scrollbar-thumb {
     @apply bg-gray-300 rounded-full;
+    transition: background-color 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-gray-400;
   }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(209 213 219) transparent;
+  }
+
+  /* Better selection color */
+  ::selection {
+    @apply bg-primary-100 text-primary-900;
+  }
 }
 
 @layer components {
-  /* Button Variants */
+  /* ========================================
+     MODERN BUTTON VARIANTS
+     ======================================== */
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply relative overflow-hidden bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 
+           text-white font-medium px-6 py-3 rounded-xl shadow-md hover:shadow-glow
+           transition-all duration-300 transform hover:scale-105 active:scale-95
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
   }
 
+  /* Glass morphism effect for secondary button */
   .btn-secondary {
-    @apply bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium px-6 py-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply relative bg-white/80 backdrop-blur-sm border border-gray-200 hover:border-gray-300 
+           hover:bg-white hover:shadow-lg text-gray-700 font-medium px-6 py-3 rounded-xl 
+           transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-outline {
-    @apply border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white font-medium px-6 py-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply relative overflow-hidden border-2 border-primary-500 text-primary-600 hover:text-white 
+           font-medium px-6 py-3 rounded-xl transition-all duration-300 transform hover:scale-105
+           before:absolute before:inset-0 before:bg-primary-500 before:scale-x-0 before:origin-left
+           before:transition-transform before:duration-300 hover:before:scale-x-100
+           disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none;
+  }
+
+  .btn-outline span {
+    @apply relative z-10;
+  }
+
+  /* Ghost button variant */
+  .btn-ghost {
+    @apply text-gray-700 hover:text-primary-600 hover:bg-primary-50 font-medium px-6 py-3 
+           rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Icon button */
+  .btn-icon {
+    @apply p-2.5 rounded-full hover:bg-gray-100 transition-colors duration-200 
+           disabled:opacity-50 disabled:cursor-not-allowed touch-target;
   }
 
   /* Input Styles */
@@ -57,17 +126,32 @@
     @apply border-red-500 focus:ring-red-500;
   }
 
-  /* Card Styles */
+  /* ========================================
+     MODERN CARD STYLES
+     ======================================== */
   .card {
-    @apply bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden;
+    @apply bg-white rounded-2xl shadow-lg border border-gray-100/50 overflow-hidden
+           transition-all duration-300 hover:shadow-xl hover:border-gray-200;
+  }
+
+  .card-hover {
+    @apply card transform transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl;
+  }
+
+  .card-glass {
+    @apply bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-white/20 overflow-hidden;
   }
 
   .card-header {
-    @apply px-6 py-4 border-b border-gray-100;
+    @apply px-6 py-4 border-b border-gray-100/80 bg-gray-50/50;
   }
 
   .card-body {
-    @apply px-6 py-4;
+    @apply px-6 py-5;
+  }
+
+  .card-footer {
+    @apply px-6 py-4 border-t border-gray-100/80 bg-gray-50/30;
   }
 
   /* Animation Classes */

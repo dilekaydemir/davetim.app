@@ -50,7 +50,7 @@ VITE_SUPABASE_URL=https://your-project-id.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 
 # Payment API Configuration
-VITE_PAYMENT_API_URL=http://localhost:5000/api/payment
+VITE_PAYMENT_API_URL=https://payment.dilcomsys.com/api/payment
 
 # App Configuration
 VITE_APP_NAME=Davetim

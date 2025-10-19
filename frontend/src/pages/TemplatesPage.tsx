@@ -173,45 +173,47 @@ const TemplatesPage: React.FC = () => {
         </div>
 
         {/* Search & Filter */}
-        <div className="flex flex-col lg:flex-row gap-6 mb-8 animate-fade-in">
+        <div className="mb-8 animate-fade-in">
           {/* Search */}
-          <div className="relative flex-1">
+          <div className="relative max-w-2xl mx-auto mb-6">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
             <input
               type="text"
               placeholder="Düğün, doğum günü, nişan gibi anahtar kelimeler girin..."
               value={searchTerm}
               onChange={(e) => handleSearch(e.target.value)}
-              className={`w-full pl-10 pr-20 py-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
-                isSearching ? 'border-primary-300 bg-primary-50/30' : 'border-gray-300 bg-white'
+              className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300 text-gray-900 placeholder-gray-500 ${
+                isSearching 
+                  ? 'border-primary-300 bg-primary-50/50 shadow-md' 
+                  : 'border-gray-300 bg-white hover:border-gray-400 focus:shadow-md'
               }`}
             />
             
             {/* Right side icons */}
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
               {isSearching && (
-                <Loader2 className="text-primary-500 h-5 w-5 animate-spin" />
+                <Loader2 className="text-primary-500 h-4 w-4 animate-spin" />
               )}
               {searchTerm && !isSearching && (
                 <button
                   onClick={handleClearSearch}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded"
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
                   title="Aramayı temizle"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               )}
             </div>
           </div>
 
           {/* Category Filter */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             <button
               onClick={() => handleCategoryChange('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 selectedCategory === 'all'
-                  ? 'bg-primary-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-primary-50 border border-gray-300'
+                  ? 'bg-primary-500 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-primary-50 border border-gray-300 hover:border-primary-300'
               }`}
             >
               Tümü
@@ -220,10 +222,10 @@ const TemplatesPage: React.FC = () => {
               <button
                 key={category.id}
                 onClick={() => handleCategoryChange(category.slug)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   selectedCategory === category.slug
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-white text-gray-700 hover:bg-primary-50 border border-gray-300'
+                    ? 'bg-primary-500 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-primary-50 border border-gray-300 hover:border-primary-300'
                 }`}
               >
                 {category.name}
@@ -246,7 +248,7 @@ const TemplatesPage: React.FC = () => {
             {hasActiveFilters && (
               <button
                 onClick={handleClearAllFilters}
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                className="text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-primary-50 transition-all duration-200"
               >
                 <X className="h-4 w-4" />
                 Filtreleri Temizle
