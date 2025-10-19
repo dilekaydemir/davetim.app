@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, CreditCard, Download, Calendar, Settings, Shield, Bell, Lock, TrendingUp, HardDrive, Users, FileText, Crown, Zap, X } from 'lucide-react';
 import { useAuth } from '../store/authStore';
 import { useSubscription } from '../hooks/useSubscription';
+import { PLAN_CONFIGS } from '../config/plans';
 import { authService } from '../services/authService';
 import { invitationService } from '../services/invitationService';
 import { guestService } from '../services/guestService';
@@ -99,7 +100,7 @@ const AccountPage: React.FC = () => {
       setUsageStats({
         invitationCount: invitations.length,
         totalGuests,
-        storageUsed: subscription.storageUsed || 0,
+        storageUsed: subscription.subscription?.storageUsedMB || 0,
       });
     } catch (error) {
       console.error('Error loading usage stats:', error);
@@ -166,13 +167,15 @@ const AccountPage: React.FC = () => {
     
     setIsCancelling(true);
     try {
-      const success = await subscription.cancelSubscription(authUser.id);
+      const success = await subscriptionService.cancelSubscription(authUser.id);
       if (success) {
+        toast.success('Aboneliğiniz iptal edildi');
         setShowCancelDialog(false);
         await subscription.refreshSubscription();
       }
     } catch (error) {
       console.error('Cancel subscription error:', error);
+      toast.error('Abonelik iptal edilemedi');
     } finally {
       setIsCancelling(false);
     }
@@ -329,15 +332,15 @@ const AccountPage: React.FC = () => {
                       {subscription.planConfig?.description}
                     </p>
                     
-                    {subscription.subscriptionEndDate && (
+                    {subscription.subscription?.subscriptionEndDate && (
                       <div className="flex items-center space-x-4 text-sm">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           <span>
-                            Bitiş: {new Date(subscription.subscriptionEndDate).toLocaleDateString('tr-TR')}
+                            Bitiş: {new Date(subscription.subscription.subscriptionEndDate).toLocaleDateString('tr-TR')}
                           </span>
                         </div>
-                        {subscription.isActive && (
+                        {subscription.subscription?.status === 'active' && (
                           <span className="bg-white/20 px-2 py-1 rounded-full">
                             ✓ Aktif
                           </span>
@@ -370,10 +373,14 @@ const AccountPage: React.FC = () => {
                       <div className="border-2 border-primary-200 bg-primary-50 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Zap className="h-5 w-5 text-primary-600" />
-                          <h4 className="font-medium text-gray-900">PRO</h4>
+                          <h4 className="font-medium text-gray-900">{PLAN_CONFIGS.pro.name}</h4>
                         </div>
-                        <p className="text-gray-600 text-sm mb-3">Daha fazla davetiye ve özellik</p>
-                        <p className="text-2xl font-bold text-gray-900 mb-3">₺29/ay</p>
+                        <p className="text-gray-600 text-sm mb-3">
+                          Aylık {PLAN_CONFIGS.pro.limits.invitationsPerMonth} davetiye, tüm PRO şablonlar
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900 mb-3">
+                          ₺{PLAN_CONFIGS.pro.price.monthly}/ay
+                        </p>
                         <button 
                           onClick={() => navigate('/pricing')}
                           className="btn-primary w-full"
@@ -385,10 +392,12 @@ const AccountPage: React.FC = () => {
                       <div className="border-2 border-purple-200 bg-purple-50 rounded-lg p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <Crown className="h-5 w-5 text-purple-600" />
-                          <h4 className="font-medium text-gray-900">PREMIUM</h4>
+                          <h4 className="font-medium text-gray-900">{PLAN_CONFIGS.premium.name}</h4>
                         </div>
-                        <p className="text-gray-600 text-sm mb-3">Tüm özellikler sınırsız</p>
-                        <p className="text-2xl font-bold text-gray-900 mb-3">₺49/ay</p>
+                        <p className="text-gray-600 text-sm mb-3">Sınırsız davetiye, QR Media, AI tasarım</p>
+                        <p className="text-2xl font-bold text-gray-900 mb-3">
+                          ₺{PLAN_CONFIGS.premium.price.monthly}/ay
+                        </p>
                         <button 
                           onClick={() => navigate('/pricing')}
                           className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
@@ -403,10 +412,14 @@ const AccountPage: React.FC = () => {
                     <div className="border-2 border-purple-200 bg-purple-50 rounded-lg p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Crown className="h-5 w-5 text-purple-600" />
-                        <h4 className="font-medium text-gray-900">PREMIUM</h4>
+                        <h4 className="font-medium text-gray-900">{PLAN_CONFIGS.premium.name}</h4>
                       </div>
-                      <p className="text-gray-600 text-sm mb-3">Gelişmiş özellikler ve AI desteği</p>
-                      <p className="text-2xl font-bold text-gray-900 mb-3">₺49/ay</p>
+                      <p className="text-gray-600 text-sm mb-3">
+                        Sınırsız davetiye, QR Media, AI tasarım, Gelişmiş analitik
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900 mb-3">
+                        ₺{PLAN_CONFIGS.premium.price.monthly}/ay
+                      </p>
                       <button 
                         onClick={() => navigate('/pricing')}
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
@@ -420,11 +433,11 @@ const AccountPage: React.FC = () => {
             )}
 
             {/* Cancel Subscription */}
-            {subscription.currentPlan !== 'free' && subscription.isActive && (
+            {subscription.currentPlan !== 'free' && subscription.subscription?.status === 'active' && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h4 className="font-medium text-red-900 mb-2">Aboneliği İptal Et</h4>
                 <p className="text-red-700 text-sm mb-3">
-                  {subscription.canCancelWithRefund ? (
+                  {subscription.canCancelWithRefund().canRefund ? (
                     <>
                       3 gün içinde iptal ederseniz ücret iadesi alırsınız. 
                       Aboneliğinizi iptal ederseniz, mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz.
@@ -890,7 +903,7 @@ const AccountPage: React.FC = () => {
         onConfirm={handleCancelSubscription}
         title="Aboneliği İptal Et"
         message={
-          subscription.canCancelWithRefund
+          subscription.canCancelWithRefund().canRefund
             ? `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz? 3 gün içinde iptal ettiğiniz için ücret iadesi alacaksınız.`
             : `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz? Mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz. 3 günlük iade süresi geçtiği için iade yapılmayacaktır.`
         }

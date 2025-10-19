@@ -1,19 +1,21 @@
-# Docker Compose for Davetim Frontend (Supabase Backend)
+# Docker Compose for PRODUCTION
+# Usage: docker-compose up
 
 services:
-  # React Frontend (Vite)
+  # React Frontend (Vite) - Production Build
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: davetim-frontend
+      target: production
+    container_name: davetim-frontend-prod
     ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - "80:80"
     environment:
-      - CHOKIDAR_USEPOLLING=true
+      - NODE_ENV=production
+    env_file:
+      - ./frontend/.env
+    restart: unless-stopped
     networks:
       - davetim-network
 

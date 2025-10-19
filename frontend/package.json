@@ -6,9 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "build:prod": "tsc && vite build --mode production",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "preview:prod": "vite preview --port 4173",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules/.vite",
+    "docker:dev": "docker-compose -f ../docker-compose.local.yml up",
+    "docker:prod": "docker-compose -f ../docker-compose.yml up"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

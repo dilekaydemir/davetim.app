@@ -1,10 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Star, Users, Clock, Download } from 'lucide-react';
 import { SEOHead, JSONLDSchema, CanonicalURL, ResourceHints } from '../components/SEO/SEOHead';
+import { templateService, type Template } from '../services/templateService';
+import { getOptimizedUnsplashUrl } from '../utils/imageOptimization';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  
+  // State for templates
+  const [featuredTemplates, setFeaturedTemplates] = useState<Template[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+
+  // Load featured templates
+  useEffect(() => {
+    loadFeaturedTemplates();
+  }, []);
+
+  const loadFeaturedTemplates = async () => {
+    try {
+      setIsLoadingTemplates(true);
+      // Get 3 featured templates for homepage
+      const templates = await templateService.getFeaturedTemplates(3);
+      setFeaturedTemplates(templates);
+    } catch (error) {
+      console.error('Error loading featured templates:', error);
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
 
   // Schema.org structured data
   const schemaData = {
@@ -16,7 +40,7 @@ const HomePage: React.FC = () => {
     offers: {
       '@type': 'AggregateOffer',
       lowPrice: '0',
-      highPrice: '49',
+      highPrice: '79',
       priceCurrency: 'TRY',
       offerCount: '3',
     },
@@ -150,38 +174,139 @@ const HomePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Template previews - will be dynamic later */}
-            {['Altın Düğün', 'Vintage Aşk', 'Renkli Parti'].map((template, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                <div className="h-64 bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                  <div className="text-primary-700 font-semibold text-lg">{template}</div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{template}</h3>
-                  <p className="text-gray-600 text-sm mb-4">
-                    Özel günleriniz için tasarlandı
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                      <span className="text-sm text-gray-600">4.9</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            {isLoadingTemplates ? (
+              // Loading skeleton
+              Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden animate-pulse">
+                  <div className="h-64 bg-gray-200"></div>
+                  <div className="p-6">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                    <div className="flex items-center justify-between">
+                      <div className="h-3 bg-gray-200 rounded w-12"></div>
+                      <div className="h-3 bg-gray-200 rounded w-16"></div>
                     </div>
-                    <span className="text-primary-600 font-semibold">Premium</span>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : featuredTemplates.length > 0 ? (
+              // Real templates
+              featuredTemplates.map((template) => (
+                <Link
+                  key={template.id}
+                  to={`/editor?template=${template.slug}`}
+                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow group"
+                >
+                  <div className="h-64 relative overflow-hidden">
+                    <img
+                      src={getOptimizedUnsplashUrl(template.preview_image_url, { width: 400, quality: 85 })}
+                      alt={template.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    {template.tier !== 'free' && (
+                      <div className="absolute top-3 right-3">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          template.tier === 'pro' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {template.tier === 'pro' ? 'PRO' : 'PREMIUM'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{template.name}</h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      {template.description || 'Özel günleriniz için tasarlandı'}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                        <span className="text-sm text-gray-600">4.9</span>
+                      </div>
+                      <span className={`font-semibold ${
+                        template.tier === 'free' 
+                          ? 'text-green-600' 
+                          : template.tier === 'pro' 
+                            ? 'text-blue-600' 
+                            : 'text-purple-600'
+                      }`}>
+                        {template.tier === 'free' ? 'Ücretsiz' : template.tier === 'pro' ? 'PRO' : 'PREMIUM'}
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))
+            ) : (
+              // Fallback with static templates if no data (3 templates)
+              [
+                { name: 'Klasik Beyaz Düğün', tier: 'free', image: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=600&fit=crop&crop=center' },
+                { name: 'Lüks Altın Düğün', tier: 'pro', image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=600&fit=crop&crop=center' },
+                { name: 'Saray Düğünü', tier: 'premium', image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=600&fit=crop&crop=center' }
+              ].map((template, index) => (
+                <div
+                  key={index}
+                  className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow group"
+                >
+                  <div className="h-64 relative overflow-hidden">
+                    <img
+                      src={template.image}
+                      alt={template.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
+                    />
+                    {template.tier !== 'free' && (
+                      <div className="absolute top-3 right-3">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          template.tier === 'pro' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-purple-100 text-purple-800'
+                        }`}>
+                          {template.tier === 'pro' ? 'PRO' : 'PREMIUM'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{template.name}</h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Özel günleriniz için tasarlandı
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                        <span className="text-sm text-gray-600">4.9</span>
+                      </div>
+                      <span className={`font-semibold ${
+                        template.tier === 'free' 
+                          ? 'text-green-600' 
+                          : template.tier === 'pro' 
+                            ? 'text-blue-600' 
+                            : 'text-purple-600'
+                      }`}>
+                        {template.tier === 'free' ? 'Ücretsiz' : template.tier === 'pro' ? 'PRO' : 'PREMIUM'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <div className="text-center mt-12">
             <Link
               to="/templates"
-              className="btn-primary text-lg px-8 py-4 inline-flex items-center gap-2"
+              className="btn-primary text-lg px-8 py-4 inline-flex items-center gap-2 hover:scale-105 transition-transform"
             >
               Tüm Şablonları Gör
               <ArrowRight className="h-5 w-5" />
             </Link>
+            <p className="text-gray-500 text-sm mt-3">
+              100+ profesyonel şablon arasından seçin
+            </p>
           </div>
         </div>
       </section>

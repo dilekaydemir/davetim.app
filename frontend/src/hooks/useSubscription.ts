@@ -7,12 +7,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../store/authStore';
-import { subscriptionService, UserSubscription } from '../services/subscriptionService';
+import { subscriptionService, Subscription } from '../services/subscriptionService';
 import { PlanTier, getPlanConfig, DEFAULT_PLAN, PlanConfig, needsUpgrade } from '../config/plans';
 
 export interface UseSubscriptionReturn {
   // Abonelik bilgileri
-  subscription: UserSubscription | null;
+  subscription: Subscription | null;
   planConfig: PlanConfig | null;
   isLoading: boolean;
   
@@ -52,7 +52,7 @@ export interface UseSubscriptionReturn {
 
 export function useSubscription(): UseSubscriptionReturn {
   const { user } = useAuth();
-  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   // Abonelik bilgilerini yükle
@@ -75,13 +75,29 @@ export function useSubscription(): UseSubscriptionReturn {
     }
   };
   
-  // İlk yüklemede ve user değiştiğinde
+  // İlk yüklemede ve user ID değiştiğinde (sadece ID'yi izle, tüm user objesini değil!)
   useEffect(() => {
     loadSubscription();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
   
-  // Plan bilgileri
-  const currentPlan = subscription?.planId || DEFAULT_PLAN;
+  // Listen for subscription update events
+  useEffect(() => {
+    const handleSubscriptionUpdate = (event: any) => {
+      console.log('📢 [useSubscription] Received subscription update event:', event.detail);
+      loadSubscription();
+    };
+    
+    window.addEventListener('subscription-updated', handleSubscriptionUpdate);
+    
+    return () => {
+      window.removeEventListener('subscription-updated', handleSubscriptionUpdate);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  // Plan bilgileri - tier field'ini kullan (planId yok)
+  const currentPlan = subscription?.tier || DEFAULT_PLAN;
   const planConfig = getPlanConfig(currentPlan);
   const planName = planConfig.name;
   

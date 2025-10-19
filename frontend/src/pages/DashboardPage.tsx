@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Download, Edit, Trash2, Eye, Crown, Zap, Users, CheckCircle, TrendingUp } from 'lucide-react';
+import { Plus, Calendar, Download, Edit, Trash2, Eye, Crown, Zap, Users, CheckCircle, TrendingUp, Lock } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { guestService, type GuestStats } from '../services/guestService';
 import { useAuth } from '../store/authStore';
+import { useSubscription } from '../hooks/useSubscription';
 import { DashboardSkeleton } from '../components/Skeleton/Skeleton';
 import ConfirmDialog from '../components/Common/ConfirmDialog';
 import { StatsCard } from '../components/Dashboard/StatsCard';
@@ -12,10 +13,12 @@ import { ViewsTimeline } from '../components/Dashboard/ViewsTimeline';
 import { RecentActivity, Activity } from '../components/Dashboard/RecentActivity';
 import { TopTemplates, TemplateUsage } from '../components/Dashboard/TopTemplates';
 import { ExportAnalytics } from '../components/Dashboard/ExportAnalytics';
+import toast from 'react-hot-toast';
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { user: authUser } = useAuth();
+  const subscription = useSubscription();
 
   // State
   const [invitations, setInvitations] = useState<Invitation[]>([]);
@@ -180,7 +183,16 @@ const DashboardPage: React.FC = () => {
     totalPending,
   };
 
-  const handleCreateNew = () => {
+  const handleCreateNew = async () => {
+    // Check if user can create invitation
+    const { allowed, reason } = await subscription.canCreateInvitation();
+    
+    if (!allowed) {
+      toast.error(reason || 'Davetiye oluşturma limitine ulaştınız');
+      navigate('/pricing');
+      return;
+    }
+    
     navigate('/templates');
   };
 
@@ -223,10 +235,33 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  // Remaining invitations helper
+  const getRemainingInvitationsDisplay = () => {
+    const remaining = subscription.getRemainingInvitations();
+    
+    if (remaining === 'unlimited') {
+      return 'Sınırsız';
+    }
+    
+    if (remaining === 0) {
+      return (
+        <span className="text-red-600 font-semibold flex items-center gap-1">
+          <Lock className="h-4 w-4" />
+          Limitiniz doldu
+        </span>
+      );
+    }
+    
+    return `${remaining} kalan`;
+  };
+
   // Show skeleton while loading
-  if (isLoading) {
+  if (isLoading || subscription.isLoading) {
     return <DashboardSkeleton />;
   }
+
+  // Can create invitation check
+  const canCreateNewInvitation = subscription.getRemainingInvitations() !== 0;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -240,6 +275,30 @@ const DashboardPage: React.FC = () => {
             Davetiyelerinizi yönetin ve yenilerini oluşturun
           </p>
         </div>
+
+        {/* Invitation Limit Warning */}
+        {!canCreateNewInvitation && (
+          <div className="mb-6 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <Lock className="h-5 w-5 text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-orange-900 mb-1">Davetiye Limitiniz Doldu</h3>
+                <p className="text-sm text-orange-700 mb-3">
+                  Daha fazla davetiye oluşturmak için planınızı yükseltin ve sınırsız davetiye erişimi kazanın.
+                </p>
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-orange-700 hover:text-orange-800"
+                >
+                  Premium'a Geç
+                  <TrendingUp className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
@@ -278,19 +337,22 @@ const DashboardPage: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1">
                 <p className="text-sm font-medium text-primary-900 mb-1">Aktif Plan</p>
-                <p className="text-3xl font-bold text-primary-900 capitalize">
-                  {authUser?.subscriptionTier === 'free' ? 'Ücretsiz' : authUser?.subscriptionTier.toUpperCase()}
+                <p className="text-2xl font-bold text-primary-900">
+                  {subscription.planName}
+                </p>
+                <p className="text-xs text-primary-700 mt-1">
+                  {getRemainingInvitationsDisplay()}
                 </p>
               </div>
               <div className="p-3 rounded-full bg-primary-200">
-                {authUser?.subscriptionTier === 'free' ? (
+                {subscription.isFreePlan ? (
                   <Zap className="h-6 w-6 text-primary-700" />
                 ) : (
                   <Crown className="h-6 w-6 text-primary-700" />
                 )}
               </div>
             </div>
-            {authUser?.subscriptionTier === 'free' && (
+            {subscription.isFreePlan && (
               <Link
                 to="/pricing"
                 className="text-sm text-primary-700 hover:text-primary-800 font-semibold flex items-center gap-1 group"
@@ -302,54 +364,72 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Analytics Grids */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* RSVP Chart */}
-          <RSVPChart
-            attending={userStats.totalAttending}
-            notAttending={userStats.totalNotAttending}
-            pending={userStats.totalPending}
-          />
+        {/* Analytics Grids - Show based on plan */}
+        {!subscription.isFreePlan && (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* RSVP Chart */}
+              <RSVPChart
+                attending={userStats.totalAttending}
+                notAttending={userStats.totalNotAttending}
+                pending={userStats.totalPending}
+              />
 
-          {/* Views Timeline */}
-          <ViewsTimeline
-            data={viewsData}
-            totalViews={userStats.totalViews}
-          />
-        </div>
+              {/* Views Timeline */}
+              <ViewsTimeline
+                data={viewsData}
+                totalViews={userStats.totalViews}
+              />
+            </div>
 
-        {/* Second Row Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Recent Activity */}
-          <RecentActivity activities={recentActivities} />
+            {/* Second Row Analytics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Recent Activity */}
+              <RecentActivity activities={recentActivities} />
 
-          {/* Top Templates */}
-          <TopTemplates templates={topTemplates} />
-        </div>
+              {/* Top Templates */}
+              <TopTemplates templates={topTemplates} />
+            </div>
 
-        {/* Export Analytics */}
-        <div className="mb-8">
-          <ExportAnalytics
-            data={{
-              invitations: invitations,
-              guestStats: guestStats,
-              activities: recentActivities,
-            }}
-          />
-        </div>
+            {/* Export Analytics - Premium Only */}
+            {subscription.isPremiumPlan && (
+              <div className="mb-8">
+                <ExportAnalytics
+                  data={{
+                    invitations: invitations,
+                    guestStats: guestStats,
+                    activities: recentActivities,
+                  }}
+                />
+              </div>
+            )}
+          </>
+        )}
 
         {/* Action Bar */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4 sm:mb-0">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+          <h2 className="text-xl font-semibold text-gray-900">
             Davetiyelerim
           </h2>
-          <button
-            onClick={handleCreateNew}
-            className="btn-primary flex items-center gap-2"
-          >
-            <Plus className="h-5 w-5" />
-            Yeni Davetiye
-          </button>
+          <div className="flex items-center gap-3">
+            {!canCreateNewInvitation ? (
+              <button
+                onClick={() => navigate('/pricing')}
+                className="btn-outline flex items-center gap-2 border-orange-300 text-orange-700 hover:bg-orange-50"
+              >
+                <Lock className="h-5 w-5" />
+                Limit Doldu - Yükselt
+              </button>
+            ) : (
+              <button
+                onClick={handleCreateNew}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus className="h-5 w-5" />
+                Yeni Davetiye
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Invitations List */}
@@ -451,25 +531,35 @@ const DashboardPage: React.FC = () => {
         )}
 
         {/* Empty State */}
-        {!isLoading && invitations.length === 0 && (
-          <div className="bg-white shadow rounded-lg p-12 text-center animate-fade-in">
+        {invitations.length === 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <div className="max-w-md mx-auto">
-              <div className="bg-primary-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Calendar className="h-10 w-10 text-primary-600" />
+              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="h-8 w-8 text-primary-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                Henüz davetiye oluşturmadınız
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Henüz davetiyeniz yok
               </h3>
-              <p className="text-gray-600 mb-8">
-                İlk davetiyenizi oluşturmak için şablonlarımıza göz atın ve sevdiklerinizi etkinliğinize davet edin!
+              <p className="text-gray-600 mb-6">
+                İlk davetiyenizi oluşturarak başlayın ve sevdiklerinizi özel etkinliğinize davet edin.
               </p>
-              <button
-                onClick={handleCreateNew}
-                className="btn-primary inline-flex items-center gap-2"
-              >
-                <Plus className="h-5 w-5" />
-                İlk Davetiyemi Oluştur
-              </button>
+              {canCreateNewInvitation ? (
+                <button
+                  onClick={handleCreateNew}
+                  className="btn-primary flex items-center gap-2 mx-auto"
+                >
+                  <Plus className="h-5 w-5" />
+                  İlk Davetiyemi Oluştur
+                </button>
+              ) : (
+                <Link
+                  to="/pricing"
+                  className="btn-primary flex items-center gap-2 mx-auto"
+                >
+                  <Crown className="h-5 w-5" />
+                  Premium'a Geç
+                </Link>
+              )}
             </div>
           </div>
         )}

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '../../store/authStore';
 import { supabase } from '../../services/supabase';
+import { authService } from '../../services/authService';
 import toast from 'react-hot-toast';
 import LoadingSpinner from '../UI/LoadingSpinner';
 
@@ -9,7 +10,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const { isInitialized, isLoading, initialize } = useAuth();
+  const { isInitialized, isLoading, initialize, user, signOut } = useAuth();
 
   useEffect(() => {
     // Initialize auth on app start
@@ -41,6 +42,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       subscription.unsubscribe();
     };
   }, [isInitialized, initialize]);
+
+  // Periodic session validation - check if user still exists in database
+  useEffect(() => {
+    if (!user) return;
+
+    const validateSession = async () => {
+      try {
+        // Check if user still exists in Supabase Auth
+        const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !authUser) {
+          console.warn('⚠️ Auth user no longer exists - forcing logout');
+          toast.error('Oturum geçersiz. Lütfen tekrar giriş yapın.');
+          localStorage.clear();
+          sessionStorage.clear();
+          await signOut();
+          window.location.href = '/';
+          return;
+        }
+        
+        // Also check if getCurrentUser works (checks subscriptions table)
+        const currentUser = await authService.getCurrentUser();
+        if (!currentUser) {
+          console.warn('⚠️ User data incomplete - forcing logout');
+          toast.error('Oturum geçersiz. Lütfen tekrar giriş yapın.');
+          localStorage.clear();
+          sessionStorage.clear();
+          await signOut();
+          window.location.href = '/';
+        }
+      } catch (error) {
+        console.error('❌ Session validation error:', error);
+        localStorage.clear();
+        sessionStorage.clear();
+        await signOut();
+        window.location.href = '/';
+      }
+    };
+
+    // Validate immediately
+    validateSession();
+
+    // Validate every 30 seconds
+    const interval = setInterval(validateSession, 30000);
+
+    return () => clearInterval(interval);
+  }, [user, signOut]);
 
   // Show loading spinner while initializing auth
   if (!isInitialized || isLoading) {

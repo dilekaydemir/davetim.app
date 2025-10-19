@@ -208,21 +208,15 @@ class AuthService {
       let subscriptionEndDate: string | undefined = undefined;
 
       try {
-        console.log('🔍 Fetching subscription for user:', user.id);
         const { data: subscription, error: subError } = await supabase
           .from('subscriptions')
-          .select('tier, end_date')
+          .select('tier, end_date, status')
           .eq('user_id', user.id)
           .single();
 
-        console.log('📊 Subscription data:', subscription, 'Error:', subError);
-
-        if (subscription) {
+        if (subscription && !subError) {
           subscriptionTier = subscription.tier || 'free';
           subscriptionEndDate = subscription.end_date || undefined;
-          console.log('✅ Subscription tier set to:', subscriptionTier);
-        } else {
-          console.log('⚠️ No subscription found, defaulting to free');
         }
       } catch (subError) {
         console.warn('❌ Could not fetch subscription, defaulting to free:', subError);
@@ -338,6 +332,43 @@ class AuthService {
       toast.error(errorMessage);
       
       throw new Error(errorMessage);
+    }
+  }
+
+  // Ensure subscription exists for user (fallback if trigger doesn't work)
+  async ensureSubscription(userId: string): Promise<void> {
+    try {
+      // Check if subscription exists
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      // If subscription doesn't exist, create one
+      if (!data && !error) {
+        console.log('📝 Creating free subscription for new user...');
+        
+        const { error: insertError } = await supabase
+          .from('subscriptions')
+          .insert({
+            user_id: userId,
+            tier: 'free',
+            status: 'active',
+            start_date: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          console.error('❌ Failed to create subscription:', insertError);
+          throw insertError;
+        }
+
+        console.log('✅ Free subscription created successfully');
+        toast.success('Hesabınız hazır!', { duration: 3000 });
+      }
+    } catch (error: any) {
+      console.error('❌ Ensure subscription error:', error);
+      // Don't throw - allow signup to complete even if subscription creation fails
     }
   }
 

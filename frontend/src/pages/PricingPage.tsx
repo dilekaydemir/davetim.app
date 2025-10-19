@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Crown, Star, Zap } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
+import { PLAN_CONFIGS, type PlanTier } from '../config/plans';
 import PaymentModal from '../components/Payment/PaymentModal';
 import toast from 'react-hot-toast';
 
@@ -19,23 +20,23 @@ const PricingPage: React.FC = () => {
     amount: 0,
   });
 
-  // Planlar
+  // Planları plans.ts'den al ve display için formatla
   const plans = [
     {
-      id: 'free',
-      name: 'Ücretsiz',
-      price: { monthly: 0, yearly: 0 },
+      id: 'free' as PlanTier,
+      name: PLAN_CONFIGS.free.name,
+      price: PLAN_CONFIGS.free.price,
       description: 'Tek kullanım için',
       icon: <Star className="h-6 w-6" />,
       color: 'gray',
       features: [
-        '1 davetiye (tek kullanım)',
-        '5 temel şablon',
+        `${PLAN_CONFIGS.free.limits.invitationsLifetime} davetiye (tek kullanım)`,
+        `${PLAN_CONFIGS.free.limits.basicTemplatesCount} temel şablon`,
         'Temel özelleştirme',
         'PDF + PNG indirme (sınırsız)',
         'Link paylaşımı',
-        'Temel RSVP (max 50 kişi)',
-        '5MB depolama'
+        `Temel RSVP (max ${PLAN_CONFIGS.free.limits.maxGuestsPerInvitation} kişi)`,
+        `${PLAN_CONFIGS.free.limits.storageMB}MB depolama`
       ],
       limitations: [
         'Premium şablonlar yok',
@@ -45,24 +46,25 @@ const PricingPage: React.FC = () => {
       ],
       popular: false,
       cta: 'Ücretsiz Başla',
-      badge: null
+      badge: null,
+      hasYearly: false
     },
     {
-      id: 'pro',
-      name: 'PRO',
-      price: { monthly: 39, yearly: 0 },
+      id: 'pro' as PlanTier,
+      name: PLAN_CONFIGS.pro.name,
+      price: PLAN_CONFIGS.pro.price,
       description: 'Düzenli kullanım için',
       icon: <Zap className="h-6 w-6" />,
       color: 'primary',
       features: [
-        'Aylık 3 davetiye',
-        'Tüm premium şablonlar',
+        `Aylık ${PLAN_CONFIGS.pro.limits.invitationsPerMonth} davetiye`,
+        'Tüm PRO şablonlar',
         'Görsel yükleme',
-        'Sosyal medya paylaşımı (WhatsApp, Telegram, Instagram, vb.)',
+        'Sosyal medya paylaşımı (WhatsApp, Telegram, Instagram)',
         'Sınırsız RSVP',
         'Excel export',
         'PDF + PNG indirme (sınırsız)',
-        '100MB depolama'
+        `${PLAN_CONFIGS.pro.limits.storageMB}MB depolama`
       ],
       limitations: [],
       popular: true,
@@ -71,9 +73,9 @@ const PricingPage: React.FC = () => {
       hasYearly: false
     },
     {
-      id: 'premium',
-      name: 'PREMIUM',
-      price: { monthly: 79, yearly: 790 },
+      id: 'premium' as PlanTier,
+      name: PLAN_CONFIGS.premium.name,
+      price: PLAN_CONFIGS.premium.price,
       description: 'Sınırsız + gelişmiş',
       icon: <Crown className="h-6 w-6" />,
       color: 'gradient',
@@ -84,7 +86,7 @@ const PricingPage: React.FC = () => {
         '🎥 Yıllıkta medya 1 yıl saklanır',
         '🤖 AI tasarım önerileri',
         '7/24 öncelikli destek',
-        '500MB depolama',
+        `${PLAN_CONFIGS.premium.limits.storageMB}MB depolama`,
         'Gelişmiş analitik'
       ],
       limitations: [],

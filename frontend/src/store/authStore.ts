@@ -42,6 +42,20 @@ export const useAuthStore = create<AuthState>()(
           const session = await authService.getCurrentSession()
           const user = await authService.getCurrentUser()
 
+          // If session exists but user is null (user deleted from Supabase), clear session
+          if (session && !user) {
+            console.warn('⚠️ Session exists but user not found - clearing session');
+            localStorage.clear();
+            sessionStorage.clear();
+            set({
+              session: null,
+              user: null,
+              isInitialized: true,
+              isLoading: false
+            });
+            return;
+          }
+
           set({
             session,
             user,
@@ -60,10 +74,17 @@ export const useAuthStore = create<AuthState>()(
               set({ session: null, user: null })
             } else if (event === 'TOKEN_REFRESHED' && session) {
               set({ session })
+            } else if (event === 'USER_DELETED') {
+              console.warn('⚠️ User deleted event received');
+              localStorage.clear();
+              sessionStorage.clear();
+              set({ session: null, user: null })
             }
           })
         } catch (error) {
           console.error('Auth initialization error:', error)
+          // Don't clear storage on init error - might be network issue
+          // Only clear if user explicitly signs out or is deleted
           set({
             session: null,
             user: null,
@@ -81,6 +102,9 @@ export const useAuthStore = create<AuthState>()(
           const result = await authService.signUp(data)
           
           if (result.user && result.session) {
+            // Ensure subscription exists after signup
+            await authService.ensureSubscription(result.user.id)
+            
             const user = await authService.getCurrentUser()
             set({
               session: result.session,
@@ -143,13 +167,26 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           await authService.signOut()
+          
+          // Clear all storage
+          localStorage.clear()
+          sessionStorage.clear()
+          
           set({
             user: null,
             session: null,
             isLoading: false
           })
         } catch (error) {
-          set({ isLoading: false })
+          console.error('Sign out error:', error)
+          // Even if sign out fails, clear local data
+          localStorage.clear()
+          sessionStorage.clear()
+          set({
+            user: null,
+            session: null,
+            isLoading: false
+          })
           throw error
         }
       },
@@ -188,7 +225,7 @@ export const useAuthStore = create<AuthState>()(
 
       // Update user data
       updateUser: (user: AuthUser | null) => {
-        set({ user })
+        set({ user: user ? { ...user } : null }); // Create new object reference
       },
 
       // Clear any errors (if needed for UI feedback)

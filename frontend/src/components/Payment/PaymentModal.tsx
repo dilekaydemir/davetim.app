@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { paymentService } from '../../services/paymentService';
 import { subscriptionService } from '../../services/subscriptionService';
@@ -24,6 +25,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   billingPeriod,
   amount,
 }) => {
+  const navigate = useNavigate();
   const { user, initialize, updateUser } = useAuthStore();
   const { refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
@@ -168,32 +170,59 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           billingPeriod
         );
 
-        // Force refresh auth state without clearing cache
+        // Force refresh auth state without page reload
         console.log('🔄 Force refreshing auth state...');
         sessionStorage.removeItem('pending_payment');
         
-        // Get fresh user data from Supabase
-        const freshUser = await authService.getCurrentUser();
-        console.log('🔄 Fresh user data:', freshUser);
+        // Wait a bit for database to settle
+        console.log('⏳ Waiting 1 second for database to settle...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Update auth store directly
+        // Get fresh user data from Supabase
+        console.log('🔄 Fetching fresh user data from database...');
+        const freshUser = await authService.getCurrentUser();
+        console.log('📊 Fresh user data:', freshUser);
+        console.log('📊 Fresh subscription tier:', freshUser?.subscriptionTier);
+        
+        // Update auth store with fresh data
         if (freshUser) {
+          console.log('🔄 Updating auth store with fresh data...');
           updateUser(freshUser);
-          console.log('✅ Auth store updated with fresh data');
+          
+          // Force storage to persist immediately
+          const currentState = useAuthStore.getState();
+          localStorage.setItem('auth-store', JSON.stringify({
+            state: {
+              user: freshUser,
+              session: currentState.session,
+              isInitialized: currentState.isInitialized
+            },
+            version: 0
+          }));
+          
+          console.log('✅ Auth store updated');
+          console.log('✅ Updated user:', useAuthStore.getState().user);
+          
+          // Dispatch custom event to force re-render
+          console.log('📢 Dispatching subscription update event...');
+          window.dispatchEvent(new CustomEvent('subscription-updated', { 
+            detail: { user: freshUser } 
+          }));
         }
 
         // Refresh subscription hook
         console.log('🔄 Refreshing subscription hook...');
         await refreshSubscription();
         console.log('✅ Subscription hook refreshed');
+        
+        // Small delay to ensure UI updates propagate
+        await new Promise(resolve => setTimeout(resolve, 800));
 
         toast.success('Ödeme başarılı! 🎉');
         onClose();
         
-        // Navigate to dashboard (no reload needed)
-        setTimeout(() => {
-          window.location.href = '/dashboard';
-        }, 1000);
+        // Navigate to account page (no reload)
+        navigate('/account');
       } else {
         toast.error(result.errorMessage || 'Ödeme başarısız');
       }
