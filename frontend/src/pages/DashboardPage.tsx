@@ -273,6 +273,8 @@ const DashboardPage: React.FC = () => {
           </h1>
           <p className="text-gray-600 mt-2">
             Davetiyelerinizi yönetin ve yenilerini oluşturun
+
+            Deneme Deneme Deneme
           </p>
         </div>
 
