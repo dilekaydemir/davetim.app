@@ -457,65 +457,6 @@ class MediaService {
   }
 
   /**
-   * Delete media (QR and all associated data)
-   */
-  async deleteMedia(mediaId: string): Promise<boolean> {
-    try {
-      // First get media data to find storage path
-      const { data: mediaData, error: fetchError } = await supabase
-        .from('media')
-        .select('storage_path, qr_code')
-        .eq('id', mediaId)
-        .single();
-      
-      if (fetchError) {
-        console.error('Fetch media error:', fetchError);
-        throw fetchError;
-      }
-
-      // Delete guest uploads first
-      const { error: guestError } = await supabase
-        .from('guest_uploads')
-        .delete()
-        .eq('media_id', mediaId);
-      
-      if (guestError) {
-        console.error('Delete guest uploads error:', guestError);
-        throw guestError;
-      }
-
-      // Delete media record
-      const { error: mediaError } = await supabase
-        .from('media')
-        .delete()
-        .eq('id', mediaId);
-      
-      if (mediaError) {
-        console.error('Delete media error:', mediaError);
-        throw mediaError;
-      }
-
-      // Delete storage files if they exist
-      if (mediaData.storage_path) {
-        const { error: storageError } = await supabase.storage
-          .from(this.BUCKET_NAME)
-          .remove([mediaData.storage_path]);
-        
-        if (storageError) {
-          console.warn('Storage deletion warning:', storageError);
-          // Don't throw here as the main deletion succeeded
-        }
-      }
-
-      return true;
-    } catch (error: any) {
-      console.error('Delete media error:', error);
-      toast.error('Medya silinemedi');
-      throw error;
-    }
-  }
-
-  /**
    * Get user's media list
    */
   async getUserMedia(): Promise<Media[]> {
