@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../store/authStore';
+import { useSubscription } from '../../hooks/useSubscription';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -9,6 +10,7 @@ const Navbar: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { isAuthenticated, user, signOut } = useAuth();
+  const subscription = useSubscription();
 
   const handleLogin = () => {
     navigate('/login');
@@ -102,7 +104,7 @@ const Navbar: React.FC = () => {
                         <p className="text-sm font-medium text-gray-900">{user?.fullName}</p>
                         <p className="text-sm text-gray-500">{user?.email}</p>
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 mt-1">
-                          {user?.subscriptionTier?.toUpperCase() || 'FREE'}
+                          {subscription.planName.toUpperCase()}
                         </span>
                       </div>
                       <div className="py-1">
@@ -203,7 +205,7 @@ const Navbar: React.FC = () => {
                       <div className="text-base font-medium text-gray-800">{user?.fullName}</div>
                       <div className="text-sm text-gray-500">{user?.email}</div>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800 mt-1">
-                        {user?.subscriptionTier?.toUpperCase() || 'FREE'}
+                        {subscription.planName.toUpperCase()}
                       </span>
                     </div>
                   </div>

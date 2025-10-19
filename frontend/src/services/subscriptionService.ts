@@ -48,7 +48,9 @@ class SubscriptionService {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No subscription found - create free tier
+          // No subscription found - this should not happen if triggers are working
+          // But create one as fallback
+          console.warn('⚠️ Subscription not found, creating free tier (trigger may not be working)');
           return this.createFreeSubscription(userId);
         }
         throw error;
@@ -129,6 +131,22 @@ class SubscriptionService {
       }
 
       console.log('✅ Subscription updated:', data);
+      
+      // Also update auth user metadata for consistency (optional, as we don't use it)
+      try {
+        console.log('🔄 Updating auth user metadata...');
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: { subscription_tier: tier }
+        });
+        if (metadataError) {
+          console.warn('⚠️ Could not update auth metadata:', metadataError);
+        } else {
+          console.log('✅ Auth metadata updated');
+        }
+      } catch (metadataError) {
+        console.warn('⚠️ Auth metadata update failed:', metadataError);
+      }
+      
       toast.success(`${tier.toUpperCase()} planına yükseltildiniz! 🎉`);
       return this.mapToSubscription(data);
     } catch (error: any) {

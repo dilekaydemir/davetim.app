@@ -1,0 +1,28 @@
+# Docker Compose for LOCAL DEVELOPMENT
+# Usage: docker-compose -f docker-compose.local.yml up
+
+services:
+  # React Frontend (Vite) - Development Mode
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: davetim-frontend-local
+    ports:
+      - "5173:5173"  # Vite default port
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    env_file:
+      - ./frontend/.env.local
+    networks:
+      - davetim-network-local
+    command: npm run dev
+
+networks:
+  davetim-network-local:
+    driver: bridge
+
