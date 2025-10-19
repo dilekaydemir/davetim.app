@@ -10,7 +10,7 @@ services:
       target: production
     container_name: davetim-frontend-prod
     ports:
-      - "80:80"
+      - "8087:80"
     environment:
       - NODE_ENV=production
     env_file:
