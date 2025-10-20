@@ -144,12 +144,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         sessionStorage.setItem('last_transaction_id', result.transactionId);
         console.log('💾 Saved transaction ID to sessionStorage:', result.transactionId);
         
-        // Handle 3D Secure with improved method
+        // Handle 3D Secure with modern iframe overlay
         toast.success('3D Secure doğrulaması başlatıl\u0131yor...');
         
         if (result.threeDSecureHtmlContent) {
-          // Use full-page redirect for 3D Secure (popup doesn't work with POST callback)
-          paymentService.handle3DSecure(result.threeDSecureHtmlContent, '3d');
+          // Use modern iframe overlay (responsive, minimal, beautiful)
+          paymentService.handle3DSecure(result.threeDSecureHtmlContent);
         } else {
           toast.error('3D Secure içeriği alınamadı');
         }

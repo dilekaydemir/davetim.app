@@ -173,104 +173,226 @@ class PaymentService {
   }
 
   /**
-   * Handle 3D Secure redirect (open in popup or iframe)
+   * Handle 3D Secure redirect with modern iframe overlay
    */
-  handle3DSecure(htmlContent: string, mode: '3d' | 'popup' | 'iframe' = 'popup'): void {
-    if (mode === 'popup') {
-      // Open 3D Secure in popup window
-      const popup = window.open('', '_blank', 'width=600,height=800,resizable=yes,scrollbars=yes');
-      if (popup) {
-        popup.document.write(htmlContent);
-        popup.document.close();
-      } else {
-        toast.error('Pop-up engelleyici nedeniyle 3D Secure sayfası açılamadı');
-        // Fallback to iframe
-        this.handle3DSecure(htmlContent, 'iframe');
+  handle3DSecure(htmlContent: string): void {
+    // Create modern overlay container
+    const overlay = document.createElement('div');
+    overlay.id = 'payment-3d-secure-overlay';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.3s ease-in-out;
+    `;
+
+    // Create iframe container with modern design
+    const container = document.createElement('div');
+    container.style.cssText = `
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      height: 90vh;
+      max-height: 800px;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      animation: slideUp 0.4s ease-out;
+      display: flex;
+      flex-direction: column;
+    `;
+
+    // Create header
+    const header = document.createElement('div');
+    header.style.cssText = `
+      background: linear-gradient(135deg, #f5702a 0%, #e6571d 100%);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    `;
+
+    const headerTitle = document.createElement('div');
+    headerTitle.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    `;
+
+    const lockIcon = document.createElement('div');
+    lockIcon.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+    `;
+    lockIcon.style.cssText = `display: flex; align-items: center;`;
+
+    const title = document.createElement('span');
+    title.textContent = 'Güvenli Ödeme';
+    title.style.cssText = `
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    `;
+
+    headerTitle.appendChild(lockIcon);
+    headerTitle.appendChild(title);
+
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    `;
+    closeButton.style.cssText = `
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0.8;
+    `;
+    closeButton.onmouseover = () => {
+      closeButton.style.background = 'rgba(255, 255, 255, 0.3)';
+      closeButton.style.opacity = '1';
+    };
+    closeButton.onmouseout = () => {
+      closeButton.style.background = 'rgba(255, 255, 255, 0.2)';
+      closeButton.style.opacity = '0.8';
+    };
+    closeButton.onclick = () => {
+      document.body.removeChild(overlay);
+      toast.error('3D Secure doğrulaması iptal edildi');
+    };
+
+    header.appendChild(headerTitle);
+    header.appendChild(closeButton);
+
+    // Create iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = `
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: white;
+    `;
+    iframe.srcdoc = htmlContent;
+
+    // Create footer with info
+    const footer = document.createElement('div');
+    footer.style.cssText = `
+      background: #f8fafc;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-top: 1px solid #e2e8f0;
+    `;
+
+    const infoIcon = document.createElement('div');
+    infoIcon.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+      </svg>
+    `;
+    infoIcon.style.cssText = `display: flex; align-items: center;`;
+
+    const infoText = document.createElement('span');
+    infoText.textContent = 'Bankanızdan gelen doğrulama kodunu girin';
+    infoText.style.cssText = `
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 500;
+    `;
+
+    footer.appendChild(infoIcon);
+    footer.appendChild(infoText);
+
+    // Assemble components
+    container.appendChild(header);
+    container.appendChild(iframe);
+    container.appendChild(footer);
+    overlay.appendChild(container);
+
+    // Add animations
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
-    } else if (mode === 'iframe') {
-      // Create fullscreen iframe overlay
-      const overlay = document.createElement('div');
-      overlay.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
-
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = `
-        width: 90%;
-        max-width: 600px;
-        height: 90%;
-        max-height: 800px;
-        border: none;
-        border-radius: 8px;
-      `;
-      iframe.srcdoc = htmlContent;
-
-      overlay.appendChild(iframe);
-      document.body.appendChild(overlay);
-
-      // Remove overlay when payment is complete
-      const checkComplete = setInterval(() => {
-        try {
-          if (iframe.contentWindow?.location.href.includes('/payment/callback')) {
-            clearInterval(checkComplete);
-            document.body.removeChild(overlay);
-          }
-        } catch (e) {
-          // Cross-origin error is expected
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px) scale(0.95);
         }
-      }, 500);
-    } else {
-      // Full page redirect - Extract and submit form directly
-      // İyzico 3D Secure HTML'i içinde bir form var, onu çıkartıp submit ediyoruz
-      
-      // Create temporary container
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = htmlContent;
-      
-      // Find the form
-      const form = tempDiv.querySelector('form');
-      
-      if (form) {
-        // Append form to body (hidden)
-        form.style.display = 'none';
-        document.body.appendChild(form);
-        
-        // Submit form immediately (this will do full page redirect to İyzico 3D Secure)
-        form.submit();
-      } else {
-        // Fallback: iframe method
-        console.warn('Form not found in 3D Secure HTML, using iframe fallback');
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          border: none;
-          z-index: 999999;
-          background: white;
-        `;
-        
-        document.body.appendChild(iframe);
-        
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (iframeDoc) {
-          iframeDoc.open();
-          iframeDoc.write(htmlContent);
-          iframeDoc.close();
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
         }
       }
-    }
+      @media (max-width: 640px) {
+        #payment-3d-secure-overlay > div {
+          max-width: 100% !important;
+          height: 100vh !important;
+          max-height: 100vh !important;
+          border-radius: 0 !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Add to DOM
+    document.body.appendChild(overlay);
+
+    // Listen for payment completion
+    const checkInterval = setInterval(() => {
+      try {
+        // Check if iframe navigated to callback URL
+        const iframeUrl = iframe.contentWindow?.location.href || '';
+        if (iframeUrl.includes('/payment/callback')) {
+          clearInterval(checkInterval);
+          document.body.removeChild(overlay);
+          // Reload page to show callback result
+          window.location.reload();
+        }
+      } catch (e) {
+        // Cross-origin error is expected during 3D Secure
+      }
+    }, 500);
+
+    // Auto-cleanup after 10 minutes (timeout)
+    setTimeout(() => {
+      if (document.body.contains(overlay)) {
+        clearInterval(checkInterval);
+        document.body.removeChild(overlay);
+        toast.error('3D Secure doğrulaması zaman aşımına uğradı');
+      }
+    }, 10 * 60 * 1000);
   }
 
   /**
