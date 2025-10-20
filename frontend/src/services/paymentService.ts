@@ -223,10 +223,11 @@ class PaymentService {
         }
       }, 500);
     } else {
-      // Full page redirect
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      window.location.href = url;
+      // Full page redirect - write HTML directly to document
+      // Bu yöntem popup blocker'ı bypass eder
+      document.open();
+      document.write(htmlContent);
+      document.close();
     }
   }
 
