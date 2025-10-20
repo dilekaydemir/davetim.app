@@ -9,8 +9,14 @@ import type {
   SubscriptionPaymentData,
 } from '../types/payment';
 
-// Payment service base URL (localhost for development)
+// Payment service base URL
 const PAYMENT_API_BASE_URL = import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:5000/api/payment';
+
+// Validate payment API URL in production
+if (import.meta.env.PROD && PAYMENT_API_BASE_URL.includes('localhost')) {
+  console.error('❌ PRODUCTION ERROR: Payment API URL is still localhost!');
+  console.error('Set VITE_PAYMENT_API_URL=https://payment.dilcomsys.com/api/payment in .env');
+}
 
 class PaymentService {
   private api = axios.create({
@@ -223,37 +229,47 @@ class PaymentService {
         }
       }, 500);
     } else {
-      // Full page redirect - Use iframe method for better compatibility
-      // Create a fullscreen iframe that acts like a full page
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border: none;
-        z-index: 999999;
-      `;
+      // Full page redirect - Extract and submit form directly
+      // İyzico 3D Secure HTML'i içinde bir form var, onu çıkartıp submit ediyoruz
       
-      document.body.appendChild(iframe);
+      // Create temporary container
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
       
-      // Write HTML to iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.open();
-        iframeDoc.write(htmlContent);
-        iframeDoc.close();
-      }
+      // Find the form
+      const form = tempDiv.querySelector('form');
       
-      // Listen for callback redirect (when payment completes)
-      window.addEventListener('message', (event) => {
-        // İyzico callback sonrası iframe'i kaldır
-        if (event.data === 'payment_callback' || 
-            window.location.pathname.includes('/payment/callback')) {
-          document.body.removeChild(iframe);
+      if (form) {
+        // Append form to body (hidden)
+        form.style.display = 'none';
+        document.body.appendChild(form);
+        
+        // Submit form immediately (this will do full page redirect to İyzico 3D Secure)
+        form.submit();
+      } else {
+        // Fallback: iframe method
+        console.warn('Form not found in 3D Secure HTML, using iframe fallback');
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border: none;
+          z-index: 999999;
+          background: white;
+        `;
+        
+        document.body.appendChild(iframe);
+        
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          iframeDoc.open();
+          iframeDoc.write(htmlContent);
+          iframeDoc.close();
         }
-      });
+      }
     }
   }
 
