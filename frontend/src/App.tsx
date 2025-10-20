@@ -8,6 +8,9 @@ import ErrorBoundary from './components/Common/ErrorBoundary'
 import { NetworkStatus } from './components/Common/NetworkStatus'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 
+// Eager load critical pages (payment callback needs to be immediate)
+import PaymentCallbackPage from './pages/PaymentCallbackPage'
+
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'))
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'))
@@ -22,7 +25,6 @@ const RSVPPage = lazy(() => import('./pages/RSVPPage'))
 const MediaGalleryPage = lazy(() => import('./pages/MediaGalleryPage'))
 const MediaUploadPage = lazy(() => import('./pages/MediaUploadPage'))
 const PublicMediaPage = lazy(() => import('./pages/PublicMediaPage'))
-const PaymentCallbackPage = lazy(() => import('./pages/PaymentCallbackPage'))
 const QRManagePage = lazy(() => import('./pages/QRManagePage'))
 
 function App() {
@@ -46,6 +48,9 @@ function App() {
 
           {/* Payment Callback (No Layout - handles 3D Secure redirect) */}
           <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+          
+          {/* Test route to verify routing works */}
+          <Route path="/test" element={<div style={{ padding: '50px', textAlign: 'center' }}><h1>Test Route Works! ✅</h1></div>} />
 
           {/* Public Routes */}
           <Route path="/" element={<Layout />}>

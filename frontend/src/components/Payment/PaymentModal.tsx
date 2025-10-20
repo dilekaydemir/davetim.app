@@ -116,13 +116,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     setLoading(true);
 
     try {
-      // Save pending payment data for callback
-      sessionStorage.setItem('pending_payment', JSON.stringify({
-        planTier,
-        billingPeriod,
-        amount,
-      }));
-
       // Process payment
       const result = await paymentService.processSubscriptionPayment({
         planTier,
@@ -140,7 +133,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         installment: 1,
       });
 
-      if (result.success && (result.status === 'WAITING_3D' || result.status === 1)) {
+      // Status codes: 0 = SUCCESS, 1 = PENDING, 2 = FAILED, 3 = WAITING_3D_SECURE
+      if (result.success && (result.status === 'WAITING_3D' || result.status === 1 || result.status === 3)) {
+        // Save pending payment data and transaction ID for callback
+        sessionStorage.setItem('pending_payment', JSON.stringify({
+          planTier,
+          billingPeriod,
+          amount,
+        }));
+        sessionStorage.setItem('last_transaction_id', result.transactionId);
+        console.log('💾 Saved transaction ID to sessionStorage:', result.transactionId);
+        
         // Handle 3D Secure with improved method
         toast.success('3D Secure doğrulaması başlatıl\u0131yor...');
         
@@ -228,10 +231,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         // Navigate to account page (no reload)
         navigate('/account');
       } else {
+        // Payment failed or unknown status
+        console.error('❌ Payment failed or unknown status:', result);
+        console.error('  - success:', result.success);
+        console.error('  - status:', result.status);
+        console.error('  - errorMessage:', result.errorMessage);
         toast.error(result.errorMessage || 'Ödeme başarısız');
       }
     } catch (error: any) {
-      console.error('Payment error:', error);
+      console.error('❌ Payment error:', error);
       toast.error('Ödeme sırasında bir hata oluştu');
     } finally {
       setLoading(false);
