@@ -223,11 +223,37 @@ class PaymentService {
         }
       }, 500);
     } else {
-      // Full page redirect - write HTML directly to document
-      // Bu yöntem popup blocker'ı bypass eder
-      document.open();
-      document.write(htmlContent);
-      document.close();
+      // Full page redirect - Use iframe method for better compatibility
+      // Create a fullscreen iframe that acts like a full page
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+        z-index: 999999;
+      `;
+      
+      document.body.appendChild(iframe);
+      
+      // Write HTML to iframe
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(htmlContent);
+        iframeDoc.close();
+      }
+      
+      // Listen for callback redirect (when payment completes)
+      window.addEventListener('message', (event) => {
+        // İyzico callback sonrası iframe'i kaldır
+        if (event.data === 'payment_callback' || 
+            window.location.pathname.includes('/payment/callback')) {
+          document.body.removeChild(iframe);
+        }
+      });
     }
   }
 
