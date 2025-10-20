@@ -289,7 +289,7 @@ class PaymentService {
     header.appendChild(headerTitle);
     header.appendChild(closeButton);
 
-    // Create iframe
+    // Create iframe (will be referenced by footer later)
     const iframe = document.createElement('iframe');
     iframe.style.cssText = `
       flex: 1;
@@ -297,7 +297,6 @@ class PaymentService {
       border: none;
       background: white;
     `;
-    iframe.srcdoc = htmlContent;
 
     // Create footer with info
     const footer = document.createElement('div');
@@ -322,7 +321,7 @@ class PaymentService {
     infoIcon.style.cssText = `display: flex; align-items: center;`;
 
     const infoText = document.createElement('span');
-    infoText.textContent = 'Bankanızdan gelen doğrulama kodunu girin';
+    infoText.textContent = '3D Secure sayfası yükleniyor...';
     infoText.style.cssText = `
       color: #64748b;
       font-size: 13px;
@@ -337,6 +336,33 @@ class PaymentService {
     container.appendChild(iframe);
     container.appendChild(footer);
     overlay.appendChild(container);
+    
+    // Setup iframe content and auto-submit
+    iframe.onload = () => {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(htmlContent);
+        iframeDoc.close();
+        
+        // Auto-submit the form after a short delay
+        setTimeout(() => {
+          const form = iframeDoc.querySelector('form');
+          if (form) {
+            console.log('🚀 Auto-submitting 3D Secure form');
+            form.submit();
+            
+            // Update footer message after submission
+            setTimeout(() => {
+              infoText.textContent = 'Bankanızdan gelen doğrulama kodunu girin';
+            }, 1000);
+          }
+        }, 100);
+      }
+    };
+    
+    // Set empty src to trigger onload
+    iframe.src = 'about:blank';
 
     // Add animations
     const style = document.createElement('style');
@@ -369,26 +395,53 @@ class PaymentService {
     // Add to DOM
     document.body.appendChild(overlay);
 
-    // Listen for payment completion
+    // Listen for payment completion via message or navigation
+    let paymentCompleted = false;
+    
+    // Method 1: Listen for postMessage from iframe
+    const messageHandler = (event: MessageEvent) => {
+      if (event.data === 'payment_complete' || event.data?.type === 'payment_complete') {
+        if (!paymentCompleted) {
+          paymentCompleted = true;
+          clearInterval(checkInterval);
+          window.removeEventListener('message', messageHandler);
+          document.body.removeChild(overlay);
+          // Navigate to callback page
+          window.location.href = '/payment/callback';
+        }
+      }
+    };
+    window.addEventListener('message', messageHandler);
+    
+    // Method 2: Check iframe navigation (fallback)
     const checkInterval = setInterval(() => {
       try {
-        // Check if iframe navigated to callback URL
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
         const iframeUrl = iframe.contentWindow?.location.href || '';
-        if (iframeUrl.includes('/payment/callback')) {
-          clearInterval(checkInterval);
-          document.body.removeChild(overlay);
-          // Reload page to show callback result
-          window.location.reload();
+        
+        // Check if navigated to callback or success page
+        if (iframeUrl.includes('/payment/callback') || 
+            iframeUrl.includes('success=true') ||
+            iframeDoc?.body?.textContent?.includes('başarılı')) {
+          if (!paymentCompleted) {
+            paymentCompleted = true;
+            clearInterval(checkInterval);
+            window.removeEventListener('message', messageHandler);
+            document.body.removeChild(overlay);
+            // Navigate to callback page
+            window.location.href = '/payment/callback';
+          }
         }
       } catch (e) {
-        // Cross-origin error is expected during 3D Secure
+        // Cross-origin error is expected during 3D Secure (normal)
       }
-    }, 500);
+    }, 1000);
 
     // Auto-cleanup after 10 minutes (timeout)
     setTimeout(() => {
-      if (document.body.contains(overlay)) {
+      if (document.body.contains(overlay) && !paymentCompleted) {
         clearInterval(checkInterval);
+        window.removeEventListener('message', messageHandler);
         document.body.removeChild(overlay);
         toast.error('3D Secure doğrulaması zaman aşımına uğradı');
       }
