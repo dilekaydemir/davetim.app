@@ -25,15 +25,44 @@ const PaymentCallbackPage: React.FC = () => {
 
   const handlePaymentCallback = async () => {
     try {
-      // Get transaction ID from URL params
-      const txId = searchParams.get('transactionId') || 
-                   searchParams.get('transaction_id') ||
-                   searchParams.get('conversationId');
+      console.log('🔍 Payment callback started');
+      console.log('📍 Current URL:', window.location.href);
+      console.log('📦 SessionStorage keys:', Object.keys(sessionStorage));
       
+      // Get transaction ID from URL params or sessionStorage (fallback for sandbox)
+      let txId = searchParams.get('transactionId') || 
+                 searchParams.get('transaction_id') ||
+                 searchParams.get('conversationId') ||
+                 searchParams.get('token');
+      
+      console.log('🔍 Transaction ID from URL params:', txId);
+      
+      // Fallback: Get from sessionStorage if URL params missing (sandbox/mock scenario)
       if (!txId) {
-        setStatus('error');
-        setMessage('İşlem kimliği bulunamadı');
-        return;
+        const pendingPayment = sessionStorage.getItem('pending_payment');
+        const lastTransactionId = sessionStorage.getItem('last_transaction_id');
+        
+        console.log('📦 Pending payment:', pendingPayment);
+        console.log('📦 Last transaction ID:', lastTransactionId);
+        
+        if (lastTransactionId) {
+          txId = lastTransactionId;
+          console.log('✅ Using transaction ID from sessionStorage:', txId);
+        } else if (pendingPayment) {
+          // If no transaction ID but has pending payment, show waiting message
+          setStatus('processing');
+          setMessage('Ödeme işleminiz kontrol ediliyor. URL parametreleri bekleniyor...');
+          console.log('⏳ No transaction ID yet, retrying in 2 seconds...');
+          setTimeout(() => {
+            handlePaymentCallback();
+          }, 2000);
+          return;
+        } else {
+          console.error('❌ No transaction ID found anywhere!');
+          setStatus('error');
+          setMessage('İşlem kimliği bulunamadı. Lütfen hesap sayfanızdan ödeme durumunu kontrol edin.');
+          return;
+        }
       }
 
       setTransactionId(txId);
@@ -73,8 +102,9 @@ const PaymentCallbackPage: React.FC = () => {
             `${planTier.toUpperCase()} - ${billingPeriod === 'monthly' ? 'Aylık' : 'Yıllık'} Abonelik`
           );
 
-          // Clear pending payment
+          // Clear pending payment and transaction ID
           sessionStorage.removeItem('pending_payment');
+          sessionStorage.removeItem('last_transaction_id');
 
           // Refresh auth state to get updated subscription
           await initialize();
@@ -112,6 +142,7 @@ const PaymentCallbackPage: React.FC = () => {
             );
           }
           sessionStorage.removeItem('pending_payment');
+          sessionStorage.removeItem('last_transaction_id');
         }
 
         // Redirect to pricing after 5 seconds
