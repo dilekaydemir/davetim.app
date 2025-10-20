@@ -60,7 +60,8 @@ export interface PaymentRequest {
   billingAddress: AddressInfo;
   shippingAddress?: AddressInfo;
   basketItems: BasketItem[];
-  callbackUrl?: string;
+  callbackUrl?: string; // Backend callback URL (deprecated - backend otomatik set eder)
+  clientRedirectUrl?: string; // Frontend redirect URL (3D Secure sonrası kullanıcı buraya gider)
   cardInfo?: CardInfo;
   use3DSecure: boolean;
   installment: number;
