@@ -173,20 +173,21 @@ class PaymentService {
   }
 
   /**
-   * Handle 3D Secure redirect - Full page replacement
-   * This is the most reliable method for 3D Secure (no CORS issues)
+   * Handle 3D Secure redirect
+   * Instead of handling HTML client-side, we redirect to backend 3D Secure endpoint
+   * Backend will serve the HTML and handle redirects properly
    */
-  handle3DSecure(htmlContent: string): void {
-    // Save current state before full page redirect
+  handle3DSecure(transactionId: string): void {
+    // Save current state before redirect
     sessionStorage.setItem('payment_3d_in_progress', 'true');
     sessionStorage.setItem('payment_3d_timestamp', Date.now().toString());
     
-    // Full page replacement - most reliable for 3D Secure
-    document.open();
-    document.write(htmlContent);
-    document.close();
+    // Redirect to backend 3D Secure page
+    // Backend will serve İyzico's HTML and handle the callback
+    const threeDSecureUrl = `${PAYMENT_API_BASE_URL}/iyzico/3dsecure/${transactionId}`;
     
-    // Code below won't execute - page is fully replaced
+    console.log('🔐 Redirecting to 3D Secure:', threeDSecureUrl);
+    window.location.href = threeDSecureUrl;
   }
 
   /**
