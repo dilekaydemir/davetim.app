@@ -155,13 +155,18 @@ git push origin main
 
 ```bash
 # Production
-docker-compose up -d
-
-# Development
-docker-compose -f docker-compose.local.yml up
+./setup-production-env.sh  # Create production .env
+docker-compose up -d       # Deploy
 ```
 
 **Detailed guide:** [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)
+
+### Payment Production
+
+```bash
+# Complete checklist
+See: docs/PAYMENT-PRODUCTION-CHECKLIST.md
+```
 
 ## 🧪 Testing
 

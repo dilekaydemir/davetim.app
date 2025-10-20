@@ -125,9 +125,12 @@ const PaymentCallbackPage: React.FC = () => {
 
   const handlePaymentCallback = async () => {
     try {
-      console.log('🔍 Payment callback started');
-      console.log('📍 Current URL:', window.location.href);
-      console.log('📦 URL Search Params:', Array.from(searchParams.entries()));
+      // Development logging only
+      if (import.meta.env.DEV) {
+        console.log('🔍 Payment callback started');
+        console.log('📍 Current URL:', window.location.href);
+        console.log('📦 URL Search Params:', Array.from(searchParams.entries()));
+      }
       
       // Backend proxy'den gelen parametreler (priority)
       const success = searchParams.get('success');

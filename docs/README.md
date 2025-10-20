@@ -47,6 +47,17 @@ Template hızlı kurulum
 
 **Süre:** 10 dakika
 
+### [PAYMENT-PRODUCTION-CHECKLIST.md](./PAYMENT-PRODUCTION-CHECKLIST.md) 💳 **YENİ!**
+Payment production deployment
+- Environment variables
+- İyzico configuration
+- 3D Secure testing
+- CORS setup
+- Error handling
+- Rollback plan
+
+**Süre:** 20 dakika
+
 ## 🔧 Technical Guides
 
 ### [ENVIRONMENT.md](./ENVIRONMENT.md)
