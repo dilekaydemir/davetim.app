@@ -154,7 +154,13 @@ class PaymentService {
       cardInfo,
       use3DSecure: true, // ✅ Production: 3D Secure enabled
       installment: installment || 1,
-      callbackUrl: `${window.location.origin}/payment/callback`,
+      
+      // Backend callback URL (İyzico POST burayı çağırır)
+      // callbackUrl: Backend'in callback endpoint'i (İyzico için)
+      // NOT: Bu backend tarafından otomatik set ediliyor, burada göndermeye gerek yok
+      
+      // Client redirect URL (Backend başarı/hata sonrası kullanıcıyı buraya yönlendirir)
+      clientRedirectUrl: `${window.location.origin}/payment/callback`,
     };
 
     return this.processPayment(paymentRequest);

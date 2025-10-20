@@ -18,47 +18,162 @@ const PaymentCallbackPage: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'failure' | 'error'>('processing');
   const [message, setMessage] = useState('Ödeme işleminiz kontrol ediliyor...');
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   useEffect(() => {
+    // Check if this is a POST callback from İyzico (will have form data in body)
+    // Since we can't directly access POST data in frontend, we'll use query params
+    // that İyzico adds to the callback URL after successful 3D Secure
     handlePaymentCallback();
-  }, []);
+  }, [searchParams]);
+
+  const handleSuccessfulPayment = async (txId: string | null, params: URLSearchParams) => {
+    setStatus('success');
+    setMessage('Ödemeniz başarıyla tamamlandı! 🎉');
+    if (txId) setTransactionId(txId);
+
+    // Get plan details from sessionStorage
+    const planData = sessionStorage.getItem('pending_payment');
+    if (planData && user) {
+      const { planTier, billingPeriod } = JSON.parse(planData);
+      
+      // Upgrade subscription
+      await subscriptionService.upgradeSubscription(user.id, planTier, billingPeriod, txId || '');
+
+      // Save payment history
+      const amount = parseFloat(params.get('amount') || '0');
+      const currency = params.get('currency') || 'TRY';
+      
+      await subscriptionService.savePaymentHistory(
+        user.id,
+        txId || '',
+        params.get('providerTransactionId') || '',
+        'iyzico',
+        amount,
+        currency,
+        'SUCCESS',
+        planTier,
+        billingPeriod,
+        `${planTier.toUpperCase()} - ${billingPeriod === 'monthly' ? 'Aylık' : 'Yıllık'} Abonelik`
+      );
+
+      // Clear pending payment
+      sessionStorage.removeItem('pending_payment');
+      sessionStorage.removeItem('last_transaction_id');
+
+      // Refresh auth state
+      await initialize();
+    }
+
+    // Start countdown and redirect to account page
+    setCountdown(5);
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownInterval);
+          navigate('/account');
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleFailedPayment = async (txId: string | null, error: string | null) => {
+    setStatus('failure');
+    setMessage(error || 'Ödeme işlemi başarısız oldu');
+    if (txId) setTransactionId(txId);
+    
+    toast.error('Ödeme başarısız! Lütfen tekrar deneyin.');
+
+    // Save failed payment to history
+    if (user) {
+      const planData = sessionStorage.getItem('pending_payment');
+      if (planData) {
+        const { planTier, billingPeriod } = JSON.parse(planData);
+        await subscriptionService.savePaymentHistory(
+          user.id,
+          txId || '',
+          '',
+          'iyzico',
+          0,
+          'TRY',
+          'FAILURE',
+          planTier,
+          billingPeriod,
+          undefined,
+          error || undefined
+        );
+      }
+      sessionStorage.removeItem('pending_payment');
+      sessionStorage.removeItem('last_transaction_id');
+    }
+
+    // Start countdown and redirect to pricing
+    setCountdown(5);
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownInterval);
+          navigate('/pricing');
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const handlePaymentCallback = async () => {
     try {
       console.log('🔍 Payment callback started');
       console.log('📍 Current URL:', window.location.href);
-      console.log('📦 SessionStorage keys:', Object.keys(sessionStorage));
+      console.log('📦 URL Search Params:', Array.from(searchParams.entries()));
       
-      // Get transaction ID from URL params or sessionStorage (fallback for sandbox)
+      // Backend proxy'den gelen parametreler (priority)
+      const success = searchParams.get('success');
+      const statusParam = searchParams.get('status');
+      const errorParam = searchParams.get('error');
+      
+      // Transaction ID - backend'den veya sessionStorage'dan
       let txId = searchParams.get('transactionId') || 
                  searchParams.get('transaction_id') ||
-                 searchParams.get('conversationId') ||
-                 searchParams.get('token');
+                 sessionStorage.getItem('last_transaction_id');
       
-      console.log('🔍 Transaction ID from URL params:', txId);
+      console.log('🔍 Transaction ID:', txId);
+      console.log('✅ Success param:', success);
+      console.log('📊 Status param:', statusParam);
+      console.log('❌ Error param:', errorParam);
       
-      // Fallback: Get from sessionStorage if URL params missing (sandbox/mock scenario)
+      // Backend'den direkt sonuç geldi mi?
+      if (success !== null) {
+        if (success === 'true') {
+          // Backend başarılı dedi, direkt işle
+          console.log('✅ Payment successful (from backend callback)');
+          await handleSuccessfulPayment(txId, searchParams);
+          return;
+        } else {
+          // Backend başarısız dedi
+          console.log('❌ Payment failed (from backend callback)');
+          await handleFailedPayment(txId, errorParam);
+          return;
+        }
+      }
+      
+      // Fallback: Transaction ID yoksa sessionStorage'dan al
       if (!txId) {
         const pendingPayment = sessionStorage.getItem('pending_payment');
-        const lastTransactionId = sessionStorage.getItem('last_transaction_id');
-        
         console.log('📦 Pending payment:', pendingPayment);
-        console.log('📦 Last transaction ID:', lastTransactionId);
         
-        if (lastTransactionId) {
-          txId = lastTransactionId;
-          console.log('✅ Using transaction ID from sessionStorage:', txId);
-        } else if (pendingPayment) {
-          // If no transaction ID but has pending payment, show waiting message
+        if (pendingPayment) {
           setStatus('processing');
-          setMessage('Ödeme işleminiz kontrol ediliyor. URL parametreleri bekleniyor...');
+          setMessage('Ödeme işleminiz kontrol ediliyor...');
           console.log('⏳ No transaction ID yet, retrying in 2 seconds...');
           setTimeout(() => {
             handlePaymentCallback();
           }, 2000);
           return;
         } else {
-          console.error('❌ No transaction ID found anywhere!');
+          console.error('❌ No transaction ID found!');
           setStatus('error');
           setMessage('İşlem kimliği bulunamadı. Lütfen hesap sayfanızdan ödeme durumunu kontrol edin.');
           return;
@@ -70,7 +185,7 @@ const PaymentCallbackPage: React.FC = () => {
       // Check payment status
       const result = await paymentService.checkPaymentStatus(txId);
 
-      if (result.success && (result.status === 'SUCCESS' || result.status === 0)) {
+      if (result.success && result.status === 'SUCCESS') {
         // Payment successful
         setStatus('success');
         setMessage('Ödemeniz başarıyla tamamlandı! 🎉');
@@ -115,7 +230,7 @@ const PaymentCallbackPage: React.FC = () => {
           navigate('/dashboard');
         }, 3000);
 
-      } else if (result.status === 'FAILURE' || result.status === 2) {
+      } else if (result.status === 'FAILURE') {
         // Payment failed
         setStatus('failure');
         setMessage(result.errorMessage || 'Ödeme işlemi başarısız oldu');
@@ -150,7 +265,7 @@ const PaymentCallbackPage: React.FC = () => {
           navigate('/pricing');
         }, 5000);
 
-      } else if (result.status === 'PENDING' || result.status === 'WAITING_3D' || result.status === 1) {
+      } else if (result.status === 'PENDING' || result.status === 'WAITING_3D') {
         // Still processing
         setStatus('processing');
         setMessage('Ödeme işleminiz hala devam ediyor. Lütfen bekleyin...');
@@ -226,14 +341,28 @@ const PaymentCallbackPage: React.FC = () => {
           </div>
         )}
 
+        {/* Countdown */}
+        {countdown !== null && countdown > 0 && (
+          <div className="mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800 text-center">
+                {status === 'success' ? 'Hesap sayfasına' : 'Fiyatlandırma sayfasına'} yönlendiriliyorsunuz...
+              </p>
+              <p className="text-2xl font-bold text-blue-600 text-center mt-2">
+                {countdown}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="space-y-3">
           {status === 'success' && (
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/account')}
               className="w-full btn-primary"
             >
-              Dashboard'a Git
+              Hesabıma Git
             </button>
           )}
 

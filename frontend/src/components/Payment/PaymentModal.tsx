@@ -148,8 +148,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         toast.success('3D Secure doğrulaması başlatıl\u0131yor...');
         
         if (result.threeDSecureHtmlContent) {
-          // Use the improved 3D Secure handler from paymentService
-          paymentService.handle3DSecure(result.threeDSecureHtmlContent, 'popup');
+          // Use full-page redirect for 3D Secure (popup doesn't work with POST callback)
+          paymentService.handle3DSecure(result.threeDSecureHtmlContent, '3d');
         } else {
           toast.error('3D Secure içeriği alınamadı');
         }
