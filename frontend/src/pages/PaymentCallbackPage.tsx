@@ -37,13 +37,29 @@ const PaymentCallbackPage: React.FC = () => {
     if (planData && user) {
       const { planTier, billingPeriod, amount: planAmount } = JSON.parse(planData);
       
+      console.log('💰 Processing successful payment:', {
+        userId: user.id,
+        transactionId: txId,
+        planTier,
+        billingPeriod,
+        planAmount,
+      });
+      
       // Upgrade subscription
       await subscriptionService.upgradeSubscription(user.id, planTier, billingPeriod, txId || '');
+      console.log('✅ Subscription upgraded successfully');
 
       // Save payment history
       // Use amount from planData (sessionStorage) as fallback if URL doesn't have it
       const amount = parseFloat(params.get('amount') || String(planAmount || 0));
       const currency = params.get('currency') || 'TRY';
+      
+      console.log('💾 Saving payment history:', {
+        amount,
+        currency,
+        planAmount,
+        urlAmount: params.get('amount'),
+      });
       
       // Only save if amount is valid (> 0)
       if (amount > 0) {
@@ -59,6 +75,14 @@ const PaymentCallbackPage: React.FC = () => {
           billingPeriod,
           `${planTier.toUpperCase()} - ${billingPeriod === 'monthly' ? 'Aylık' : 'Yıllık'} Abonelik`
         );
+        console.log('✅ Payment history saved successfully');
+      } else {
+        console.error('❌ Payment history NOT saved - amount is 0 or invalid!', {
+          amount,
+          planAmount,
+          urlAmount: params.get('amount'),
+        });
+        toast.error('Ödeme kaydı oluşturulamadı. Lütfen destek ile iletişime geçin.');
       }
 
       // Clear pending payment

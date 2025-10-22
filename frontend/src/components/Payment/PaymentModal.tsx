@@ -136,13 +136,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       // Status codes: 0 = SUCCESS, 1 = PENDING, 2 = FAILED, 3 = WAITING_3D_SECURE
       if (result.success && (result.status === 'WAITING_3D' || result.status === 1 || result.status === 3)) {
         // Save pending payment data and transaction ID for callback
-        sessionStorage.setItem('pending_payment', JSON.stringify({
+        const pendingPaymentData = {
           planTier,
           billingPeriod,
           amount,
-        }));
+        };
+        sessionStorage.setItem('pending_payment', JSON.stringify(pendingPaymentData));
         sessionStorage.setItem('last_transaction_id', result.transactionId);
-        console.log('💾 Saved transaction ID to sessionStorage:', result.transactionId);
+        
+        console.log('💾 Saved payment data to sessionStorage:', {
+          transactionId: result.transactionId,
+          planTier,
+          billingPeriod,
+          amount,
+        });
         
         // Redirect to backend 3D Secure page
         toast.success('3D Secure doğrulaması başlatılıyor...');
