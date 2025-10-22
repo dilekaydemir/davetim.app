@@ -222,15 +222,32 @@ class SubscriptionService {
         }
       }
 
-      // Update subscription status to cancelled
-      // Keep tier and end_date so user can use until period ends
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .update({
+      // Update subscription based on refund status
+      let updateData: any;
+      
+      if (shouldRefund) {
+        // ✅ İADE YAPILIYORSA: Hemen FREE'ye düşür
+        updateData = {
+          tier: 'free',
+          status: 'active', // Free is always active
+          cancelled_at: new Date().toISOString(),
+          end_date: null, // Free has no end date
+          start_date: new Date().toISOString(),
+        };
+        console.log('💰 Refund processed - downgrading to FREE immediately');
+      } else {
+        // ❌ İADE YAPILMIYORSA: Cancelled olarak işaretle, dönem sonuna kadar kullan
+        updateData = {
           status: 'cancelled',
           cancelled_at: new Date().toISOString(),
-          // DON'T change tier or end_date - user keeps access until end_date
-        })
+          // Keep tier and end_date - user keeps access until end_date
+        };
+        console.log('📅 No refund - keeping tier until end_date');
+      }
+      
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .update(updateData)
         .eq('user_id', userId)
         .select()
         .single();
@@ -238,7 +255,7 @@ class SubscriptionService {
       if (error) throw error;
 
       if (shouldRefund) {
-        toast.success('Aboneliğiniz iptal edildi ve ücret iadesi işleme alındı');
+        toast.success('Aboneliğiniz iptal edildi, ücret iadesi işleme alındı ve FREE plana geçirildiniz');
       } else {
         toast.success('Aboneliğiniz iptal edildi. Mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz.');
       }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, CreditCard, Download, Calendar, Settings, Shield, Bell, Lock, TrendingUp, HardDrive, Users, FileText, Crown, Zap, X } from 'lucide-react';
+import { User, Mail, Phone, CreditCard, Download, Calendar, Settings, Shield, Bell, Lock, TrendingUp, HardDrive, Users, FileText, Crown, Zap, X, AlertCircle } from 'lucide-react';
 import { useAuth } from '../store/authStore';
 import { useSubscription } from '../hooks/useSubscription';
 import { PLAN_CONFIGS } from '../config/plans';
@@ -378,8 +378,51 @@ const AccountPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Cancelled Subscription Info */}
+            {subscription.subscription?.status === 'cancelled' && subscription.subscription?.cancelledAt && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+                <div className="flex items-start gap-3">
+                  <div className="bg-orange-100 rounded-full p-2">
+                    <AlertCircle className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-orange-900 mb-2">
+                      Abonelik İptal Edildi
+                    </h4>
+                    <div className="space-y-2 text-sm text-orange-800">
+                      <p>
+                        <strong>İptal Tarihi:</strong> {new Date(subscription.subscription.cancelledAt).toLocaleDateString('tr-TR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                      <p>
+                        <strong>Kullanım Süresi:</strong> {new Date(subscription.subscription.subscriptionEndDate!).toLocaleDateString('tr-TR', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })} tarihine kadar {subscription.planConfig?.name} özelliklerini kullanmaya devam edebilirsiniz.
+                      </p>
+                      <p className="pt-2 border-t border-orange-200">
+                        💡 <strong>Not:</strong> Dönem sonunda otomatik olarak <strong>FREE</strong> plana geçeceksiniz.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => subscription.reactivateSubscription && navigate('/pricing')}
+                      className="mt-4 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                    >
+                      Aboneliği Yeniden Aktifleştir
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Upgrade Options */}
-            {subscription.currentPlan !== 'premium' && (
+            {subscription.currentPlan !== 'premium' && subscription.subscription?.status !== 'cancelled' && (
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Plan Değiştir
@@ -556,26 +599,39 @@ const AccountPage: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            ₺{payment.amount.toFixed(2)}
+                            {payment.status === 'REFUNDED' ? (
+                              <span className="text-orange-600">-₺{payment.amount.toFixed(2)}</span>
+                            ) : (
+                              <span>₺{payment.amount.toFixed(2)}</span>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {payment.status === 'SUCCESS' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                ✓ Başarılı
-                              </span>
-                            ) : payment.status === 'FAILURE' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                ✗ Başarısız
-                              </span>
-                            ) : payment.status === 'PENDING' ? (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                ⏳ Beklemede
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                {payment.status}
-                              </span>
-                            )}
+                            <div className="flex flex-col gap-1">
+                              {payment.status === 'SUCCESS' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  ✓ Başarılı
+                                </span>
+                              ) : payment.status === 'REFUNDED' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                  ↩ İade Edildi
+                                </span>
+                              ) : payment.status === 'FAILURE' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  ✗ Başarısız
+                                </span>
+                              ) : payment.status === 'PENDING' ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                  ⏳ Beklemede
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                  {payment.status}
+                                </span>
+                              )}
+                              {payment.description && (
+                                <span className="text-xs text-gray-500">{payment.description}</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono">
                             {payment.transactionId}
@@ -933,8 +989,8 @@ const AccountPage: React.FC = () => {
         message={(() => {
           const refundInfo = subscription.canCancelWithRefund();
           return refundInfo.canRefund
-            ? `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz? ${refundInfo.daysLeft} gün içinde iptal ettiğiniz için ücret iadesi alacaksınız.`
-            : `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz? Mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz. 3 günlük iade süresi geçtiği için iade yapılmayacaktır.`;
+            ? `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz?\n\n✅ ${refundInfo.daysLeft} gün içinde iptal ettiğiniz için ücret iadesi alacaksınız.\n⚠️ İade sonrası hemen FREE plana geçeceksiniz.`
+            : `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz?\n\n❌ 3 günlük iade süresi geçtiği için iade yapılmayacaktır.\n✅ Mevcut dönemin sonuna kadar ${subscription.planConfig?.name} özelliklerini kullanmaya devam edebilirsiniz.`;
         })()}
         confirmText="Evet, İptal Et"
         cancelText="Vazgeç"
