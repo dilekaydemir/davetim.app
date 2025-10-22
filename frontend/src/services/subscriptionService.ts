@@ -157,15 +157,79 @@ class SubscriptionService {
   }
 
   /**
-   * Cancel subscription
+   * Cancel subscription with optional refund
    */
-  async cancelSubscription(userId: string): Promise<Subscription> {
+  async cancelSubscription(userId: string, shouldRefund: boolean = false): Promise<Subscription> {
     try {
+      console.log('🔄 Cancelling subscription:', { userId, shouldRefund });
+      
+      // Get subscription first to check dates
+      const subscription = await this.getUserSubscription(userId);
+      if (!subscription) {
+        throw new Error('Abonelik bulunamadı');
+      }
+
+      // If refund is requested, get latest payment and process refund
+      if (shouldRefund) {
+        console.log('💰 Processing refund...');
+        
+        // Get latest successful payment for this user
+        const { data: paymentHistory, error: paymentError } = await supabase
+          .from('payment_history')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'SUCCESS')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (paymentError) {
+          console.warn('⚠️ No payment found for refund:', paymentError);
+        } else if (paymentHistory) {
+          console.log('💳 Found payment for refund:', {
+            transactionId: paymentHistory.transaction_id,
+            amount: paymentHistory.amount,
+            currency: paymentHistory.currency,
+          });
+
+          // Import paymentService to request refund
+          const { paymentService } = await import('./paymentService');
+          
+          try {
+            await paymentService.refundPayment({
+              paymentTransactionId: paymentHistory.transaction_id,
+              amount: paymentHistory.amount,
+              currency: paymentHistory.currency,
+              reason: 'Abonelik iptali (3 gün içinde)',
+            });
+            
+            console.log('✅ Refund request sent to İyzico');
+            
+            // Update payment history to mark as refunded
+            await supabase
+              .from('payment_history')
+              .update({
+                status: 'REFUNDED',
+                description: (paymentHistory.description || '') + ' - İade Yapıldı',
+              })
+              .eq('transaction_id', paymentHistory.transaction_id);
+            
+          } catch (refundError: any) {
+            console.error('❌ Refund failed:', refundError);
+            // Don't throw error - still cancel subscription
+            toast.error('İade işlemi başarısız oldu. Lütfen destek ile iletişime geçin.');
+          }
+        }
+      }
+
+      // Update subscription status to cancelled
+      // Keep tier and end_date so user can use until period ends
       const { data, error } = await supabase
         .from('subscriptions')
         .update({
           status: 'cancelled',
           cancelled_at: new Date().toISOString(),
+          // DON'T change tier or end_date - user keeps access until end_date
         })
         .eq('user_id', userId)
         .select()
@@ -173,7 +237,12 @@ class SubscriptionService {
 
       if (error) throw error;
 
-      toast.success('Aboneliğiniz iptal edildi');
+      if (shouldRefund) {
+        toast.success('Aboneliğiniz iptal edildi ve ücret iadesi işleme alındı');
+      } else {
+        toast.success('Aboneliğiniz iptal edildi. Mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz.');
+      }
+      
       return this.mapToSubscription(data);
     } catch (error: any) {
       console.error('❌ Cancel subscription error:', error);
@@ -422,6 +491,42 @@ class SubscriptionService {
     }
 
     return { allowed: false, reason: 'Geçersiz abonelik planı' };
+  }
+
+  /**
+   * Check if user can cancel with refund (3 day policy)
+   */
+  canCancelWithRefund(subscriptionStartDate: string): { canRefund: boolean; daysLeft: number } {
+    const startDate = new Date(subscriptionStartDate);
+    const now = new Date();
+    
+    // Calculate days since subscription started
+    // Use floor instead of ceil to not count partial days as full days
+    const diffTime = now.getTime() - startDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    const REFUND_PERIOD_DAYS = 3;
+    
+    // Days left = 3 - completed days
+    // If subscription started today (diffDays = 0), you have 3 days left
+    // If subscription started 1 day ago (diffDays = 1), you have 2 days left
+    // If subscription started 2 days ago (diffDays = 2), you have 1 day left
+    // If subscription started 3 days ago (diffDays = 3), you have 0 days left (no refund)
+    const daysLeft = Math.max(0, REFUND_PERIOD_DAYS - diffDays);
+    const canRefund = diffDays < REFUND_PERIOD_DAYS;
+    
+    console.log('🔍 Refund check:', {
+      subscriptionStartDate,
+      startDateFormatted: startDate.toISOString(),
+      nowFormatted: now.toISOString(),
+      diffTime,
+      diffDays,
+      daysLeft,
+      canRefund,
+      explanation: `Started ${diffDays} day(s) ago. ${canRefund ? `You have ${daysLeft} day(s) left for refund.` : 'Refund period expired.'}`,
+    });
+    
+    return { canRefund, daysLeft };
   }
 
   /**
