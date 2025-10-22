@@ -34,8 +34,12 @@ const PaymentCallbackPage: React.FC = () => {
 
     // Get plan details from sessionStorage
     const planData = sessionStorage.getItem('pending_payment');
+    
+    console.log('📦 SessionStorage pending_payment:', planData);
+    
     if (planData && user) {
-      const { planTier, billingPeriod, amount: planAmount } = JSON.parse(planData);
+      const parsedData = JSON.parse(planData);
+      const { planTier, billingPeriod, amount: planAmount } = parsedData;
       
       console.log('💰 Processing successful payment:', {
         userId: user.id,
@@ -43,6 +47,7 @@ const PaymentCallbackPage: React.FC = () => {
         planTier,
         billingPeriod,
         planAmount,
+        parsedData,
       });
       
       // Upgrade subscription
@@ -51,18 +56,22 @@ const PaymentCallbackPage: React.FC = () => {
 
       // Save payment history
       // Use amount from planData (sessionStorage) as fallback if URL doesn't have it
-      const amount = parseFloat(params.get('amount') || String(planAmount || 0));
+      const urlAmount = params.get('amount');
+      const amount = urlAmount && parseFloat(urlAmount) > 0 
+        ? parseFloat(urlAmount) 
+        : planAmount;
       const currency = params.get('currency') || 'TRY';
       
       console.log('💾 Saving payment history:', {
         amount,
         currency,
         planAmount,
-        urlAmount: params.get('amount'),
+        urlAmount,
+        finalAmount: amount,
       });
       
       // Only save if amount is valid (> 0)
-      if (amount > 0) {
+      if (amount && amount > 0) {
         await subscriptionService.savePaymentHistory(
           user.id,
           txId || '',
