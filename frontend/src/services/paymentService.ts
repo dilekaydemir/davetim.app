@@ -208,7 +208,6 @@ class PaymentService {
       display: flex;
       justify-content: center;
       align-items: center;
-      animation: fadeIn 0.3s ease-in-out;
     `;
 
     // Create container
@@ -236,26 +235,57 @@ class PaymentService {
       justify-content: space-between;
       align-items: center;
     `;
-    header.innerHTML = `
-      <div>
-        <h3 style="margin: 0; font-size: 18px; font-weight: 600;">🔐 Güvenli Ödeme</h3>
-        <p style="margin: 4px 0 0 0; font-size: 12px; opacity: 0.9;">3D Secure ile ödemenizi tamamlayın</p>
-      </div>
-      <button id="3ds-close-btn" style="
-        background: rgba(255,255,255,0.2);
-        border: none;
-        color: white;
-        font-size: 24px;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.2s;
-      ">×</button>
+
+    // Create title
+    const titleDiv = document.createElement('div');
+    const title = document.createElement('h3');
+    title.textContent = '🔐 Güvenli Ödeme';
+    title.style.cssText = 'margin: 0; font-size: 18px; font-weight: 600;';
+    
+    const subtitle = document.createElement('p');
+    subtitle.textContent = '3D Secure ile ödemenizi tamamlayın';
+    subtitle.style.cssText = 'margin: 4px 0 0 0; font-size: 12px; opacity: 0.9;';
+    
+    titleDiv.appendChild(title);
+    titleDiv.appendChild(subtitle);
+
+    // Create close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.style.cssText = `
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      font-size: 24px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
     `;
+
+    // Close button handlers
+    closeBtn.addEventListener('click', () => {
+      if (confirm('3D Secure işlemini iptal etmek istediğinize emin misiniz?')) {
+        modal.remove();
+        sessionStorage.removeItem('payment_3d_in_progress');
+        toast.error('Ödeme işlemi iptal edildi');
+      }
+    });
+
+    closeBtn.addEventListener('mouseenter', () => {
+      closeBtn.style.background = 'rgba(255,255,255,0.3)';
+    });
+    
+    closeBtn.addEventListener('mouseleave', () => {
+      closeBtn.style.background = 'rgba(255,255,255,0.2)';
+    });
+
+    header.appendChild(titleDiv);
+    header.appendChild(closeBtn);
 
     // Create iframe
     const iframe = document.createElement('iframe');
@@ -268,31 +298,52 @@ class PaymentService {
     `;
     iframe.srcdoc = htmlContent;
 
+    // Listen for iframe navigation (3D Secure completion)
+    // When İyzico redirects to callback URL, we'll detect it
+    let checkInterval: number;
+    
+    iframe.addEventListener('load', () => {
+      console.log('🔄 3D Secure iframe loaded');
+      
+      // Check if iframe navigated to callback URL
+      checkInterval = window.setInterval(() => {
+        try {
+          // Try to access iframe location (will fail due to CORS, but we can detect navigation)
+          const iframeWindow = iframe.contentWindow;
+          if (iframeWindow) {
+            // If we can access it, check if it's our callback URL
+            const iframeLocation = iframeWindow.location.href;
+            console.log('🔍 Checking iframe location:', iframeLocation);
+            
+            if (iframeLocation.includes('/payment/callback')) {
+              console.log('✅ 3D Secure completed, redirecting...');
+              clearInterval(checkInterval);
+              
+              // Redirect main window to callback URL
+              window.location.href = iframeLocation;
+            }
+          }
+        } catch (e) {
+          // CORS error is expected, ignore
+          // We'll rely on backend redirect instead
+        }
+      }, 1000);
+    });
+
+    // Cleanup interval on modal close
+    const originalRemove = modal.remove.bind(modal);
+    modal.remove = () => {
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
+      originalRemove();
+    };
+
     // Assemble modal
     container.appendChild(header);
     container.appendChild(iframe);
     modal.appendChild(container);
     document.body.appendChild(modal);
-
-    // Close button handler
-    const closeBtn = header.querySelector('#3ds-close-btn') as HTMLButtonElement;
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => {
-        if (confirm('3D Secure işlemini iptal etmek istediğinize emin misiniz?')) {
-          modal.remove();
-          sessionStorage.removeItem('payment_3d_in_progress');
-          toast.error('Ödeme işlemi iptal edildi');
-        }
-      });
-
-      // Hover effect for close button
-      closeBtn.addEventListener('mouseenter', () => {
-        closeBtn.style.background = 'rgba(255,255,255,0.3)';
-      });
-      closeBtn.addEventListener('mouseleave', () => {
-        closeBtn.style.background = 'rgba(255,255,255,0.2)';
-      });
-    }
 
     console.log('✅ 3D Secure modal rendered. User can now complete payment.');
   }
