@@ -213,6 +213,7 @@ class PaymentService {
     // Create container
     const container = document.createElement('div');
     container.style.cssText = `
+      position: relative;
       width: 90%;
       max-width: 600px;
       height: 85vh;
@@ -287,7 +288,7 @@ class PaymentService {
     header.appendChild(titleDiv);
     header.appendChild(closeBtn);
 
-    // Create iframe
+    // Create iframe with blob URL (full permissions for form submit)
     const iframe = document.createElement('iframe');
     iframe.id = '3ds-iframe';
     iframe.style.cssText = `
@@ -296,46 +297,175 @@ class PaymentService {
       border: none;
       background: white;
     `;
-    iframe.srcdoc = htmlContent;
+    
+    // ✅ Use blob URL instead of srcdoc for better compatibility
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    iframe.src = blobUrl;
 
-    // Listen for iframe navigation (3D Secure completion)
-    // When İyzico redirects to callback URL, we'll detect it
-    let checkInterval: number;
+    // Loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #667eea;
+      font-size: 16px;
+    `;
+    loadingDiv.innerHTML = `
+      <div style="margin-bottom: 10px;">
+        <div style="border: 4px solid #f3f3f3; border-top: 4px solid #667eea; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+      </div>
+      <p>3D Secure yükleniyor...</p>
+    `;
+    container.appendChild(loadingDiv);
+
+    // Listen for iframe load
+    let checkInterval: number | undefined;
+    let statusCheckInterval: number | undefined;
+    let loadCount = 0;
+    let statusCheckCount = 0;
+    const MAX_STATUS_CHECKS = 120; // 120 * 3 = 360 seconds = 6 minutes
+    
+    // Get transaction ID from sessionStorage for status polling
+    const transactionId = sessionStorage.getItem('last_transaction_id');
     
     iframe.addEventListener('load', () => {
-      console.log('🔄 3D Secure iframe loaded');
+      loadCount++;
+      console.log(`🔄 3D Secure iframe loaded (${loadCount})`);
       
-      // Check if iframe navigated to callback URL
-      checkInterval = window.setInterval(() => {
-        try {
-          // Try to access iframe location (will fail due to CORS, but we can detect navigation)
-          const iframeWindow = iframe.contentWindow;
-          if (iframeWindow) {
-            // If we can access it, check if it's our callback URL
-            const iframeLocation = iframeWindow.location.href;
-            console.log('🔍 Checking iframe location:', iframeLocation);
-            
-            if (iframeLocation.includes('/payment/callback')) {
-              console.log('✅ 3D Secure completed, redirecting...');
-              clearInterval(checkInterval);
+      // Remove loading indicator on first load
+      if (loadCount === 1 && loadingDiv.parentNode) {
+        loadingDiv.remove();
+      }
+      
+      // Start checking for callback URL navigation (Method 1: iframe URL detection)
+      if (!checkInterval) {
+        checkInterval = window.setInterval(() => {
+          try {
+            const iframeWindow = iframe.contentWindow;
+            if (iframeWindow) {
+              const iframeLocation = iframeWindow.location.href;
               
-              // Redirect main window to callback URL
-              window.location.href = iframeLocation;
+              // If navigated away from blob URL, check if it's our callback
+              if (!iframeLocation.startsWith('blob:')) {
+                console.log('🔍 Iframe navigated to:', iframeLocation);
+                
+                if (iframeLocation.includes('/payment/callback')) {
+                  console.log('✅ 3D Secure completed (iframe URL), redirecting...');
+                  clearInterval(checkInterval);
+                  if (statusCheckInterval) clearInterval(statusCheckInterval);
+                  
+                  // Cleanup blob URL
+                  URL.revokeObjectURL(blobUrl);
+                  
+                  // Redirect main window
+                  window.location.href = iframeLocation;
+                }
+              }
             }
+          } catch (e) {
+            // CORS error means iframe navigated to external domain (İyzico sandbox)
+            // This is expected during 3D Secure flow
           }
-        } catch (e) {
-          // CORS error is expected, ignore
-          // We'll rely on backend redirect instead
-        }
-      }, 1000);
+        }, 500);
+      }
+      
+      // Start payment status polling (Method 2: Backend status check)
+      // This is a fallback in case iframe URL detection fails
+      if (!statusCheckInterval && transactionId && loadCount >= 2) {
+        console.log('🔄 Starting payment status polling for:', transactionId);
+        
+        // Show status message to user
+        toast.loading('Ödeme durumunuz kontrol ediliyor...', {
+          duration: 10000,
+          id: 'payment-status-check'
+        });
+        
+        statusCheckInterval = window.setInterval(async () => {
+          statusCheckCount++;
+          
+          if (statusCheckCount > MAX_STATUS_CHECKS) {
+            console.log('⏱️ Status check timeout, stopping polling');
+            if (statusCheckInterval) clearInterval(statusCheckInterval);
+            
+            // Show timeout message
+            toast.error('Ödeme zaman aşımına uğradı. Lütfen tekrar deneyin.');
+            modal.remove();
+            return;
+          }
+          
+          try {
+            console.log(`🔍 Checking payment status (${statusCheckCount}/${MAX_STATUS_CHECKS})...`);
+            const status = await this.checkPaymentStatus(transactionId);
+            
+            console.log('📊 Payment status:', status);
+            
+            // If payment completed successfully
+            if (status.status === 'SUCCESS') {
+              console.log('✅ Payment confirmed (status polling), redirecting...');
+              
+              toast.dismiss('payment-status-check');
+              toast.success('Ödeme başarılı! Yönlendiriliyorsunuz...');
+              
+              clearInterval(checkInterval!);
+              clearInterval(statusCheckInterval!);
+              URL.revokeObjectURL(blobUrl);
+              
+              // Redirect to callback with success
+              const callbackUrl = `${window.location.origin}/payment/callback?` +
+                `success=true&` +
+                `status=SUCCESS&` +
+                `transactionId=${transactionId}&` +
+                `amount=${sessionStorage.getItem('pending_payment') ? JSON.parse(sessionStorage.getItem('pending_payment')!).amount : 0}&` +
+                `currency=TRY`;
+              
+              window.location.href = callbackUrl;
+            }
+            // If payment failed
+            else if (status.status === 'FAILURE') {
+              console.log('❌ Payment failed (status polling)');
+              
+              toast.dismiss('payment-status-check');
+              toast.error('Ödeme başarısız oldu.');
+              
+              clearInterval(checkInterval!);
+              clearInterval(statusCheckInterval!);
+              URL.revokeObjectURL(blobUrl);
+              
+              // Redirect to callback with error
+              const callbackUrl = `${window.location.origin}/payment/callback?` +
+                `success=false&` +
+                `status=FAILURE&` +
+                `transactionId=${transactionId}&` +
+                `error=${encodeURIComponent(status.errorMessage || 'Ödeme başarısız')}`;
+              
+              window.location.href = callbackUrl;
+            }
+            // If still waiting for 3D Secure, continue polling
+            else if (status.status === 'WAITING_3D' || status.status === 'PENDING') {
+              console.log('⏳ Still waiting for 3D Secure completion...');
+            }
+          } catch (error) {
+            console.error('❌ Status check error:', error);
+            // Continue polling even if there's an error
+          }
+        }, 3000); // Check every 3 seconds
+      }
     });
 
-    // Cleanup interval on modal close
+    // Cleanup on modal close
     const originalRemove = modal.remove.bind(modal);
     modal.remove = () => {
       if (checkInterval) {
         clearInterval(checkInterval);
       }
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+      }
+      URL.revokeObjectURL(blobUrl);
       originalRemove();
     };
 
@@ -343,9 +473,20 @@ class PaymentService {
     container.appendChild(header);
     container.appendChild(iframe);
     modal.appendChild(container);
+    
+    // Add CSS animation for spinner
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+    
     document.body.appendChild(modal);
 
-    console.log('✅ 3D Secure modal rendered. User can now complete payment.');
+    console.log('✅ 3D Secure modal rendered with blob URL');
   }
 
   /**
