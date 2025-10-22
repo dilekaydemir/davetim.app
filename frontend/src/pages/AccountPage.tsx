@@ -167,11 +167,23 @@ const AccountPage: React.FC = () => {
     
     setIsCancelling(true);
     try {
-      const success = await subscriptionService.cancelSubscription(authUser.id);
+      // Check if refund is available
+      const refundInfo = subscription.canCancelWithRefund();
+      
+      console.log('🔄 Starting cancellation:', {
+        userId: authUser.id,
+        shouldRefund: refundInfo.canRefund,
+        daysLeft: refundInfo.daysLeft,
+      });
+      
+      // Cancel subscription with refund flag
+      const success = await subscriptionService.cancelSubscription(authUser.id, refundInfo.canRefund);
+      
       if (success) {
-        toast.success('Aboneliğiniz iptal edildi');
         setShowCancelDialog(false);
         await subscription.refreshSubscription();
+        
+        // Toast message is shown by subscriptionService
       }
     } catch (error) {
       console.error('Cancel subscription error:', error);
@@ -345,6 +357,11 @@ const AccountPage: React.FC = () => {
                             ✓ Aktif
                           </span>
                         )}
+                        {subscription.subscription?.status === 'cancelled' && (
+                          <span className="bg-red-500/80 px-2 py-1 rounded-full text-xs">
+                            ⚠ İptal Edildi (Dönem sonuna kadar kullanılabilir)
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -437,17 +454,20 @@ const AccountPage: React.FC = () => {
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h4 className="font-medium text-red-900 mb-2">Aboneliği İptal Et</h4>
                 <p className="text-red-700 text-sm mb-3">
-                  {subscription.canCancelWithRefund().canRefund ? (
-                    <>
-                      3 gün içinde iptal ederseniz ücret iadesi alırsınız. 
-                      Aboneliğinizi iptal ederseniz, mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz.
-                    </>
-                  ) : (
-                    <>
-                      Aboneliğinizi iptal ederseniz, mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz. 
-                      3 günlük iade süresi geçmiştir.
-                    </>
-                  )}
+                  {(() => {
+                    const refundInfo = subscription.canCancelWithRefund();
+                    return refundInfo.canRefund ? (
+                      <>
+                        ✅ <strong>{refundInfo.daysLeft} gün içinde</strong> iptal ederseniz <strong>ücret iadesi</strong> alırsınız. 
+                        Aboneliğinizi iptal ederseniz, mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz.
+                      </>
+                    ) : (
+                      <>
+                        Aboneliğinizi iptal ederseniz, mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz. 
+                        3 günlük iade süresi geçtiği için iade yapılmayacaktır.
+                      </>
+                    );
+                  })()}
                 </p>
                 <button 
                   onClick={() => setShowCancelDialog(true)}
@@ -910,11 +930,12 @@ const AccountPage: React.FC = () => {
         onClose={() => setShowCancelDialog(false)}
         onConfirm={handleCancelSubscription}
         title="Aboneliği İptal Et"
-        message={
-          subscription.canCancelWithRefund().canRefund
-            ? `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz? 3 gün içinde iptal ettiğiniz için ücret iadesi alacaksınız.`
-            : `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz? Mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz. 3 günlük iade süresi geçtiği için iade yapılmayacaktır.`
-        }
+        message={(() => {
+          const refundInfo = subscription.canCancelWithRefund();
+          return refundInfo.canRefund
+            ? `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz? ${refundInfo.daysLeft} gün içinde iptal ettiğiniz için ücret iadesi alacaksınız.`
+            : `${subscription.planConfig?.name} aboneliğinizi iptal etmek istediğinize emin misiniz? Mevcut dönemin sonuna kadar kullanmaya devam edebilirsiniz. 3 günlük iade süresi geçtiği için iade yapılmayacaktır.`;
+        })()}
         confirmText="Evet, İptal Et"
         cancelText="Vazgeç"
         type="warning"

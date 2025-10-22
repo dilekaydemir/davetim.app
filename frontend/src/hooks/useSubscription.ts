@@ -254,10 +254,10 @@ export function useSubscription(): UseSubscriptionReturn {
   };
   
   const canCancelWithRefund = () => {
-    if (!subscription?.subscriptionStartDate) {
+    if (!subscription?.startDate) {
       return { canRefund: false, daysLeft: 0 };
     }
-    return subscriptionService.canCancelWithRefund(subscription.subscriptionStartDate);
+    return subscriptionService.canCancelWithRefund(subscription.startDate);
   };
 
   /**
