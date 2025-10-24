@@ -151,20 +151,20 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           amount,
         });
         
-        // ✅ DOĞRU: HTML içeriğini kontrol et
+        // ✅ DOĞRU: HTML'i frontend'te render et
         if (!result.threeDSecureHtmlContent) {
-          console.error('❌ threeDSecureHtmlContent missing in response!');
-          toast.error('3D Secure HTML içeriği bulunamadı');
+          toast.error('3D Secure HTML içeriği alınamadı');
+          console.error('❌ threeDSecureHtmlContent eksik:', result);
           return;
         }
         
-        console.log('✅ 3D Secure HTML content received (length:', result.threeDSecureHtmlContent.length, ')');
+        console.log('✅ 3D Secure HTML alındı, render ediliyor...');
+        toast.success('3D Secure doğrulama ekranı açılıyor...');
         
-        // ✅ DOĞRU: HTML içeriğini direkt render et (backend'den serve etmeye gerek yok)
-        toast.success('3D Secure doğrulaması başlatılıyor...');
+        // Render 3D Secure HTML in modal (frontend'te direkt render)
         paymentService.handle3DSecure(result.threeDSecureHtmlContent);
         
-        // Modal'ı kapat (3D Secure modal açılacak)
+        // Close payment modal (3D Secure modal is now open)
         onClose();
       } else if (result.success && (result.status === 'SUCCESS' || result.status === 0)) {
         // Direct success (without 3D Secure)
