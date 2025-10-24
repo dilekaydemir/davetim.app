@@ -175,7 +175,7 @@ class PaymentService {
   /**
    * Handle 3D Secure HTML rendering
    * ✅ DOĞRU YAKLAŞIM: HTML'i frontend'te direkt render et
-   * Backend'den gelen threeDSecureHtmlContent'i modal içinde göster
+   * Backend'den gelen threeDSecureHtmlContent'i TAM EKRAN olarak göster
    */
   handle3DSecure(htmlContent: string): void {
     console.log('🔐 Rendering 3D Secure HTML...');
@@ -185,234 +185,39 @@ class PaymentService {
     sessionStorage.setItem('payment_3d_in_progress', 'true');
     sessionStorage.setItem('payment_3d_timestamp', Date.now().toString());
     
-    // ✅ MODAL İÇİNDE IFRAME RENDER ET (ÖNERİLEN)
-    this.render3DSecureModal(htmlContent);
+    // ✅ TAM EKRAN RENDER (iframe sandbox sorunu yok)
+    this.render3DSecureFullScreen(htmlContent);
   }
 
   /**
-   * Render 3D Secure HTML in a modal with iframe
-   * Modern, responsive, minimal design
+   * Render 3D Secure HTML in full screen (NO iframe - direct document write)
+   * Bu yöntem iframe sandbox sorunlarını ortadan kaldırır
+   * İyzico callback sonrası doğrudan yönlendirme yapabilir
    */
-  private render3DSecureModal(htmlContent: string): void {
-    // Remove existing modal if any
-    const existingModal = document.getElementById('threeds-modal');
-    if (existingModal) {
-      existingModal.remove();
-    }
-
-    // Create modal overlay
-    const modal = document.createElement('div');
-    modal.id = 'threeds-modal';
-    modal.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(4px);
-      z-index: 99999;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      animation: fadeIn 0.3s ease-in-out;
-      padding: 20px;
-    `;
-
-    // Create modal container
-    const container = document.createElement('div');
-    container.style.cssText = `
-      width: 100%;
-      max-width: 500px;
-      height: 90vh;
-      max-height: 700px;
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      animation: slideUp 0.3s ease-out;
-    `;
-
-    // Create header
-    const header = document.createElement('div');
-    header.style.cssText = `
-      padding: 20px;
-      background: linear-gradient(135deg, #f5702a 0%, #e85d1f 100%);
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    `;
-
-    const title = document.createElement('h3');
-    title.textContent = '🔐 3D Secure Doğrulama';
-    title.style.cssText = `
-      margin: 0;
-      font-size: 18px;
-      font-weight: 600;
-    `;
-
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '×';
-    closeBtn.style.cssText = `
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: white;
-      font-size: 32px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      line-height: 1;
-      padding: 0;
-    `;
-    closeBtn.onmouseover = () => {
-      closeBtn.style.background = 'rgba(255, 255, 255, 0.3)';
-      closeBtn.style.transform = 'rotate(90deg)';
-    };
-    closeBtn.onmouseout = () => {
-      closeBtn.style.background = 'rgba(255, 255, 255, 0.2)';
-      closeBtn.style.transform = 'rotate(0deg)';
-    };
-    closeBtn.onclick = () => {
-      console.log('⚠️ 3D Secure modal kapatıldı (kullanıcı iptal etti)');
-      document.body.removeChild(modal);
-      sessionStorage.removeItem('payment_3d_in_progress');
-      toast.error('3D Secure doğrulaması iptal edildi');
-    };
-
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-
-    // Create iframe container
-    const iframeContainer = document.createElement('div');
-    iframeContainer.style.cssText = `
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      position: relative;
-    `;
-
-    // Create loading spinner
-    const spinner = document.createElement('div');
-    spinner.innerHTML = `
-      <div style="text-align: center; padding: 40px;">
-        <div style="
-          border: 4px solid #f3f4f6;
-          border-top: 4px solid #f5702a;
-          border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          animation: spin 1s linear infinite;
-          margin: 0 auto 20px;
-        "></div>
-        <p style="color: #6b7280; font-size: 14px; margin: 0;">3D Secure yükleniyor...</p>
-      </div>
-    `;
-    spinner.style.cssText = `
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 1;
-    `;
-
-    // Create iframe
-    const iframe = document.createElement('iframe');
-    iframe.style.cssText = `
-      width: 100%;
-      height: 100%;
-      border: none;
-      background: white;
-    `;
-    iframe.setAttribute('sandbox', 'allow-forms allow-scripts allow-same-origin allow-top-navigation');
+  private render3DSecureFullScreen(htmlContent: string): void {
+    console.log('🔐 Opening 3D Secure in new window...');
     
-    // Hide spinner when iframe loads
-    iframe.onload = () => {
-      spinner.style.display = 'none';
-      console.log('✅ 3D Secure iframe yüklendi');
-    };
-
-    // ✅ RENDER HTML IN IFRAME
-    iframe.srcdoc = htmlContent;
-
-    iframeContainer.appendChild(spinner);
-    iframeContainer.appendChild(iframe);
-
-    // Create footer with info
-    const footer = document.createElement('div');
-    footer.style.cssText = `
-      padding: 16px 20px;
-      background: #f9fafb;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    `;
-
-    footer.innerHTML = `
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink: 0;">
-        <path d="M10 2C5.58 2 2 5.58 2 10C2 14.42 5.58 18 10 18C14.42 18 18 14.42 18 10C18 5.58 14.42 2 10 2ZM10 13C9.45 13 9 12.55 9 12V10C9 9.45 9.45 9 10 9C10.55 9 11 9.45 11 10V12C11 12.55 10.55 13 10 13ZM11 7H9V5H11V7Z" fill="#6b7280"/>
-      </svg>
-      <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">
-        Bankanızdan gelen SMS kodunu girerek ödemenizi tamamlayın
-      </p>
-    `;
-
-    container.appendChild(header);
-    container.appendChild(iframeContainer);
-    container.appendChild(footer);
-    modal.appendChild(container);
-
-    // Add animations
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
-      @keyframes slideUp {
-        from { 
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to { 
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      
-      /* Mobile responsive */
-      @media (max-width: 640px) {
-        #threeds-modal > div {
-          max-width: 100% !important;
-          height: 100vh !important;
-          max-height: 100vh !important;
-          border-radius: 0 !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Append to body
-    document.body.appendChild(modal);
+    // Create a blob URL for the HTML content
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
     
-    console.log('✅ 3D Secure modal açıldı. Kullanıcı SMS kodunu girecek.');
-    toast.success('3D Secure doğrulama ekranı açıldı');
+    // Try to open in same window (works best for callbacks)
+    // Save current location to restore if user cancels
+    const returnUrl = window.location.href;
+    sessionStorage.setItem('payment_return_url', returnUrl);
+    
+    console.log('✅ Redirecting to 3D Secure page...');
+    console.log('📍 Return URL saved:', returnUrl);
+    
+    // Full page redirect - İyzico can properly redirect back
+    window.location.href = blobUrl;
+    
+    // Cleanup blob URL after a delay
+    setTimeout(() => {
+      URL.revokeObjectURL(blobUrl);
+    }, 10000);
   }
+
 
   /**
    * Get client IP address (fallback to mock if not available)
