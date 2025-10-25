@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import toast from 'react-hot-toast';
+import { PLAN_CONFIGS } from '../config/plans';
 import type { PlanTier } from '../config/plans';
 
 export interface Subscription {
@@ -147,7 +148,7 @@ class SubscriptionService {
         console.warn('⚠️ Auth metadata update failed:', metadataError);
       }
       
-      toast.success(`${tier.toUpperCase()} planına yükseltildiniz! 🎉`);
+      // Note: Success toast is shown in PaymentModal.tsx to avoid duplicate messages
       return this.mapToSubscription(data);
     } catch (error: any) {
       console.error('❌ Upgrade subscription error:', error);
@@ -461,15 +462,15 @@ class SubscriptionService {
       return { allowed: true, remaining: 'unlimited' };
     }
 
+    // Get plan configuration
+    const planConfig = PLAN_CONFIGS[subscription.tier];
+    if (!planConfig) {
+      return { allowed: false, reason: 'Geçersiz abonelik planı' };
+    }
+
     // PRO - Monthly limit
     if (subscription.tier === 'pro') {
-      const PLAN_CONFIGS = {
-        pro: {
-          invitationsPerMonth: 3,
-        }
-      };
-      
-      const limit = PLAN_CONFIGS.pro.invitationsPerMonth;
+      const limit = planConfig.limits.invitationsPerMonth as number;
       const used = subscription.invitationsCreatedThisMonth;
       const remaining = limit - used;
 
@@ -484,22 +485,16 @@ class SubscriptionService {
       return { allowed: true, remaining };
     }
 
-    // FREE - Lifetime limit
+    // FREE - Lifetime limit (tek kullanımlık)
     if (subscription.tier === 'free') {
-      const PLAN_CONFIGS = {
-        free: {
-          invitationsLifetime: 1,
-        }
-      };
-      
-      const limit = PLAN_CONFIGS.free.invitationsLifetime;
+      const limit = planConfig.limits.invitationsLifetime || 1;
       const used = subscription.invitationsCreatedLifetime;
       const remaining = limit - used;
 
       if (remaining <= 0) {
         return {
           allowed: false,
-          reason: `Ücretsiz planda ${limit} davetiye hakkınızı kullandınız. Daha fazla davetiye için PRO veya PREMIUM plana yükseltin.`,
+          reason: `Ücretsiz planda ${limit} davetiye hakkınızı kullandınız. Daha fazla davetiye için PRO (₺79/ay, 3 davetiye) veya PREMIUM (₺129/ay, sınırsız) plana yükseltin.`,
           remaining: 0
         };
       }

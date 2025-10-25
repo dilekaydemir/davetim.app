@@ -7,6 +7,47 @@ import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 
 /**
+ * Convert technical error messages to user-friendly Turkish messages
+ */
+const getUserFriendlyError = (technicalError: string | null): string => {
+  if (!technicalError) return 'Ödeme işlemi başarısız oldu';
+  
+  const errorLower = technicalError.toLowerCase();
+  
+  // Common payment errors
+  if (errorLower.includes('insufficient') || errorLower.includes('yetersiz') || errorLower.includes('balance')) {
+    return '💳 Kartınızda yetersiz bakiye bulunuyor. Lütfen farklı bir kart deneyin.';
+  }
+  if (errorLower.includes('declined') || errorLower.includes('reddedildi') || errorLower.includes('reject')) {
+    return '🚫 Bankanız işlemi reddetti. Lütfen bankanızla iletişime geçin.';
+  }
+  if (errorLower.includes('invalid card') || errorLower.includes('geçersiz kart') || errorLower.includes('card number')) {
+    return '❌ Kart bilgileri geçersiz. Lütfen kart numaranızı kontrol edin.';
+  }
+  if (errorLower.includes('expired') || errorLower.includes('süresi dolmuş') || errorLower.includes('expir')) {
+    return '📅 Kartınızın son kullanma tarihi geçmiş. Lütfen güncel bir kart kullanın.';
+  }
+  if (errorLower.includes('cvc') || errorLower.includes('cvv') || errorLower.includes('güvenlik kodu')) {
+    return '🔒 Güvenlik kodu (CVC) hatalı. Lütfen kartınızın arkasındaki 3 haneli kodu kontrol edin.';
+  }
+  if (errorLower.includes('3d secure') || errorLower.includes('authentication') || errorLower.includes('doğrulama')) {
+    return '🔐 3D Secure doğrulaması başarısız. Lütfen SMS kodunu doğru girdiğinizden emin olun.';
+  }
+  if (errorLower.includes('limit') || errorLower.includes('exceed')) {
+    return '⚠️ Kart limitiniz aşıldı. Lütfen farklı bir kart deneyin veya bankanızla görüşün.';
+  }
+  if (errorLower.includes('timeout') || errorLower.includes('zaman aşımı')) {
+    return '⏱️ İşlem zaman aşımına uğradı. Lütfen tekrar deneyin.';
+  }
+  if (errorLower.includes('blocked') || errorLower.includes('bloke') || errorLower.includes('frozen')) {
+    return '🔒 Kartınız bloke edilmiş. Lütfen bankanızla iletişime geçin.';
+  }
+  
+  // Return original error if no match (but keep it user-friendly)
+  return `❌ ${technicalError}`;
+};
+
+/**
  * Payment Callback Page
  * Handles 3D Secure redirect and payment verification
  */
@@ -117,19 +158,22 @@ const PaymentCallbackPage: React.FC = () => {
   };
 
   const handleFailedPayment = async (txId: string | null, error: string | null) => {
+    // Convert technical error to user-friendly message
+    const userFriendlyError = getUserFriendlyError(error);
+    
     setStatus('failure');
-    setMessage(error || 'Ödeme işlemi başarısız oldu');
+    setMessage(userFriendlyError);
     if (txId) setTransactionId(txId);
     
-    toast.error('Ödeme başarısız! Lütfen tekrar deneyin.');
+    toast.error(userFriendlyError);
 
-    // Save failed payment to history
+    // Save failed payment to history with user-friendly error
     if (user) {
       const planData = sessionStorage.getItem('pending_payment');
       if (planData) {
         const { planTier, billingPeriod, amount: planAmount } = JSON.parse(planData);
         
-        // Save with correct amount (not 0) for failed payments
+        // Save with user-friendly error message
         await subscriptionService.savePaymentHistory(
           user.id,
           txId || '',
@@ -141,7 +185,7 @@ const PaymentCallbackPage: React.FC = () => {
           planTier,
           billingPeriod,
           undefined,
-          error || undefined
+          userFriendlyError // Save user-friendly error
         );
       }
       sessionStorage.removeItem('pending_payment');

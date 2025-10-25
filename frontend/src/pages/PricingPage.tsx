@@ -305,12 +305,11 @@ const PricingPage: React.FC = () => {
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 mb-2">
-                İptal politikası nedir?
+                İptal ve İade Politikası
               </h3>
               <p className="text-gray-600">
-                Ödeme yaptıktan sonra 3 gün içinde iptal ederseniz, ödemeniz iade edilir. 
-                3 günden sonra yapılan iptallerde mevcut dönemin sonuna kadar hizmet almaya 
-                devam edersiniz ancak iade yapılmaz.
+                ✅ <strong>3 gün içinde:</strong> Tam ücret iadesi alırsınız, ancak hemen FREE plana düşersiniz.<br/>
+                ❌ <strong>3 gün sonra:</strong> İade alamazsınız, ama dönem sonuna kadar tüm özellikleri kullanabilirsiniz.
               </p>
             </div>
             <div>

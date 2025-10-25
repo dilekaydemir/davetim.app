@@ -26,6 +26,7 @@ const MediaGalleryPage = lazy(() => import('./pages/MediaGalleryPage'))
 const MediaUploadPage = lazy(() => import('./pages/MediaUploadPage'))
 const PublicMediaPage = lazy(() => import('./pages/PublicMediaPage'))
 const QRManagePage = lazy(() => import('./pages/QRManagePage'))
+const LegalPage = lazy(() => import('./pages/LegalPage'))
 
 function App() {
   return (
@@ -62,6 +63,9 @@ function App() {
             <Route path="signup" element={<AuthPage mode="signup" />} />
             <Route path="forgot-password" element={<AuthPage mode="forgot" />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />
+            
+            {/* Legal Pages */}
+            <Route path="legal/:slug" element={<LegalPage />} />
             
             {/* Protected Routes */}
             <Route path="dashboard" element={
