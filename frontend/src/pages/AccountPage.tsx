@@ -58,23 +58,23 @@ const AccountPage: React.FC = () => {
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
-    const tabs = [
-      { id: 'profile', name: 'Profil', icon: <User className="h-5 w-5" /> },
-      { id: 'subscription', name: 'Abonelik', icon: <CreditCard className="h-5 w-5" /> },
-      { id: 'payments', name: 'Ödemeler', icon: <FileText className="h-5 w-5" /> },
+  const tabs = [
+    { id: 'profile', name: 'Profil', icon: <User className="h-5 w-5" /> },
+    { id: 'subscription', name: 'Abonelik', icon: <CreditCard className="h-5 w-5" /> },
+    { id: 'payments', name: 'Ödemeler', icon: <FileText className="h-5 w-5" /> },
       { id: 'contracts', name: 'Sözleşmeler', icon: <Shield className="h-5 w-5" /> },
-      { id: 'usage', name: 'Kullanım', icon: <Download className="h-5 w-5" /> },
-      { id: 'settings', name: 'Ayarlar', icon: <Settings className="h-5 w-5" /> },
-    ];
+    { id: 'usage', name: 'Kullanım', icon: <Download className="h-5 w-5" /> },
+    { id: 'settings', name: 'Ayarlar', icon: <Settings className="h-5 w-5" /> },
+  ];
 
   // Load usage stats
   useEffect(() => {
     loadUsageStats();
   }, []);
 
-  // Load payment history when tab is selected
+  // Load payment history when needed (for payments tab or subscription tab)
   useEffect(() => {
-    if (activeTab === 'payments' && authUser?.id && paymentHistory.length === 0) {
+    if ((activeTab === 'payments' || activeTab === 'subscription') && authUser?.id && paymentHistory.length === 0) {
       loadPaymentHistory();
     }
   }, [activeTab, authUser?.id]);
@@ -313,18 +313,18 @@ const AccountPage: React.FC = () => {
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Ad Soyad */}
-                  <div>
+            <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">
                       Ad Soyad <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={profileData.fullName}
-                      onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                      <input
+                        type="text"
+                        value={profileData.fullName}
+                        onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                      required
+                        required
                       placeholder="Adınız Soyadınız"
-                    />
+                      />
                   </div>
                   
                   {/* E-posta */}
@@ -342,31 +342,31 @@ const AccountPage: React.FC = () => {
                       <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     </div>
                   </div>
-                </div>
-                
+                  </div>
+                  
                 {/* Telefon */}
-                <div>
+                  <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Telefon <span className="text-gray-500 text-xs">(İsteğe bağlı)</span>
-                  </label>
-                  <input
-                    type="tel"
-                    value={profileData.phone}
-                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    </label>
+                      <input
+                        type="tel"
+                        value={profileData.phone}
+                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                    placeholder="05XX XXX XX XX"
-                  />
-                </div>
-                
+                        placeholder="05XX XXX XX XX"
+                      />
+                  </div>
+                  
                 {/* Save Button */}
                 <div className="pt-2">
-                  <button 
-                    type="submit" 
+                    <button 
+                      type="submit" 
                     className="w-full sm:w-auto px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50"
-                    disabled={isSaving}
-                  >
+                      disabled={isSaving}
+                    >
                     {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
-                  </button>
+                    </button>
                 </div>
               </form>
             </div>
@@ -421,32 +421,49 @@ const AccountPage: React.FC = () => {
               <div className="flex items-start justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
-                    {getPlanIcon(subscription.currentPlan)}
+                      {getPlanIcon(subscription.currentPlan)}
                   </div>
                   <div>
                     <p className="text-white/80 text-sm font-medium mb-1">Mevcut Planınız</p>
                     <h4 className="text-3xl font-bold">
                       {subscription.planConfig?.name}
-                    </h4>
-                  </div>
+                      </h4>
+                    </div>
                 </div>
                 
                 <div className="text-right">
                   <div className="text-4xl font-bold mb-1">
-                    {subscription.currentPlan === 'free' 
-                      ? '₺0' 
-                      : paymentHistory.length > 0 && paymentHistory.find(p => p.status === 'SUCCESS')
-                        ? `₺${paymentHistory.find(p => p.status === 'SUCCESS')?.amount}`
-                        : (subscription.planConfig?.price?.monthly || 0) > 0 
-                          ? `₺${subscription.planConfig?.price?.monthly}` 
-                          : '₺0'
-                    }
-                  </div>
+                    {(() => {
+                      if (subscription.currentPlan === 'free') return '₺0';
+                      
+                      // En son başarılı ödemeyi bul (en yeni tarihli)
+                      const successfulPayments = paymentHistory.filter(p => p.status === 'SUCCESS');
+                      if (successfulPayments.length > 0) {
+                        const latestPayment = successfulPayments.reduce((latest, current) => 
+                          new Date(current.processedAt) > new Date(latest.processedAt) ? current : latest
+                        );
+                        return `₺${latestPayment.amount.toFixed(2)}`;
+                      }
+                      
+                      // Ödeme yoksa planın güncel fiyatını göster
+                      return (subscription.planConfig?.price?.monthly || 0) > 0 
+                        ? `₺${subscription.planConfig?.price?.monthly}` 
+                        : '₺0';
+                    })()}
+                        </div>
                   {subscription.currentPlan !== 'free' && (
                     <p className="text-white/70 text-sm">
-                      {paymentHistory.length > 0 && paymentHistory.find(p => p.status === 'SUCCESS')?.billingPeriod === 'yearly' 
-                        ? 'Yıllık abonelik' 
-                        : 'Aylık abonelik'}
+                      {(() => {
+                        // En son başarılı ödemeyi bul
+                        const successfulPayments = paymentHistory.filter(p => p.status === 'SUCCESS');
+                        if (successfulPayments.length > 0) {
+                          const latestPayment = successfulPayments.reduce((latest, current) => 
+                            new Date(current.processedAt) > new Date(latest.processedAt) ? current : latest
+                          );
+                          return latestPayment.billingPeriod === 'yearly' ? 'Yıllık abonelik' : 'Aylık abonelik';
+                        }
+                        return 'Aylık abonelik';
+                      })()}
                     </p>
                   )}
                 </div>
@@ -469,14 +486,14 @@ const AccountPage: React.FC = () => {
                         })}
                       </p>
                     </div>
-                  </div>
-                )}
+                      </div>
+                    )}
                 
                 {subscription.subscription?.endDate && (
                   <div className="flex items-center gap-3">
                     <div className="bg-white/10 rounded-lg p-2">
                       <Calendar className="h-5 w-5" />
-                    </div>
+                  </div>
                     <div>
                       <p className="text-white/70 text-xs">
                         {subscription.subscription?.status === 'cancelled' ? 'Son Kullanım' : 'Yenilenme'}
@@ -495,7 +512,7 @@ const AccountPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <div className="bg-white/10 rounded-lg p-2">
                     <Shield className="h-5 w-5" />
-                  </div>
+                    </div>
                   <div>
                     <p className="text-white/70 text-xs">Durum</p>
                     {subscription.subscription?.status === 'active' ? (
@@ -750,9 +767,9 @@ const AccountPage: React.FC = () => {
                             <>
                               <p>✅ <strong>{refundInfo.daysLeft} gün</strong> içinde iptal: Tam iade</p>
                               <p className="text-gray-500">ℹ️ İade sonrası FREE plana geçiş</p>
-                            </>
-                          ) : (
-                            <>
+                    </>
+                  ) : (
+                    <>
                               <p>• İade süresi doldu</p>
                               <p>• İptal sonrası <strong>{new Date(subscription.subscription?.endDate || '').toLocaleDateString('tr-TR')}</strong> tarihine kadar kullanım devam eder</p>
                             </>
@@ -762,13 +779,13 @@ const AccountPage: React.FC = () => {
                     </div>
                     
                     <div className="flex justify-end">
-                      <button 
-                        onClick={() => setShowCancelDialog(true)}
+                <button 
+                  onClick={() => setShowCancelDialog(true)}
                         className="text-xs text-gray-500 hover:text-red-600 font-medium transition-colors underline"
-                      >
+                >
                         Aboneliği iptal et
-                      </button>
-                    </div>
+                </button>
+              </div>
                   </div>
                 </div>
               </details>
@@ -779,12 +796,12 @@ const AccountPage: React.FC = () => {
       case 'payments':
         return (
           <div className="space-y-6 animate-fade-in">
-            {loadingPayments ? (
+              {loadingPayments ? (
               <div className="flex flex-col items-center justify-center py-16">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
                 <p className="text-gray-600 mt-4">Ödeme geçmişi yükleniyor...</p>
-              </div>
-            ) : paymentHistory.length === 0 ? (
+                </div>
+              ) : paymentHistory.length === 0 ? (
               <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300">
                 <div className="bg-gray-200 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                   <FileText className="h-10 w-10 text-gray-500" />
@@ -794,15 +811,15 @@ const AccountPage: React.FC = () => {
                 </h3>
                 <p className="text-gray-600 mb-6 max-w-md mx-auto">
                   Premium özelliklerden faydalanmak ve davetiyelerinizi profesyonel hale getirmek için bir plan seçin
-                </p>
-                <button
-                  onClick={() => navigate('/pricing')}
+                  </p>
+                  <button
+                    onClick={() => navigate('/pricing')}
                   className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-xl font-medium transition-all shadow-md hover:shadow-lg transform hover:scale-105"
-                >
+                  >
                   🚀 Planları Keşfet
-                </button>
-              </div>
-            ) : (
+                  </button>
+                </div>
+              ) : (
               <>
                 {/* Payment Summary - Wide Total Card */}
                 <div className="space-y-4 mt-6">
@@ -877,26 +894,26 @@ const AccountPage: React.FC = () => {
                 </div>
                 <div className="overflow-hidden bg-white rounded-xl border border-gray-200 shadow-sm">
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                            Tarih
-                          </th>
+                          Tarih
+                        </th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                            Plan
-                          </th>
+                          Plan
+                        </th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                            Tutar
-                          </th>
+                          Tutar
+                        </th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                            Durum
-                          </th>
+                          Durum
+                        </th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
-                            İşlem No
-                          </th>
-                        </tr>
-                      </thead>
+                          İşlem No
+                        </th>
+                      </tr>
+                    </thead>
                     <tbody className="bg-white divide-y divide-gray-100">
                       {paymentHistory.map((payment) => (
                         <tr 
@@ -906,17 +923,17 @@ const AccountPage: React.FC = () => {
                           <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
                             <div className="flex flex-col">
                               <span className="font-medium">
-                                {new Date(payment.processedAt).toLocaleDateString('tr-TR', {
-                                  day: 'numeric',
+                            {new Date(payment.processedAt).toLocaleDateString('tr-TR', {
+                              day: 'numeric',
                                   month: 'short',
                                   year: 'numeric',
                                 })}
                               </span>
                               <span className="text-xs text-gray-500">
                                 {new Date(payment.processedAt).toLocaleTimeString('tr-TR', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                               </span>
                             </div>
                           </td>
@@ -937,12 +954,12 @@ const AccountPage: React.FC = () => {
                                 : 'text-gray-900'
                             }`}>
                               {payment.status === 'REFUNDED' && '-'}
-                              ₺{payment.amount.toFixed(2)}
+                            ₺{payment.amount.toFixed(2)}
                             </span>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex flex-col gap-1">
-                              {payment.status === 'SUCCESS' ? (
+                            {payment.status === 'SUCCESS' ? (
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 w-fit">
                                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
                                   Başarılı
@@ -951,13 +968,13 @@ const AccountPage: React.FC = () => {
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 w-fit">
                                   <span className="w-1.5 h-1.5 bg-orange-500 rounded-full"></span>
                                   İade Edildi
-                                </span>
-                              ) : payment.status === 'FAILURE' ? (
+                              </span>
+                            ) : payment.status === 'FAILURE' ? (
                                 <div className="flex items-center gap-2">
                                   <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 w-fit">
                                     <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
                                     Başarısız
-                                  </span>
+                              </span>
                                   {payment.errorMessage && (
                                     <div className="group relative">
                                       <AlertCircle className="h-4 w-4 text-red-500 cursor-help" />
@@ -968,29 +985,29 @@ const AccountPage: React.FC = () => {
                                     </div>
                                   )}
                                 </div>
-                              ) : payment.status === 'PENDING' ? (
+                            ) : payment.status === 'PENDING' ? (
                                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 w-fit">
                                   <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse"></span>
                                   Beklemede
-                                </span>
-                              ) : (
+                              </span>
+                            ) : (
                                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 w-fit">
-                                  {payment.status}
-                                </span>
-                              )}
+                                {payment.status}
+                              </span>
+                            )}
                             </div>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <code className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded font-mono">
-                              {payment.transactionId}
+                            {payment.transactionId}
                             </code>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  </div>
                 </div>
+            </div>
               </>
             )}
 
@@ -1003,7 +1020,7 @@ const AccountPage: React.FC = () => {
                     <span className="text-sm text-gray-700">
                       {paymentHistory.filter(p => p.status === 'FAILURE').length} başarısız ödeme girişimi
                     </span>
-                  </div>
+                    </div>
                   <svg className="h-4 w-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
@@ -1019,7 +1036,7 @@ const AccountPage: React.FC = () => {
                   >
                     Tekrar dene →
                   </button>
-                </div>
+                    </div>
               </details>
             )}
           </div>
@@ -1028,13 +1045,13 @@ const AccountPage: React.FC = () => {
       case 'usage':
         return (
           <div className="space-y-6 animate-fade-in">
-            {/* Stats Grid */}
+              {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-6 hover:shadow-lg transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <div className="bg-blue-600 rounded-xl p-3">
                     <FileText className="h-6 w-6 text-white" />
-                  </div>
+                    </div>
                   <div className="text-right">
                     <p className="text-4xl font-bold text-blue-900">{usageStats.invitationCount}</p>
                   </div>
@@ -1048,24 +1065,24 @@ const AccountPage: React.FC = () => {
                   ) : (
                     `${subscription.planConfig?.limits.invitationsPerMonth} / ay limit`
                   )}
-                </p>
-              </div>
-              
+                  </p>
+                </div>
+                
               <div className="bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-xl p-6 hover:shadow-lg transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <div className="bg-green-600 rounded-xl p-3">
                     <Users className="h-6 w-6 text-white" />
-                  </div>
+                    </div>
                   <div className="text-right">
                     <p className="text-4xl font-bold text-green-900">{usageStats.totalGuests}</p>
                   </div>
                 </div>
                 <h4 className="text-sm font-semibold text-green-900 mb-1">👥 Toplam Misafir</h4>
                 <p className="text-xs text-green-700">
-                  Tüm davetiyelerinizde
-                </p>
-              </div>
-              
+                    Tüm davetiyelerinizde
+                  </p>
+                </div>
+                
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-6 hover:shadow-lg transition-all">
                 <div className="flex items-center justify-between mb-4">
                   <div className="bg-purple-600 rounded-xl p-3">
@@ -1073,24 +1090,24 @@ const AccountPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-4xl font-bold text-purple-900">
-                      {formatFileSize(usageStats.storageUsed * 1024 * 1024)}
-                    </p>
+                        {formatFileSize(usageStats.storageUsed * 1024 * 1024)}
+                      </p>
+                    </div>
                   </div>
-                </div>
                 <h4 className="text-sm font-semibold text-purple-900 mb-1">💾 Depolama</h4>
                 <p className="text-xs text-purple-700">
                   {subscription.planConfig?.limits.storageMB}MB limit
-                </p>
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* Storage Progress Bar */}
+              {/* Storage Progress Bar */}
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="bg-gray-600 rounded-lg p-2">
                     <HardDrive className="h-5 w-5 text-white" />
-                  </div>
+                </div>
                   <div>
                     <h4 className="font-bold text-gray-900">Depolama Kullanımı</h4>
                     <p className="text-xs text-gray-600">Dosya ve medya depolama alanı</p>
@@ -1106,9 +1123,9 @@ const AccountPage: React.FC = () => {
               <div className="relative w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                 <div
                   className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary-500 via-primary-600 to-blue-600 rounded-full transition-all duration-500 shadow-lg"
-                  style={{
+                    style={{
                     width: `${Math.min((usageStats.storageUsed / (subscription.planConfig?.limits.storageMB || 1)) * 100, 100)}%`
-                  }}
+                    }}
                 >
                   <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
                 </div>
@@ -1174,7 +1191,7 @@ const AccountPage: React.FC = () => {
                 <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-green-600" />
-                    <div>
+            <div>
                       <p className="font-medium text-gray-900 text-sm">Mesafeli Satış Sözleşmesi</p>
                       <p className="text-xs text-gray-500">Abonelik sözleşmeniz</p>
                     </div>
@@ -1220,7 +1237,7 @@ const AccountPage: React.FC = () => {
                     <div className="flex-1">
                       <p className="font-medium text-gray-900 text-sm">{setting.label}</p>
                       <p className="text-xs text-gray-500">{setting.description}</p>
-                    </div>
+                      </div>
                     <label className="relative inline-flex items-center cursor-pointer ml-4">
                       <input
                         type="checkbox"
@@ -1278,11 +1295,11 @@ const AccountPage: React.FC = () => {
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                Hesap Ayarları
-              </h1>
+            Hesap Ayarları
+          </h1>
               <p className="text-gray-600">
-                Profil bilgilerinizi ve hesap ayarlarınızı yönetin
-              </p>
+            Profil bilgilerinizi ve hesap ayarlarınızı yönetin
+          </p>
             </div>
             {subscription.currentPlan !== 'free' && (
               <div className="flex items-center gap-2 bg-gradient-to-r from-primary-50 to-blue-50 px-4 py-2 rounded-xl border-2 border-primary-200">
@@ -1310,7 +1327,7 @@ const AccountPage: React.FC = () => {
                   }`}
                 >
                   <span className={activeTab === tab.id ? 'text-white' : 'text-gray-500 group-hover:text-primary-600'}>
-                    {tab.icon}
+                  {tab.icon}
                   </span>
                   <span className="font-medium">{tab.name}</span>
                 </button>
@@ -1360,15 +1377,15 @@ const AccountPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  <input
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                       className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all bg-white"
-                      required
-                      autoComplete="current-password"
+                    required
+                    autoComplete="current-password"
                       placeholder="Mevcut şifrenizi girin"
-                    />
+                  />
                   </div>
                 </div>
 
@@ -1378,16 +1395,16 @@ const AccountPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="password"
-                      value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  <input
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                       className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all bg-white"
-                      required
-                      minLength={6}
-                      autoComplete="new-password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
                       placeholder="En az 6 karakter"
-                    />
+                  />
                   </div>
                   <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
                     <span>ℹ️</span> En az 6 karakter içermelidir
@@ -1400,15 +1417,15 @@ const AccountPage: React.FC = () => {
                   </label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="password"
-                      value={passwordData.confirmPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  <input
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                       className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all bg-white"
-                      required
-                      autoComplete="new-password"
+                    required
+                    autoComplete="new-password"
                       placeholder="Yeni şifrenizi tekrar girin"
-                    />
+                  />
                   </div>
                 </div>
 

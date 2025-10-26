@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Loader2, X } from 'lucide-react';
+import { Search, Loader2, X, Sparkles, Filter } from 'lucide-react';
 import { templateService, type Template, type TemplateCategory } from '../services/templateService';
 import { useAuth } from '../store/authStore';
 import { useSubscription } from '../hooks/useSubscription';
@@ -32,7 +32,7 @@ const TemplatesPage: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 800); // Wait 800ms after user stops typing
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
@@ -122,7 +122,6 @@ const TemplatesPage: React.FC = () => {
   const handleClearSearch = () => {
     setSearchTerm('');
     setDebouncedSearchTerm('');
-    // Immediately reload with empty search
     loadData('', selectedCategory);
   };
   
@@ -130,7 +129,6 @@ const TemplatesPage: React.FC = () => {
     setSearchTerm('');
     setDebouncedSearchTerm('');
     handleCategoryChange('all');
-    // Immediately reload with empty search and all categories
     loadData('', 'all');
   };
   
@@ -159,187 +157,221 @@ const TemplatesPage: React.FC = () => {
       />
       <CanonicalURL url="https://davetim.app/templates" />
       
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-        <div className="text-center mb-12 animate-fade-in">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Davetiye Şablonları
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Özel günleriniz için profesyonel tasarlanmış şablonlar. 
-            Hemen seçin ve kişiselleştirin!
-          </p>
-        </div>
-
-        {/* Search & Filter */}
-        <div className="mb-8 animate-fade-in">
-          {/* Search */}
-          <div className="relative max-w-2xl mx-auto mb-6">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Düğün, doğum günü, nişan gibi anahtar kelimeler girin..."
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className={`w-full pl-10 pr-12 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300 text-gray-900 placeholder-gray-500 ${
-                isSearching 
-                  ? 'border-primary-300 bg-primary-50/50 shadow-md' 
-                  : 'border-gray-300 bg-white hover:border-gray-400 focus:shadow-md'
-              }`}
-            />
+          {/* Header - Compact */}
+          <div className="text-center mb-8 animate-fade-in">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-primary-200/50 mb-4">
+              <Sparkles className="h-4 w-4 text-primary-600" />
+              <span className="text-sm font-semibold text-gray-700">100+ Profesyonel Şablon</span>
+            </div>
             
-            {/* Right side icons */}
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-              {isSearching && (
-                <Loader2 className="text-primary-500 h-4 w-4 animate-spin" />
-              )}
-              {searchTerm && !isSearching && (
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+              Davetiye Şablonları
+            </h1>
+            <p className="text-base text-gray-600 max-w-2xl mx-auto">
+              Özel günleriniz için profesyonel tasarlanmış şablonlar
+            </p>
+          </div>
+
+          {/* Search & Filter - Modern & Compact */}
+          <div className="mb-6 animate-fade-in">
+            {/* Search Bar - Compact */}
+            <div className="relative max-w-2xl mx-auto mb-4">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="Ara... (Düğün, doğum günü, nişan)"
+                  value={searchTerm}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className={`w-full pl-11 pr-11 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm ${
+                    isSearching 
+                      ? 'border-primary-300 bg-primary-50/50 shadow-md' 
+                      : 'border-gray-300 bg-white hover:border-gray-400 focus:shadow-md'
+                  }`}
+                />
+                
+                {/* Right side icons */}
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+                  {isSearching && (
+                    <Loader2 className="text-primary-500 h-4 w-4 animate-spin" />
+                  )}
+                  {searchTerm && !isSearching && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+                      title="Temizle"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Category Pills - Compact & Scrollable */}
+            <div className="relative">
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                <Filter className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 <button
-                  onClick={handleClearSearch}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
-                  title="Aramayı temizle"
+                  onClick={() => handleCategoryChange('all')}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    selectedCategory === 'all'
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-primary-300'
+                  }`}
                 >
-                  <X className="h-4 w-4" />
+                  Tümü
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryChange(category.slug)}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                      selectedCategory === category.slug
+                        ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
+                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-primary-300'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Results Count & Clear - Compact */}
+          {!isSearching && templates.length > 0 && (
+            <div className="mb-4 flex items-center justify-between animate-fade-in">
+              <p className="text-sm text-gray-600">
+                <span className="font-bold text-gray-900">{templates.length}</span> şablon
+                {hasActiveSearch && (
+                  <span className="ml-1 text-primary-600 font-medium">
+                    "{debouncedSearchTerm}"
+                  </span>
+                )}
+              </p>
+              {hasActiveFilters && (
+                <button
+                  onClick={handleClearAllFilters}
+                  className="text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-all"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Temizle
                 </button>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap justify-center gap-2">
-            <button
-              onClick={() => handleCategoryChange('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                selectedCategory === 'all'
-                  ? 'bg-primary-500 text-white shadow-md'
-                  : 'bg-white text-gray-700 hover:bg-primary-50 border border-gray-300 hover:border-primary-300'
-              }`}
-            >
-              Tümü
-            </button>
-            {categories.map((category) => (
-              <button
-                key={category.id}
-                onClick={() => handleCategoryChange(category.slug)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  selectedCategory === category.slug
-                    ? 'bg-primary-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-primary-50 border border-gray-300 hover:border-primary-300'
-                }`}
-              >
-                {category.name}
-              </button>
-            ))}
-          </div>
-        </div>
+          {/* Templates Grid - Responsive */}
+          {templates.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 animate-fade-in">
+              {templates.map((template, index) => (
+                <div
+                  key={template.id}
+                  style={{ animationDelay: `${index * 30}ms` }}
+                  className="animate-fade-in"
+                >
+                  <TemplateCard
+                    template={template}
+                    onSave={handleSaveTemplate}
+                    isSaved={savedTemplates.has(template.id)}
+                    onUpgradeNeeded={handleUpgradeNeeded}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
 
-        {/* Results Count */}
-        {!isSearching && templates.length > 0 && (
-          <div className="mb-6 flex items-center justify-between animate-fade-in">
-            <p className="text-sm text-gray-600">
-              <span className="font-semibold text-gray-900">{templates.length}</span> şablon bulundu
-              {hasActiveSearch && (
-                <span className="ml-2">
-                  "<span className="font-medium text-primary-600">{debouncedSearchTerm}</span>" için
-                </span>
-              )}
-            </p>
-            {hasActiveFilters && (
-              <button
-                onClick={handleClearAllFilters}
-                className="text-sm text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-primary-50 transition-all duration-200"
-              >
-                <X className="h-4 w-4" />
-                Filtreleri Temizle
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Templates Grid */}
-        {templates.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-fade-in">
-            {templates.map((template, index) => (
-              <div
-                key={template.id}
-                style={{ animationDelay: `${index * 50}ms` }}
-                className="animate-fade-in"
-              >
-                <TemplateCard
-                  template={template}
-                  onSave={handleSaveTemplate}
-                  isSaved={savedTemplates.has(template.id)}
-                  onUpgradeNeeded={handleUpgradeNeeded}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* No Results */}
-        {!isSearching && templates.length === 0 && (
-          <div className="bg-white rounded-lg shadow-md p-12 text-center animate-fade-in">
-            <div className="max-w-md mx-auto">
-              <div className="bg-gradient-to-br from-primary-50 to-primary-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Search className="h-12 w-12 text-primary-500" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                {hasActiveSearch ? 'Sonuç Bulunamadı' : 'Şablon Bulunamadı'}
-              </h3>
-              <p className="text-gray-600 mb-2">
-                {hasActiveSearch ? (
-                  <>
-                    "<span className="font-semibold text-gray-900">{debouncedSearchTerm}</span>" için sonuç bulunamadı.
-                  </>
-                ) : (
-                  'Bu kategoride henüz şablon bulunmuyor.'
-                )}
-              </p>
-              <p className="text-sm text-gray-500 mb-8">
-                {hasActiveFilters ? (
-                  'Farklı anahtar kelimeler veya kategoriler deneyebilir, ya da tüm şablonları görüntüleyebilirsiniz.'
-                ) : (
-                  'Yakında yeni şablonlar eklenecek. Şimdilik diğer kategorilere göz atabilirsiniz.'
-                )}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                {hasActiveFilters && (
-                  <button
-                    onClick={handleClearAllFilters}
-                    className="btn-primary"
-                  >
-                    Tüm Şablonları Göster
-                  </button>
-                )}
-                {hasActiveSearch && !hasActiveFilters && (
-                  <button
-                    onClick={handleClearSearch}
-                    className="btn-primary"
-                  >
-                    Aramayı Temizle
-                  </button>
-                )}
+          {/* No Results - Modern */}
+          {!isSearching && templates.length === 0 && (
+            <div className="bg-white rounded-2xl shadow-md p-8 sm:p-12 text-center animate-fade-in border border-gray-200">
+              <div className="max-w-md mx-auto">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full mb-4">
+                  <Search className="h-8 w-8 text-primary-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  {hasActiveSearch ? 'Sonuç Bulunamadı' : 'Şablon Bulunamadı'}
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  {hasActiveSearch ? (
+                    <>
+                      "<span className="font-semibold text-gray-900">{debouncedSearchTerm}</span>" için sonuç yok
+                    </>
+                  ) : (
+                    'Bu kategoride henüz şablon yok'
+                  )}
+                </p>
+                <p className="text-xs text-gray-500 mb-6">
+                  {hasActiveFilters ? 'Farklı kelimeler veya kategoriler deneyin' : 'Yakında yeni şablonlar eklenecek'}
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  {hasActiveFilters && (
+                    <button
+                      onClick={handleClearAllFilters}
+                      className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all text-sm"
+                    >
+                      Tüm Şablonlar
+                    </button>
+                  )}
+                  {hasActiveSearch && !hasActiveFilters && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all text-sm"
+                    >
+                      Aramayı Temizle
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* CTA Section */}
-        <div className="bg-primary-50 rounded-2xl p-8 mt-16 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Özel Şablon İsteğiniz Var mı?
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Premium planla özel tasarım taleplerinde bulunabilir, 
-            kendi şablonlarınızı yükleyebilirsiniz.
-          </p>
-          <button
-            onClick={() => navigate('/pricing')}
-            className="btn-primary"
-          >
-            Premium'a Yükseltin
-          </button>
+          {/* CTA Section - Only for non-premium users */}
+          {subscription.currentPlan !== 'premium' && (
+            <div className="bg-gradient-to-br from-primary-50 via-blue-50 to-purple-50 rounded-2xl p-6 sm:p-8 mt-8 text-center border border-primary-200/50 shadow-sm">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full mb-3">
+                <Sparkles className="h-3.5 w-3.5 text-primary-600" />
+                <span className="text-xs font-semibold text-gray-700">Premium Özellik</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                Özel Şablon İsteğiniz Var mı?
+              </h2>
+              <p className="text-sm text-gray-600 mb-4 max-w-xl mx-auto">
+                Premium planla özel tasarım taleplerinde bulunun
+              </p>
+              <button
+                onClick={() => navigate('/pricing')}
+                className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 text-sm"
+              >
+                Premium'a Yükselt
+              </button>
+            </div>
+          )}
+
+          {/* Premium User Section - Special message for premium users */}
+          {subscription.currentPlan === 'premium' && (
+            <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 rounded-2xl p-6 sm:p-8 mt-8 text-center border border-purple-200/50 shadow-sm">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-sm rounded-full mb-3">
+                <Sparkles className="h-3.5 w-3.5 text-purple-600" />
+                <span className="text-xs font-semibold text-gray-700">Premium Üye</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+                Tüm Premium Şablonlara Erişiminiz Var! 🎉
+              </h2>
+              <p className="text-sm text-gray-600 mb-4 max-w-xl mx-auto">
+                Özel tasarım talepleriniz için destek ekibimizle iletişime geçebilirsiniz
+              </p>
+              <button
+                onClick={() => navigate('/account?tab=support')}
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 text-sm"
+              >
+                Destek Talebi Oluştur
+              </button>
+            </div>
+          )}
         </div>
       </div>
       
@@ -356,7 +388,17 @@ const TemplatesPage: React.FC = () => {
         currentPlan={subscription.currentPlan}
         recommendedPlan={upgradeTemplateTier === 'premium' ? 'premium' : 'pro'}
       />
-      </div>
+
+      {/* Custom Scrollbar Hide */}
+      <style>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </>
   );
 };

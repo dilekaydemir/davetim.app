@@ -133,59 +133,73 @@ const PublicInvitationPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      {/* Draft Banner */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20">
+      {/* Draft Banner - Modern */}
       {invitation.status !== 'published' && (
-        <div className="bg-yellow-50 border-b border-yellow-200 py-3">
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-b border-amber-200/50 backdrop-blur-sm py-4">
           <div className="max-w-4xl mx-auto px-4">
-            <p className="text-sm text-yellow-800 text-center">
-              ⚠️ <strong>Önizleme Modu:</strong> Bu davetiye henüz yayınlanmamış. Sadece linke sahip olanlar görebilir.
-            </p>
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <div className="bg-amber-200 rounded-full p-1.5">
+                <span className="text-amber-700 text-xs">⚠️</span>
+              </div>
+              <p className="text-amber-900">
+                <strong className="font-semibold">Önizleme Modu:</strong> Bu davetiye henüz yayınlanmamış
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Header Actions */}
-      <div className="max-w-4xl mx-auto px-4 mb-6">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="text-gray-600 hover:text-gray-900 font-medium"
-          >
-            ← Ana Sayfa
-          </button>
-          <div className="flex items-center gap-3">
+      {/* Header Actions - Modern & Sticky */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <button
-              onClick={handleShare}
-              className="btn-secondary flex items-center gap-2"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all font-medium"
             >
-              <Share2 className="h-4 w-4" />
-              Paylaş
+              <span className="text-lg">←</span>
+              <span className="hidden sm:inline">Ana Sayfa</span>
             </button>
-            <button
-              onClick={handleDownloadPDF}
-              disabled={isExporting}
-              className="btn-primary flex items-center gap-2"
-            >
-              {isExporting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              {isExporting ? 'İndiriliyor...' : 'PDF İndir'}
-            </button>
+            {/* Only show share/download buttons for published invitations */}
+            {invitation.status === 'published' && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-500 hover:text-primary-600 rounded-xl transition-all font-medium shadow-sm hover:shadow-md"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Paylaş</span>
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={isExporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">{isExporting ? 'İndiriliyor...' : 'PDF İndir'}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Invitation Preview */}
+      {/* Main Content */}
+      <div className="py-8">
+
+      {/* Invitation Preview - Modern Card */}
       <div className="max-w-4xl mx-auto px-4">
         <div 
           id="invitation-preview"
-          className="bg-white shadow-2xl rounded-lg overflow-hidden relative"
+          className="bg-white shadow-2xl rounded-2xl overflow-hidden relative border border-white/50 backdrop-blur-sm"
           style={{
             minHeight: '600px',
-            backgroundImage: invitation.content?.imagePosition === 'background' && invitation.image_url
+            backgroundImage: invitation.image_url && invitation.content?.imagePosition === 'background'
               ? `url(${invitation.image_url})`
               : invitation.content?.colors 
                 ? `linear-gradient(135deg, ${invitation.content.colors.primary} 0%, ${invitation.content.colors.secondary} 100%)`
@@ -330,28 +344,34 @@ const PublicInvitationPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="mt-8 text-center text-gray-600">
-          <p className="text-sm">
-            Bu davetiye{' '}
-            <a 
-              href="/" 
-              className="text-primary-600 hover:text-primary-700 font-medium"
-            >
-              Davetim
-            </a>
-            {' '}ile oluşturulmuştur
-          </p>
-          <p className="text-xs mt-2 text-gray-500">
-            Kendi davetiyenizi oluşturmak için{' '}
-            <a 
-              href="/signup" 
-              className="text-primary-600 hover:text-primary-700 font-medium"
-            >
-              ücretsiz kayıt olun
-            </a>
-          </p>
+        {/* Footer Info - Modern */}
+        <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 p-4 shadow-sm">
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center">
+              <a href="/" className="flex items-center gap-2 group">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                  <span className="text-white font-bold text-base">D</span>
+                </div>
+                <span className="text-base font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Davetim
+                </span>
+              </a>
+            </div>
+            <div className="pt-2 border-t border-gray-200/50">
+              <p className="text-xs text-gray-600">
+                Kendi davetiyenizi oluşturmak için{' '}
+                <a 
+                  href="/signup" 
+                  className="text-primary-600 hover:text-primary-700 font-semibold transition-colors inline-flex items-center gap-1"
+                >
+                  ücretsiz kayıt olun
+                  <span className="text-base">→</span>
+                </a>
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
       </div>
     </div>
   );
