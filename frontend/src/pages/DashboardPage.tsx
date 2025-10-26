@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Download, Edit, Trash2, Eye, Crown, Zap, Users, CheckCircle, TrendingUp, Lock, Sparkles, BarChart3, ExternalLink, Award, Target, Rocket, Gift } from 'lucide-react';
+import { Plus, Calendar, Edit, Trash2, Eye, Crown, Zap, Users, CheckCircle, TrendingUp, Lock, Sparkles, BarChart3, ExternalLink, Award, Rocket, Gift } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { guestService, type GuestStats } from '../services/guestService';
 import { useAuth } from '../store/authStore';
