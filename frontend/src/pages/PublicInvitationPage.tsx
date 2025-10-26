@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Download, Share2, Loader2 } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
+import { mediaService, type Media } from '../services/mediaService';
 import { pdfService } from '../services/pdfService';
 import { PublicInvitationSkeleton } from '../components/Skeleton/Skeleton';
 import toast from 'react-hot-toast';
@@ -11,6 +12,7 @@ const PublicInvitationPage: React.FC = () => {
   const navigate = useNavigate();
   
   const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [qrMedia, setQrMedia] = useState<Media | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   
@@ -56,6 +58,21 @@ const PublicInvitationPage: React.FC = () => {
       }
 
       setInvitation(data);
+      
+      // Load QR media if exists
+      try {
+        const media = await mediaService.getMediaByInvitationId(invitationId);
+        if (media) {
+          console.log('✅ QR Media loaded:', media);
+          console.log('📍 QR Settings:', data.settings);
+          setQrMedia(media);
+        } else {
+          console.log('ℹ️ No QR media found for invitation');
+        }
+      } catch (error) {
+        // QR media is optional, don't show error
+        console.log('⚠️ Error loading QR media:', error);
+      }
       
       // Increment view count only for published invitations
       if (data.status === 'published') {
@@ -226,6 +243,25 @@ const PublicInvitationPage: React.FC = () => {
               src={invitation.image_url}
               alt="Logo"
               className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+            />
+          )}
+
+          {/* QR Code - Dynamic Position */}
+          {qrMedia?.qr_image_url && invitation.settings?.showQrOnDesign && (
+            <img
+              src={qrMedia.qr_image_url}
+              alt="QR"
+              style={{ 
+                width: `${invitation.settings?.qrSize || 96}px`, 
+                height: `${invitation.settings?.qrSize || 96}px` 
+              }}
+              className={
+                `absolute bg-white p-2 rounded-md shadow-md z-20 ` +
+                (invitation.settings?.qrPosition === 'top-left' ? 'top-4 left-4' : '') +
+                (invitation.settings?.qrPosition === 'top-right' ? 'top-4 right-4' : '') +
+                (invitation.settings?.qrPosition === 'bottom-left' ? 'bottom-4 left-4' : '') +
+                (invitation.settings?.qrPosition === 'bottom-right' ? 'bottom-4 right-4' : '')
+              }
             />
           )}
           

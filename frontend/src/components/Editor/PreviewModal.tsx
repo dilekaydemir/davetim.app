@@ -26,6 +26,11 @@ interface PreviewModalProps {
     text: string;
     accent: string;
   };
+  qrData?: {
+    qrImageUrl: string;
+    qrPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    qrSize: number;
+  } | null;
 }
 
 const PreviewModal: React.FC<PreviewModalProps> = ({
@@ -39,7 +44,8 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
     background: '#ffffff',
     text: '#ffffff',
     accent: '#f56565'
-  }
+  },
+  qrData = null
 }) => {
   const previewRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = React.useState(false);
@@ -167,6 +173,22 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                   src={invitationData.imageUrl}
                   alt="Logo"
                   className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+                />
+              )}
+
+              {/* QR Code - Dynamic Position */}
+              {qrData?.qrImageUrl && (
+                <img
+                  src={qrData.qrImageUrl}
+                  alt="QR"
+                  style={{ width: `${qrData.qrSize}px`, height: `${qrData.qrSize}px` }}
+                  className={
+                    `absolute bg-white p-2 rounded-md shadow-md z-20 ` +
+                    (qrData.qrPosition === 'top-left' ? 'top-4 left-4' : '') +
+                    (qrData.qrPosition === 'top-right' ? 'top-4 right-4' : '') +
+                    (qrData.qrPosition === 'bottom-left' ? 'bottom-4 left-4' : '') +
+                    (qrData.qrPosition === 'bottom-right' ? 'bottom-4 right-4' : '')
+                  }
                 />
               )}
               

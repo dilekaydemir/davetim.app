@@ -155,6 +155,19 @@ const EditorPage: React.FC = () => {
           setColors(invitationData.content.colors);
         }
         
+        // Load QR settings if exists
+        if (invitationData.settings) {
+          if (typeof invitationData.settings.showQrOnDesign === 'boolean') {
+            setShowQrOnDesign(invitationData.settings.showQrOnDesign);
+          }
+          if (invitationData.settings.qrPosition) {
+            setQrPosition(invitationData.settings.qrPosition);
+          }
+          if (invitationData.settings.qrSize) {
+            setQrSize(invitationData.settings.qrSize);
+          }
+        }
+        
       } else {
         // Creating new invitation from template
         const templateSlug = searchParams.get('template');
@@ -392,6 +405,11 @@ const EditorPage: React.FC = () => {
         },
         custom_design: {
           font: selectedFont
+        },
+        settings: {
+          showQrOnDesign: showQrOnDesign,
+          qrPosition: qrPosition,
+          qrSize: qrSize
         }
       });
       
@@ -643,11 +661,11 @@ const EditorPage: React.FC = () => {
             <div className="p-4 sm:p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
               {/* Details Tab */}
               {activeTab === 'details' && (
-                <div className="space-y-5">
-              {/* Title */}
+                <div className="space-y-4">
+              {/* Title - Compact */}
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Etkinlik Başlığı <span className="text-red-500">*</span>
+                <label className="block text-xs font-bold text-gray-900 mb-1.5">
+                  ✏️ Etkinlik Başlığı <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -655,28 +673,28 @@ const EditorPage: React.FC = () => {
                   value={formData.title}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
-                    errors.title ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm ${
+                    errors.title ? 'border-red-500 focus:ring-red-500' : 'border-gray-200'
                   }`}
                   placeholder="Örn: Sevgi & Ahmet Düğünü"
                   maxLength={40}
                   required
                 />
                 {errors.title ? (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
                     <span>⚠️</span> {errors.title}
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-500 mt-1.5">
+                  <p className="text-xs text-gray-500 mt-1">
                     {formData.title.length}/40 karakter
                   </p>
                 )}
               </div>
 
-              {/* Date & Time */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Date & Time - Compact */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-xs font-bold text-gray-900 mb-1.5">
                     📅 Tarih
                   </label>
                   <input
@@ -685,19 +703,19 @@ const EditorPage: React.FC = () => {
                     value={formData.eventDate}
                     onChange={handleInputChange}
                     onBlur={handleBlur}
-                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
-                      errors.eventDate ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+                    className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm ${
+                      errors.eventDate ? 'border-red-500 focus:ring-red-500' : 'border-gray-200'
                     }`}
                     min={new Date().toISOString().split('T')[0]}
                   />
                   {errors.eventDate && (
-                    <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
                       <span>⚠️</span> {errors.eventDate}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-xs font-bold text-gray-900 mb-1.5">
                     🕐 Saat
                   </label>
                   <input
@@ -706,21 +724,21 @@ const EditorPage: React.FC = () => {
                     value={formData.eventTime}
                     onChange={handleInputChange}
                     onBlur={handleBlur}
-                    className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
-                      errors.eventTime ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+                    className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm ${
+                      errors.eventTime ? 'border-red-500 focus:ring-red-500' : 'border-gray-200'
                     }`}
                   />
                   {errors.eventTime && (
-                    <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                    <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
                       <span>⚠️</span> {errors.eventTime}
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Location */}
+              {/* Location - Compact */}
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                <label className="block text-xs font-bold text-gray-900 mb-1.5">
                   📍 Konum / Adres
                 </label>
                 <input
@@ -729,45 +747,45 @@ const EditorPage: React.FC = () => {
                   value={formData.location}
                   onChange={handleInputChange}
                   onBlur={handleBlur}
-                  className={`w-full px-4 py-2.5 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all ${
-                    errors.location ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+                  className={`w-full px-3 py-2 border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm ${
+                    errors.location ? 'border-red-500 focus:ring-red-500' : 'border-gray-200'
                   }`}
                   placeholder="Örn: Grand Hotel, İstanbul"
                   maxLength={60}
                 />
                 {errors.location ? (
-                  <p className="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
                     <span>⚠️</span> {errors.location}
                   </p>
                 ) : (
-                  <p className="text-xs text-gray-500 mt-1.5">
+                  <p className="text-xs text-gray-500 mt-1">
                     {formData.location.length}/60 karakter
                   </p>
                 )}
               </div>
 
-              {/* Custom Message */}
+              {/* Custom Message - Compact */}
               <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                <label className="block text-xs font-bold text-gray-900 mb-1.5">
                   💬 Özel Mesaj <span className="text-gray-500 text-xs font-normal">(İsteğe bağlı)</span>
                 </label>
                 <textarea
                   name="customMessage"
                   value={formData.customMessage}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all resize-none text-sm"
                   rows={3}
                   placeholder="Örn: Mutluluğumuzu paylaşmak istiyoruz"
                   maxLength={100}
                 />
-                <p className="text-xs text-gray-500 mt-1.5">
+                <p className="text-xs text-gray-500 mt-1">
                   {formData.customMessage.length}/100 karakter
                 </p>
               </div>
 
-              {/* Image Upload */}
+              {/* Image Upload - Compact */}
               {invitation && user && (
-                <div className="border-t pt-6">
+                <div className="border-t border-gray-200/50 pt-4">
                   <ImageUpload
                     invitationId={invitation.id}
                     userId={user.id}
@@ -786,32 +804,32 @@ const EditorPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Reset to Template Button - Minimalist */}
+              {/* Reset to Template Button - Compact */}
               {templateOriginalDesign && (
-                <div className="border-t border-gray-200/50 pt-5">
+                <div className="border-t border-gray-200/50 pt-4">
                   <button
                     onClick={handleResetToTemplate}
-                    className="w-full flex items-center justify-between p-3 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-all group"
+                    className="w-full flex items-center justify-between p-2.5 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 border border-amber-200 rounded-lg transition-all group"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="bg-amber-200 rounded-lg p-2">
-                        <Palette className="h-4 w-4 text-amber-700" />
+                    <div className="flex items-center gap-2">
+                      <div className="bg-amber-200 rounded-lg p-1.5">
+                        <Palette className="h-3.5 w-3.5 text-amber-700" />
                       </div>
                       <div className="text-left">
-                        <p className="text-sm font-semibold text-amber-900">Varsayılana Dön</p>
+                        <p className="text-xs font-bold text-amber-900">Varsayılana Dön</p>
                         <p className="text-xs text-amber-700">Şablonun orijinal tasarımı</p>
                       </div>
                     </div>
-                    <span className="text-amber-700 group-hover:text-amber-900 transition-colors">↻</span>
+                    <span className="text-amber-700 group-hover:text-amber-900 transition-colors text-lg">↻</span>
                   </button>
                 </div>
               )}
 
-              {/* Color Customization - Modern */}
-              <div className="border-t border-gray-200/50 pt-5">
+              {/* Color Customization - Compact */}
+              <div className="border-t border-gray-200/50 pt-4">
                 <div className="mb-3 flex items-center gap-2">
-                  <Palette className="h-5 w-5 text-gray-700" />
-                  <h3 className="font-semibold text-gray-900">Renk Özelleştirme</h3>
+                  <Palette className="h-4 w-4 text-gray-700" />
+                  <h3 className="text-xs font-bold text-gray-900">Renk Özelleştirme</h3>
                 </div>
                 <ColorPicker
                   colors={colors}
@@ -820,54 +838,100 @@ const EditorPage: React.FC = () => {
                 />
               </div>
 
-              {/* QR Media (Optional) */}
-              <div className="border-t pt-6">
-                <div className="flex items-center justify-between">
+              {/* QR Media (Optional) - Ultra Compact & Modern */}
+              <div className="border-t border-gray-200/50 pt-4">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <QrCode className="h-5 w-5 text-gray-700" />
-                    <h3 className="font-medium text-gray-900">QR Medya (Opsiyonel)</h3>
+                    <div className="p-1.5 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
+                      <QrCode className="h-3.5 w-3.5 text-purple-700" />
+                    </div>
+                    <h3 className="text-xs font-bold text-gray-900">QR Medya <span className="text-xs text-gray-500 font-normal">(Opsiyonel)</span></h3>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {qrMedia && (
+                  {qrMedia && (
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={() => navigate(`/media/manage?invitationId=${invitation.id}`)}
-                        className="btn-outline"
+                        onClick={invitation.status === 'published' ? () => navigate(`/media/manage?invitationId=${invitation.id}`) : undefined}
+                        disabled={invitation.status !== 'published'}
+                        className={`px-3 py-1.5 rounded-lg font-semibold transition-all text-xs ${
+                          invitation.status === 'published'
+                            ? 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 hover:border-primary-300'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                        title={invitation.status === 'published' ? 'QR Medya Yönet' : 'Yayınlamadan QR yönetilemez'}
                       >
                         Yönet
                       </button>
-                    )}
-                    <button
-                      onClick={() => navigate(`/media/upload?invitationId=${invitation.id}`)}
-                      className="btn-primary"
-                    >
-                      {qrMedia ? 'Güncelle' : 'Oluştur'}
-                    </button>
-                  </div>
+                      <button
+                        onClick={invitation.status === 'published' ? () => navigate(`/media/upload?invitationId=${invitation.id}`) : undefined}
+                        disabled={invitation.status !== 'published'}
+                        className={`px-3 py-1.5 rounded-lg font-semibold transition-all text-xs shadow-sm ${
+                          invitation.status === 'published'
+                            ? 'bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white hover:shadow-md'
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        }`}
+                        title={invitation.status === 'published' ? 'QR Medya Güncelle' : 'Yayınlamadan QR güncellenemez'}
+                      >
+                        Güncelle
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {qrMedia ? (
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-700">QR Kod:</p>
-                        <p className="font-mono text-gray-900 break-all">{qrMedia.qr_code}</p>
+                  <div className="mt-3 p-3 bg-gradient-to-br from-purple-50/50 to-pink-50/50 rounded-xl border border-purple-200/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-700 mb-0.5">QR Kod</p>
+                        <p className="font-mono text-xs text-gray-600 truncate">{qrMedia.qr_code}</p>
                       </div>
                       {qrMedia.qr_image_url && (
-                        <img src={qrMedia.qr_image_url} alt="QR" className="w-20 h-20 object-contain" />
+                        <img src={qrMedia.qr_image_url} alt="QR" className="w-16 h-16 object-contain rounded-lg bg-white p-1 shadow-sm ml-3" />
                       )}
                     </div>
-                    <div className="mt-2 text-sm text-gray-600">
-                      {qrMedia.allow_guest_upload ? 'Davetliler yükleyebilir' : 'Davetli yüklemeleri kapalı'}
+                    
+                    {/* Stats - Compact */}
+                    <div className="flex items-center gap-3 text-xs text-gray-600 mb-3 pb-3 border-b border-purple-200/30">
+                      <span className="flex items-center gap-1">
+                        📦 {qrMedia.storage_plan === '1_year' ? '1 yıl' : '3 ay'}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        👁️ {qrMedia.view_count}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        📱 {qrMedia.scan_count}
+                      </span>
                     </div>
-                    <label className="mt-3 flex items-center gap-2">
-                      <input type="checkbox" checked={showQrOnDesign} onChange={() => setShowQrOnDesign(!showQrOnDesign)} />
-                      <span>Davetiyede QR kodu göster</span>
+
+                    {/* Guest Upload Status */}
+                    <div className="mb-3">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${
+                        qrMedia.allow_guest_upload 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {qrMedia.allow_guest_upload ? '✓ Davetli yüklemeleri açık' : '✗ Davetli yüklemeleri kapalı'}
+                      </span>
+                    </div>
+
+                    {/* Show QR on Design Toggle */}
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        checked={showQrOnDesign} 
+                        onChange={() => setShowQrOnDesign(!showQrOnDesign)}
+                        className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-2 focus:ring-primary-500 transition-all"
+                      />
+                      <span className="text-xs font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+                        Davetiyede QR kodu göster
+                      </span>
                     </label>
+
+                    {/* QR Position & Size - Compact */}
                     {showQrOnDesign && (
-                      <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="mt-3 pt-3 border-t border-purple-200/30 space-y-3">
                         <div>
-                          <label className="block text-xs text-gray-600 mb-1">Konum</label>
+                          <label className="block text-xs font-bold text-gray-700 mb-1.5">Konum</label>
                           <select
-                            className="input-field"
+                            className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-xs"
                             value={qrPosition}
                             onChange={(e) => setQrPosition(e.target.value as any)}
                           >
@@ -877,9 +941,9 @@ const EditorPage: React.FC = () => {
                             <option value="bottom-right">Sağ Alt</option>
                           </select>
                         </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-xs text-gray-600 mb-1">
-                            Boyut ({qrSize}px)
+                        <div>
+                          <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                            Boyut: <span className="text-primary-600">{qrSize}px</span>
                           </label>
                           <input
                             type="range"
@@ -888,17 +952,40 @@ const EditorPage: React.FC = () => {
                             step={4}
                             value={qrSize}
                             onChange={(e) => setQrSize(Number(e.target.value))}
-                            className="w-full"
+                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                           />
+                          <div className="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>72px</span>
+                            <span>160px</span>
+                          </div>
                         </div>
                       </div>
                     )}
-                    <div className="mt-2 text-xs text-gray-500">
-                      Saklama: {qrMedia.storage_plan === '1_year' ? '1 yıl' : '3 ay'} • Görüntüleme: {qrMedia.view_count} • Tarama: {qrMedia.scan_count}
-                    </div>
                   </div>
                 ) : (
-                  <p className="mt-2 text-sm text-gray-600">Bu davetiye için henüz QR oluşturulmadı. İsterseniz oluşturabilirsiniz.</p>
+                  <div className="mt-3 p-3 bg-gradient-to-br from-amber-50/50 to-orange-50/50 rounded-lg border border-amber-200/30">
+                    <div className="flex items-start gap-2 mb-2">
+                      <span className="text-lg">ℹ️</span>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-gray-900 mb-1">
+                          QR Medya Henüz Oluşturulmadı
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {invitation.status === 'published' 
+                            ? 'QR medya oluşturarak davetlilerinizin fotoğraf ve video paylaşmasını sağlayabilirsiniz.' 
+                            : 'QR medya oluşturmak için önce davetiyeyi yayınlamanız gerekiyor.'}
+                        </p>
+                      </div>
+                    </div>
+                    {invitation.status === 'published' && (
+                      <button
+                        onClick={() => navigate(`/media/upload?invitationId=${invitation.id}`)}
+                        className="w-full mt-2 px-3 py-2 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold rounded-lg shadow-sm hover:shadow-md transition-all text-xs"
+                      >
+                        QR Medya Oluştur
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
                 </div>
@@ -1101,6 +1188,11 @@ const EditorPage: React.FC = () => {
           imagePosition: formData.imagePosition
         }}
         colors={colors}
+        qrData={showQrOnDesign && qrMedia?.qr_image_url ? {
+          qrImageUrl: qrMedia.qr_image_url,
+          qrPosition: qrPosition,
+          qrSize: qrSize
+        } : null}
       />
     </div>
   );

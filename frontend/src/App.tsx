@@ -98,6 +98,11 @@ function App() {
                 <QRManagePage />
               </ProtectedRoute>
             } />
+            <Route path="qr-manage" element={
+              <ProtectedRoute>
+                <QRManagePage />
+              </ProtectedRoute>
+            } />
           </Route>
           </Routes>
         </Suspense>

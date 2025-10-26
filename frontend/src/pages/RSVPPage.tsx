@@ -3,12 +3,14 @@ import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { guestService, type Guest, type RSVPData } from '../services/guestService';
 import { invitationService, type Invitation } from '../services/invitationService';
+import { mediaService, type Media } from '../services/mediaService';
 import toast from 'react-hot-toast';
 
 const RSVPPage: React.FC = () => {
   const { guestToken } = useParams<{ guestToken: string }>();
   const [guest, setGuest] = useState<Guest | null>(null);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [qrMedia, setQrMedia] = useState<Media | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -76,6 +78,22 @@ const RSVPPage: React.FC = () => {
 
       const invitationData = await invitationService.getInvitationById(guestData.invitation_id);
       setInvitation(invitationData);
+
+      // Load QR media if exists
+      if (invitationData) {
+        try {
+          const media = await mediaService.getMediaByInvitationId(guestData.invitation_id);
+          if (media) {
+            console.log('✅ RSVP: QR Media loaded:', media);
+            console.log('📍 RSVP: QR Settings:', invitationData.settings);
+            setQrMedia(media);
+          } else {
+            console.log('ℹ️ RSVP: No QR media found');
+          }
+        } catch (error) {
+          console.log('⚠️ RSVP: Error loading QR media:', error);
+        }
+      }
 
       // Pre-fill form if guest already responded
       if (guestData.rsvp_status !== 'pending') {
@@ -304,14 +322,14 @@ const RSVPPage: React.FC = () => {
                   className="w-full h-full rounded-2xl shadow-2xl overflow-hidden border-2 border-white relative"
                   style={{
                     backgroundImage: invitation.image_url && invitation.content?.imagePosition === 'background'
-                      ? `url(${invitation.image_url})`
-                      : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                  }}
-                >
-                  {/* Gradient overlay for background image */}
-                  {invitation.content?.imagePosition === 'background' && invitation.image_url && (
+              ? `url(${invitation.image_url})`
+              : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        >
+          {/* Gradient overlay for background image */}
+          {invitation.content?.imagePosition === 'background' && invitation.image_url && (
             <div 
               className="absolute inset-0" 
               style={{ 
@@ -326,6 +344,25 @@ const RSVPPage: React.FC = () => {
               src={invitation.image_url}
               alt="Logo"
               className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+            />
+          )}
+          
+          {/* QR Code - Dynamic Position (Envelope Card) */}
+          {qrMedia?.qr_image_url && invitation.settings?.showQrOnDesign && (
+            <img
+              src={qrMedia.qr_image_url}
+              alt="QR"
+              style={{ 
+                width: `${invitation.settings?.qrSize || 96}px`, 
+                height: `${invitation.settings?.qrSize || 96}px` 
+              }}
+              className={
+                `absolute bg-white p-2 rounded-md shadow-md z-20 ` +
+                (invitation.settings?.qrPosition === 'top-left' ? 'top-4 left-4' : '') +
+                (invitation.settings?.qrPosition === 'top-right' ? 'top-4 right-4' : '') +
+                (invitation.settings?.qrPosition === 'bottom-left' ? 'bottom-4 left-4' : '') +
+                (invitation.settings?.qrPosition === 'bottom-right' ? 'bottom-4 right-4' : '')
+              }
             />
           )}
           
@@ -429,9 +466,9 @@ const RSVPPage: React.FC = () => {
                   </div>
                 </>
               )}
-                  </div>
-                </div>
-              </div>
+            </div>
+          </div>
+        </div>
               </div>
             )}
 
@@ -508,6 +545,25 @@ const RSVPPage: React.FC = () => {
                     src={invitation.image_url}
                     alt="Logo"
                     className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+                  />
+                )}
+
+                {/* QR Code - Dynamic Position (Main Card) */}
+                {qrMedia?.qr_image_url && invitation.settings?.showQrOnDesign && (
+                  <img
+                    src={qrMedia.qr_image_url}
+                    alt="QR"
+                    style={{ 
+                      width: `${invitation.settings?.qrSize || 96}px`, 
+                      height: `${invitation.settings?.qrSize || 96}px` 
+                    }}
+                    className={
+                      `absolute bg-white p-2 rounded-md shadow-md z-20 ` +
+                      (invitation.settings?.qrPosition === 'top-left' ? 'top-4 left-4' : '') +
+                      (invitation.settings?.qrPosition === 'top-right' ? 'top-4 right-4' : '') +
+                      (invitation.settings?.qrPosition === 'bottom-left' ? 'bottom-4 left-4' : '') +
+                      (invitation.settings?.qrPosition === 'bottom-right' ? 'bottom-4 right-4' : '')
+                    }
                   />
                 )}
                 
@@ -825,11 +881,11 @@ const RSVPPage: React.FC = () => {
                 <span className="text-base font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                   Davetim
                 </span>
-              </Link>
+          </Link>
             </div>
           </div>
         </div>
-          </div>
+      </div>
         )}
 
       {/* Custom Animations */}
