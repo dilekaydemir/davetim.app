@@ -237,13 +237,28 @@ const PublicInvitationPage: React.FC = () => {
             />
           )}
           
-          {/* Watermark - bottom right */}
+          {/* User Watermark - bottom right */}
           {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
             <img
               src={invitation.image_url}
               alt="Logo"
-              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60 z-10"
             />
+          )}
+
+          {/* FREE Plan Watermark - davetim.app branding */}
+          {invitation.owner_subscription_tier === 'free' && (
+            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-md z-10">
+              <a 
+                href="https://davetim.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-primary-600 transition-colors"
+              >
+                <span className="text-primary-600">✨</span>
+                <span>davetim.app</span>
+              </a>
+            </div>
           )}
 
           {/* QR Code - Dynamic Position */}

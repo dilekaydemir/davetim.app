@@ -489,7 +489,7 @@ const PaymentCallbackPage: React.FC = () => {
 
           {status !== 'processing' && (
             <p className="text-xs text-gray-500 mt-4">
-              Sorun yaşıyorsanız, lütfen <a href="mailto:destek@davetim.app" className="text-primary-600 hover:underline">destek@davetim.app</a> ile iletişime geçin.
+              Sorun yaşıyorsanız, lütfen <a href="mailto:info@davetim.app" className="text-primary-600 hover:underline">info@davetim.app</a> ile iletişime geçin.
             </p>
           )}
         </div>

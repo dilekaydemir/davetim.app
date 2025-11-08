@@ -10,7 +10,7 @@ import {
   LEGAL_DOCUMENTS,
   type LegalDocument,
 } from '../legal';
-import SEOHead from '../components/SEO/SEOHead';
+import SEOHead, { CanonicalURL } from '../components/SEO/SEOHead';
 import { pdfExportService } from '../services/pdfExportService';
 import toast from 'react-hot-toast';
 
@@ -85,8 +85,9 @@ const LegalPage: React.FC = () => {
       <SEOHead
         title={`${document.title} | Davetim.app`}
         description={documentInfo.description}
-        canonical={`https://davetim.app/legal/${slug}`}
+        url={`https://davetim.app/legal/${slug}`}
       />
+      <CanonicalURL url={`https://davetim.app/legal/${slug}`} />
 
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white pt-20 pb-12 px-4">
         <div className="max-w-4xl mx-auto">
@@ -146,7 +147,7 @@ const LegalPage: React.FC = () => {
                 <Building className="h-5 w-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-600">Yayınlayan</p>
-                  <p className="font-medium text-gray-900">Dilcomsys Dijital Çözümler</p>
+                  <p className="font-medium text-gray-900">Diligent Computer System & Digital Commerce</p>
                 </div>
               </div>
             </div>
@@ -177,13 +178,10 @@ const LegalPage: React.FC = () => {
             </p>
             <div className="space-y-1 text-sm text-blue-900">
               <p>
-                <strong>E-posta:</strong> info@dilcomsys.com
+                <strong>E-posta:</strong> info@davetim.app
               </p>
               <p>
-                <strong>Telefon:</strong> +90 (555) 123-4567
-              </p>
-              <p>
-                <strong>Adres:</strong> Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Bahçelievler/İstanbul
+                <strong>Telefon:</strong> +905359216894
               </p>
             </div>
           </div>

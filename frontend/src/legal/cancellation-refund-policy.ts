@@ -15,8 +15,8 @@ Tüketiciler, abonelik başlangıcından itibaren 3 (üç) gün içinde hiçbir 
 
 **1.2. Cayma Hakkının Kullanılması:**
 • Platform: Hesap Ayarları > Abonelik > İptal Et
-• E-posta: info@dilcomsys.com
-• Telefon: +90 (555) 123-4567
+• E-posta: info@davetim.app
+• Telefon: +905359216894
 
 **1.3. Cayma Hakkı Kapsamı:**
 • Sadece ilk 3 gün içinde
@@ -28,7 +28,7 @@ Tüketiciler, abonelik başlangıcından itibaren 3 (üç) gün içinde hiçbir 
       title: "2. ABONELİK İPTALİ",
       content: `**2.1. İptal Yöntemleri:**
 • **Platform Üzerinden:** Hesap Ayarları > Abonelik Yönetimi > İptal Et
-• **E-posta ile:** info@dilcomsys.com adresine iptal talebi
+• **E-posta ile:** info@davetim.app adresine iptal talebi
 • **Canlı Destek:** Çalışma saatleri içinde (09:00-18:00)
 
 **2.2. İptal Sonrası (İADE ALINMAZSA):**
@@ -147,8 +147,8 @@ Kullanıcı hatası veya kural ihlali nedeniyle hesap askıya alınmışsa iade 
       title: "7. MÜŞTERİ HİZMETLERİ",
       content: `İptal ve iade süreçlerinde destek için:
 
-**E-posta:** info@dilcomsys.com
-**Telefon:** +90 (555) 123-4567
+**E-posta:** info@davetim.app
+**Telefon:** +905359216894
 **Çalışma Saatleri:** Hafta içi 09:00 - 18:00
 **Canlı Destek:** Platform üzerinden (Premium kullanıcılar için)
 
@@ -177,38 +177,47 @@ Kullanıcı hatası veya kural ihlali nedeniyle hesap askıya alınmışsa iade 
       title: "9. ÖZEL HÜKÜMLER",
       content: `**9.1. Dijital Hizmet Özelliği:**
 Bu bir dijital hizmettir. 6502 sayılı Kanun'un 15. maddesi gereğince:
-• Dijital içerik sunumu başlamışsa cayma hakkı kullanılamaz
-• Ancak 3 günlük süre içinde kullanım yapılmamışsa cayma hakkı korunur
+• Dijital içerik sunumu başlamışsa cayma hakkı kısıtlanabilir
+• Ancak 3 günlük yasal cayma süresi her durumda korunur
+• Kullanım yapılmış olsa bile 3 gün içinde cayma hakkı kullanılabilir
 
-**9.2. Otomatik Yenileme:**
-• Abonelikler otomatik yenilenir
-• İptal edilmediği sürece her dönem fatura kesilir
-• Dönem bitiminden önce iptal edilebilir
+**9.2. Abonelik Sistemi:**
+• Abonelikler tek seferlik ödemedir, otomatik yenileme yoktur
+• Dönem bitiminde manuel olarak yenileme yapılması gerekir
+• İptal edilmediği takdirde dönem sonunda hizmet sona erer
+• Yenileme için kullanıcının aktif olarak ödeme yapması gerekir
 
 **9.3. Veri Saklama:**
 • İptal sonrası veriler 30 gün süreyle saklanır
 • Geri dönüş talebi için 30 gün içinde iletişime geçilmelidir
-• 30 gün sonra veriler silinir (KVKK uyumu)`
+• 30 gün sonra veriler silinir (KVKK uyumu)
+• Yasal zorunluluklar gereği bazı veriler daha uzun süre saklanabilir`
     },
     {
       id: "10",
       title: "10. SORU VE SORUNLAR",
       content: `**Sık Sorulan Sorular:**
 
-**S: İptal ettim ama hala ücret kesiliyor?**
-C: İptal sonrası mevcut dönem sonuna kadar erişiminiz devam eder. Yeni dönem başladığında ücret kesilmez.
+**S: Otomatik yenileme var mı?**
+C: Hayır, abonelikler tek seferlik ödemedir. Dönem bitiminde manuel olarak yenileme yapmanız gerekir.
+
+**S: İptal ettim, dönem sonuna kadar kullanabilir miyim?**
+C: Evet, iade almadıysanız mevcut dönem sonuna kadar tüm özellikleri kullanabilirsiniz. İade aldıysanız hemen FREE plana düşersiniz.
 
 **S: 3 gün geçti, iade alabilir miyim?**
-C: 3 gün sonrası iptal işlemlerinde iade yapılmaz. Ancak mevcut dönem sonuna kadar erişim devam eder.
+C: Hayır, 3 günlük cayma süresi geçtikten sonra iade yapılmaz. Ancak mevcut dönem sonuna kadar erişim devam eder.
 
 **S: Kredi kartıma ne zaman yansır?**
-C: Banka işlemleri 2-4 hafta sürebilir. 10 iş günü içinde bankaya iade yapılır.
+C: İade onayı sonrası 10 iş günü içinde bankaya iade yapılır. Banka işlemleri 2-4 hafta sürebilir.
 
 **S: Yıllık aboneliği iptal ettim, kısmi iade var mı?**
-C: Hayır, kullanılan süre düşülerek iade yapılmamaktadır.
+C: Hayır, 3 gün sonrası iptal işlemlerinde kısmi iade yapılmamaktadır. Ancak dönem sonuna kadar kullanabilirsiniz.
 
 **S: Teknik sorun yaşıyorum, iade alabilir miyim?**
-C: Önce destek ekibi ile iletişime geçin. Platform kaynaklı sorunlarda çözüm sunulur.`
+C: Platform kaynaklı teknik sorunlarda önce destek ekibi ile iletişime geçin. Sorun çözülmezse özel değerlendirme yapılır.
+
+**S: İade aldım, verilerim ne olacak?**
+C: İade sonrası FREE plana düşersiniz. Verileriniz 30 gün saklanır, bu süre içinde yeniden abonelik alabilirsiniz.`
     }
   ]
 };

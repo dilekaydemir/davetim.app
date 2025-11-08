@@ -27,6 +27,8 @@ const MediaUploadPage = lazy(() => import('./pages/MediaUploadPage'))
 const PublicMediaPage = lazy(() => import('./pages/PublicMediaPage'))
 const QRManagePage = lazy(() => import('./pages/QRManagePage'))
 const LegalPage = lazy(() => import('./pages/LegalPage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
 
 function App() {
   return (
@@ -58,6 +60,8 @@ function App() {
             <Route index element={<HomePage />} />
             <Route path="templates" element={<TemplatesPage />} />
             <Route path="pricing" element={<PricingPage />} />
+            <Route path="about" element={<AboutPage />} />
+            <Route path="contact" element={<ContactPage />} />
             <Route path="auth" element={<AuthPage mode="login" />} />
             <Route path="login" element={<AuthPage mode="login" />} />
             <Route path="signup" element={<AuthPage mode="signup" />} />

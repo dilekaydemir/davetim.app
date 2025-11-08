@@ -13,7 +13,7 @@ class PDFExportService {
   /**
    * Yasal belgeyi PDF olarak indir
    */
-  async exportLegalDocumentToPDF(document: LegalDocument, filename: string): Promise<void> {
+  async exportLegalDocumentToPDF(legalDocument: LegalDocument, filename: string): Promise<void> {
     try {
       // Create a temporary container for rendering
       const container = document.createElement('div');
@@ -30,14 +30,14 @@ class PDFExportService {
       // Add document header
       const header = `
         <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px;">
-          <h1 style="font-size: 24px; margin: 0 0 10px 0; color: #1a1a1a;">${document.title}</h1>
-          <p style="margin: 0; color: #666; font-size: 11px;">Son Güncelleme: ${document.lastUpdated}</p>
-          <p style="margin: 5px 0 0 0; color: #666; font-size: 11px;">Dilcomsys Dijital Çözümler</p>
+          <h1 style="font-size: 24px; margin: 0 0 10px 0; color: #1a1a1a;">${legalDocument.title}</h1>
+          <p style="margin: 0; color: #666; font-size: 11px;">Son Güncelleme: ${legalDocument.lastUpdated}</p>
+          <p style="margin: 5px 0 0 0; color: #666; font-size: 11px;">Diligent Computer System & Digital Commerce</p>
         </div>
       `;
 
       // Add document content
-      const content = document.sections.map(section => `
+      const content = legalDocument.sections.map(section => `
         <div style="margin-bottom: 25px; page-break-inside: avoid;">
           <h2 style="font-size: 16px; margin: 0 0 10px 0; color: #1a1a1a; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
             ${section.title}
@@ -52,9 +52,8 @@ class PDFExportService {
       const footer = `
         <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #666;">
-            Dilcomsys Dijital Çözümler<br/>
-            Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Bahçelievler/İstanbul<br/>
-            E-posta: info@dilcomsys.com | Telefon: +90 (555) 123-4567<br/>
+            Diligent Computer System & Digital Commerce<br/>
+            E-posta: info@davetim.app | Telefon: +905359216894<br/>
             © ${new Date().getFullYear()} Tüm hakları saklıdır.
           </p>
         </div>
@@ -158,9 +157,8 @@ class PDFExportService {
             ve Mesafeli Sözleşmeler Yönetmeliği hükümlerine göre düzenlenmiştir.
           </p>
           <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666;">
-            <p style="margin: 0;">Dilcomsys Dijital Çözümler</p>
-            <p style="margin: 3px 0 0 0;">Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Bahçelievler/İstanbul</p>
-            <p style="margin: 3px 0 0 0;">E-posta: info@dilcomsys.com | Telefon: +90 (555) 123-4567</p>
+            <p style="margin: 0;">Diligent Computer System & Digital Commerce</p>
+            <p style="margin: 3px 0 0 0;">E-posta: info@davetim.app | Telefon: +905359216894</p>
           </div>
         </div>
       `;

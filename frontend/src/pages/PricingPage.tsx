@@ -74,7 +74,7 @@ const PricingPage: React.FC = () => {
       id: 'premium' as PlanTier,
       name: PLAN_CONFIGS.premium.name,
       price: PLAN_CONFIGS.premium.price,
-      description: 'Sınırsız + AI',
+      description: 'Sınırsız + QR Medya',
       icon: <Crown className="h-5 w-5" />,
       color: 'gradient',
       features: [
@@ -82,8 +82,8 @@ const PricingPage: React.FC = () => {
         'PRO\'nun tüm özellikleri',
         '🎥 QR medya (3 ay)',
         '🎥 Yıllıkta 1 yıl saklanır',
-        '🤖 AI tasarım önerileri',
         '7/24 öncelikli destek',
+        'Watermark\'sız yayın',
         `${PLAN_CONFIGS.premium.limits.storageMB}MB depolama`
       ],
       limitations: [],
@@ -297,10 +297,10 @@ const PricingPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="font-bold text-gray-900 mb-2 text-sm">
-                Planımı değiştirebilir miyim?
+                Otomatik yenileme var mı?
               </h3>
               <p className="text-sm text-gray-600">
-                Evet, istediğiniz zaman planınızı yükseltebilir veya düşürebilirsiniz. Değişiklikler hemen geçerli olur.
+                Hayır, abonelikler tek seferlik ödemedir. Dönem bitiminde manuel olarak yenileme yapmanız gerekir.
               </p>
             </div>
             <div>
@@ -314,10 +314,10 @@ const PricingPage: React.FC = () => {
             </div>
             <div>
               <h3 className="font-bold text-gray-900 mb-2 text-sm">
-                Ücretsiz plan yeterli mi?
+                Planımı değiştirebilir miyim?
               </h3>
               <p className="text-sm text-gray-600">
-                Tek davetiye için yeterli. Daha fazla davetiye ve premium özellikler için PRO veya PREMIUM plana yükseltin.
+                Evet, yükseltme anında geçerli olur. Düşürme ise mevcut dönem sonunda devreye girer.
               </p>
             </div>
             <div>
@@ -325,7 +325,7 @@ const PricingPage: React.FC = () => {
                 Hangi ödeme yöntemleri?
               </h3>
               <p className="text-sm text-gray-600">
-                Kredi kartı ve banka kartı. Tüm ödemeler SSL ile korunur ve güvenlidir.
+                Kredi kartı ve banka kartı. Tüm ödemeler güvenli ödeme altyapısı (İyzico) ile korunur.
               </p>
             </div>
           </div>

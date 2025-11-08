@@ -208,7 +208,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       // Gelişmiş özellikler - Var
       qrMediaUpload: true,
       qrMediaStorageDays: 90, // Aylık: 3 ay, Yıllık: 365 gün (kod içinde kontrol)
-      aiDesign: true,
+      aiDesign: false, // Henüz geliştirilmedi
       brandLogo: false, // Sadece kurumsal
       whiteLabel: false,
       

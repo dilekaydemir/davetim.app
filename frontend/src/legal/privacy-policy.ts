@@ -7,17 +7,17 @@ export const PRIVACY_POLICY = {
   title: "Gizlilik Politikası ve Kişisel Verilerin Korunması",
   lastUpdated: "24 Ekim 2025",
   companyInfo: {
-    name: "Dilcomsys Dijital Çözümler",
-    address: "Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Haydar Akın İş Merkezi 2 K:6 D:23 Bahçelievler/İstanbul",
-    email: "info@dilcomsys.com",
-    phone: "+90 (555) 123-4567",
+    name: "Diligent Computer System & Digital Commerce",
+    address: '',
+    email: "info@davetim.app",
+    phone: "+905359216894",
     mersis: "XXXXXXXXXXXXXXXXXX",
   },
   sections: [
     {
       id: "1",
       title: "1. VERİ SORUMLUSU",
-      content: `6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, kişisel verileriniz; veri sorumlusu olarak Dilcomsys Dijital Çözümler ("Şirket") tarafından aşağıda açıklanan kapsamda işlenebilecektir.`
+      content: `6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, kişisel verileriniz; veri sorumlusu olarak Diligent Computer System & Digital Commerce ("Şirket") tarafından aşağıda açıklanan kapsamda işlenebilecektir.`
     },
     {
       id: "2",
@@ -93,7 +93,7 @@ g) Düzeltme, silme ve yok edilme işlemlerinin aktarıldığı üçüncü kişi
 h) İşlenen verilerin münhasıran otomatik sistemler vasıtasıyla analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme
 i) Kişisel verilerin kanuna aykırı olarak işlenmesi sebebiyle zarara uğraması hâlinde zararın giderilmesini talep etme
 
-Bu haklarınızı kullanmak için info@dilcomsys.com adresine yazılı olarak başvurabilirsiniz.`
+Bu haklarınızı kullanmak için info@davetim.app adresine yazılı olarak başvurabilirsiniz.`
     },
     {
       id: "7",
@@ -144,9 +144,8 @@ saklanmaktadır. Saklama süreleri sonunda verileriniz silinir, yok edilir veya 
       title: "11. İLETİŞİM",
       content: `Gizlilik politikamız hakkında sorularınız için:
 
-**E-posta:** info@dilcomsys.com
-**Telefon:** +90 (555) 123-4567
-**Adres:** Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Bahçelievler/İstanbul
+**E-posta:** info@davetim.app
+**Telefon:** +905359216894
 **Çalışma Saatleri:** Hafta içi 09:00 - 18:00`
     }
   ]

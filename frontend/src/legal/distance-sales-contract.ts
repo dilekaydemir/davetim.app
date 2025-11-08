@@ -28,18 +28,15 @@ export const generateDistanceSalesContract = (data: DistanceSalesContractData) =
       title: "MADDE 1 - TARAFLAR",
       content: `**1.1. SATICI BİLGİLERİ:**
 
-Ünvanı: Dilcomsys Dijital Çözümler
-Adres: Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Haydar Akın İş Merkezi 2 K:6 D:23 Bahçelievler/İstanbul
-Telefon: +90 (555) 123-4567
-E-posta: info@dilcomsys.com
-MERSİS No: XXXXXXXXXXXXXXXXXX
+Ünvanı: Diligent Computer System & Digital Commerce
+Telefon: +905359216894
+E-posta: info@davetim.app
 
 **1.2. ALICI BİLGİLERİ:**
 
 Ad Soyad: ${data.userName}
 E-posta: ${data.userEmail}
-Telefon: ${data.userPhone}
-Adres: ${data.userAddress}`
+Telefon: ${data.userPhone}`
     },
     {
       id: "2",
@@ -64,7 +61,8 @@ ${getServiceFeatures(data.planName)}
 • Bu bir dijital hizmet satışıdır
 • Hizmet, ödeme onayı sonrası anında aktif hale gelir
 • Kullanım süresi boyunca erişim sağlanır
-• Otomatik yenileme aktiftir (iptal edilebilir)`
+• Tek seferlik ödemedir, otomatik yenileme yoktur
+• Dönem bitiminde manuel yenileme gerekir`
     },
     {
       id: "4",
@@ -77,23 +75,28 @@ ALICI'nın platform üzerinde işbu sözleşmeyi elektronik ortamda onaylaması,
       id: "5",
       title: "MADDE 5 - CAYMA HAKKI",
       content: `**5.1. Cayma Hakkı Süresi:**
-ALICI, sözleşme tarihinden itibaren 3 (üç) gün içinde cayma hakkına sahiptir.
+ALICI, sözleşme tarihinden itibaren 3 (üç) gün içinde hiçbir gerekçe göstermeksizin ve cezai şart ödemeksizin cayma hakkına sahiptir. (6502 sayılı Tüketicinin Korunması Hakkında Kanun, Madde 47)
 
 **5.2. Cayma Hakkının Kullanılması:**
 Cayma hakkının kullanılması için bu süre içinde SATICI'ya yazılı olarak veya kalıcı veri saklayıcısı (e-posta, platform hesap ayarları vb.) ile bildirimde bulunulması gerekmektedir.
 
 **5.3. Cayma Hakkı Bildirimi:**
-• E-posta: info@dilcomsys.com
-• Platform: Hesap Ayarları > Abonelik İptali
+• E-posta: info@davetim.app
+• Telefon: +905359216894
+• Platform: Hesap Ayarları > Abonelik Yönetimi > İptal Et
 
 **5.4. Cayma Hakkının Sonuçları:**
 Cayma hakkının kullanılması durumunda:
-• Ödenen tutar 10 (on) iş günü içinde ALICI'ya iade edilir
-• Hizmet erişimi derhal sonlandırılır
+• Ödenen tutar 10 (on) iş günü içinde ALICI'ya tam olarak iade edilir
+• Hizmet erişimi derhal sonlandırılır ve hesap FREE plana düşürülür
 • Kredi kartına iadeler, banka tarafından hesaba yansıtılır (2-4 hafta sürebilir)
+• Kullanım yapılmış olsa bile 3 gün içinde cayma hakkı kullanılabilir
 
-**5.5. Cayma Hakkının İstisnaları:**
-Dijital içerik ve hizmet sunumuna başlanmış olması halinde, ALICI'nın onayı ile cayma hakkı kullanılamaz. Ancak 3 günlük süre içinde kullanım yapılmamışsa cayma hakkı korunur.`
+**5.5. Dijital Hizmet Özelliği:**
+6502 sayılı Kanun'un 15. maddesi gereğince dijital içerik sunumuna başlanmış olması cayma hakkını kısıtlayabilir. Ancak:
+• 3 günlük yasal cayma süresi her durumda korunur
+• ALICI, kullanım yapmış olsa bile 3 gün içinde cayma hakkını kullanabilir
+• Cayma durumunda ödenen tutar tam olarak iade edilir`
     },
     {
       id: "6",
@@ -182,7 +185,7 @@ ALICI, kişisel verilerinin işlenmesine açık rıza göstermektedir.`
 İşbu sözleşme 14 (on dört) maddeden ibaret olup, taraflarca elektronik ortamda onaylanmış ve yürürlüğe girmiştir.
 
 **SATICI:**
-Dilcomsys Dijital Çözümler
+Diligent Computer System & Digital Commerce
 
 **ALICI:**
 ${data.userName}
@@ -193,27 +196,23 @@ ${data.userEmail}`
 
 function getServiceFeatures(planName: string): string {
   const features: Record<string, string> = {
-    "FREE": `• 1 adet dijital davetiye
-• Temel şablonlar
+    "FREE": `• 1 adet dijital davetiye (tek kullanım)
+• 5 temel şablona erişim
+• PDF/PNG indirme ve link paylaşımı
 • RSVP takibi (50 misafir)
-• QR kod oluşturma`,
+• 5 MB depolama, watermark'lı yayın`,
     
-    "PRO": `• 10 adet dijital davetiye/ay
-• Tüm şablonlara erişim
-• Sınırsız RSVP takibi
-• HD PDF indirme
-• Özel tasarım öğeleri
-• E-posta desteği`,
+    "PRO": `• Aylık 3 dijital davetiye
+• PRO seviyesi şablonlar
+• Görsel yükleme ve renk özelleştirme
+• Sosyal medya paylaşımı + Excel export
+• Sınırsız RSVP ve 100 MB depolama`,
     
     "PREMIUM": `• Sınırsız dijital davetiye
-• Tüm şablonlara erişim
-• Sınırsız RSVP takibi
-• HD PDF indirme
-• Özel tasarım öğeleri
-• Öncelikli teknik destek
-• Gelişmiş analitik raporlar
-• Reklamsız deneyim
-• Özel alan adı (yakında)`
+• Premium şablonlar ve PRO özellikleri
+• QR medya yükleme (3 ay / yıllıkta 12 ay)
+• 24/7 öncelikli destek
+• Watermark'sız yayın ve 500 MB depolama`
   };
 
   return features[planName.toUpperCase()] || features["FREE"];

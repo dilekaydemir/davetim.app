@@ -104,6 +104,32 @@ const Navbar: React.FC = () => {
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 rounded-full" />
               )}
             </Link>
+            <Link
+              to="/about"
+              className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                isActive('/about')
+                  ? 'text-primary-600 bg-primary-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              Hakkımızda
+              {isActive('/about') && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 rounded-full" />
+              )}
+            </Link>
+            <Link
+              to="/contact"
+              className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                isActive('/contact')
+                  ? 'text-primary-600 bg-primary-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              İletişim
+              {isActive('/contact') && (
+                <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 rounded-full" />
+              )}
+            </Link>
 
             {isAuthenticated ? (
               <div className="flex items-center gap-2 ml-4">
@@ -241,6 +267,28 @@ const Navbar: React.FC = () => {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Fiyatlar
+              </Link>
+              <Link
+                to="/about"
+                className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-target ${
+                  isActive('/about')
+                    ? 'text-primary-600 bg-primary-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Hakkımızda
+              </Link>
+              <Link
+                to="/contact"
+                className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-target ${
+                  isActive('/contact')
+                    ? 'text-primary-600 bg-primary-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                İletişim
               </Link>
               
               {!isAuthenticated ? (

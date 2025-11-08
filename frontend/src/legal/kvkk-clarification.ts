@@ -12,12 +12,10 @@ export const KVKK_CLARIFICATION = {
       title: "1. VERİ SORUMLUSU",
       content: `6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, kişisel verileriniz veri sorumlusu sıfatıyla aşağıdaki şirket tarafından işlenmektedir:
 
-**Ünvan:** Dilcomsys Dijital Çözümler
-**Adres:** Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Haydar Akın İş Merkezi 2 K:6 D:23 Bahçelievler/İstanbul
-**Telefon:** +90 (555) 123-4567
-**E-posta:** info@dilcomsys.com
-**Mersis No:** XXXXXXXXXXXXXXXXXX
-**KEP Adresi:** dilcomsys@hs03.kep.tr`
+**Ünvan:** Diligent Computer System & Digital Commerce
+**Telefon:** +905359216894
+**E-posta:** info@davetim.app
+**KEP Adresi:** info@davetim.app`
     },
     {
       id: "2",
@@ -185,9 +183,8 @@ export const KVKK_CLARIFICATION = {
 **i)** Kişisel verilerin kanuna aykırı olarak işlenmesi sebebiyle zarara uğraması hâlinde zararın giderilmesini talep etme
 
 **Başvuru Yöntemleri:**
-• E-posta: kvkk@dilcomsys.com
-• KEP: dilcomsys@hs03.kep.tr
-• Posta: Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Bahçelievler/İstanbul
+• E-posta: info@davetim.app
+• KEP: info@davetim.app
 • Platform: Hesap Ayarları > KVKK Hakları
 
 **Yanıt Süresi:** 30 gün içinde (ücretsiz)`
@@ -268,7 +265,7 @@ Saklama süreleri sona erdiğinde veriler:
 • Şikayet ve dava hakları
 
 **İletişim:**
-Veri ihlali şüphesi veya tespiti: security@dilcomsys.com`
+Veri ihlali şüphesi veya tespiti: info@davetim.app`
     },
     {
       id: "10",
@@ -278,7 +275,7 @@ Veri ihlali şüphesi veya tespiti: security@dilcomsys.com`
 Platform kullanımı ile bu metni kabul etmiş sayılırsınız.
 
 **İletişim:**
-Sorularınız için: kvkk@dilcomsys.com
+Sorularınız için: info@davetim.app
 
 **Revizyon:**
 Bu metin, yasal değişikliklere uyum sağlamak için güncellenebilir.

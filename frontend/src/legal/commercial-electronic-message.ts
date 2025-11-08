@@ -123,7 +123,7 @@ Bu iletiler, hizmet sunumu için gereklidir ve onayınız olmadan gönderilir.`
 • Hesap Ayarları > Bildirimler > Ticari İleti Onayı
 • E-posta altındaki "Abonelikten Çık" linki
 • SMS içindeki "RED" koduyla 
-• info@dilcomsys.com adresine talep
+• info@davetim.app adresine talep
 
 **Kısmi Onay:**
 Sadece belirli kanallara onay verebilirsiniz:
@@ -189,9 +189,8 @@ Sadece belirli kanallara onay verebilirsiniz:
       content: `Ticari elektronik iletiler ile ilgili şikayetleriniz için:
 
 **Şirket İletişim:**
-• E-posta: info@dilcomsys.com
-• Telefon: +90 (555) 123-4567
-• Adres: Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Bahçelievler/İstanbul
+• E-posta: info@davetim.app
+• Telefon: +905359216894
 
 **Resmi Merciler:**
 • **BTK (Bilgi Teknolojileri ve İletişim Kurumu):** İhlal bildirimi
@@ -205,7 +204,7 @@ Sadece belirli kanallara onay verebilirsiniz:
 };
 
 export const COMMERCIAL_MESSAGE_CONSENT_TEXT = `
-6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun uyarınca, Dilcomsys Dijital Çözümler tarafından 
+6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun uyarınca, Diligent Computer System & Digital Commerce tarafından 
 kampanyalar, yeni ürün/hizmetler, promosyonlar ve diğer pazarlama amaçlı ticari elektronik iletilerin 
 e-posta, SMS, telefon ve diğer elektronik kanallar aracılığıyla tarafıma iletilmesine ve bu kapsamda 
 kişisel verilerimin işlenmesine açık rıza gösteriyorum. Bu onayımı dilediğim zaman geri alabileceğimi biliyorum.

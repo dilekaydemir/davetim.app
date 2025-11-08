@@ -338,13 +338,28 @@ const RSVPPage: React.FC = () => {
             />
           )}
           
-                {/* Watermark */}
+                {/* User Watermark */}
           {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
             <img
               src={invitation.image_url}
               alt="Logo"
-              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60 z-10"
             />
+          )}
+
+          {/* FREE Plan Watermark - davetim.app branding */}
+          {invitation.owner_subscription_tier === 'free' && (
+            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-md z-10">
+              <a 
+                href="https://davetim.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-primary-600 transition-colors"
+              >
+                <span className="text-primary-600">✨</span>
+                <span>davetim.app</span>
+              </a>
+            </div>
           )}
           
           {/* QR Code - Dynamic Position (Envelope Card) */}
@@ -539,13 +554,28 @@ const RSVPPage: React.FC = () => {
                   />
                 )}
                 
-                {/* Watermark */}
+                {/* User Watermark */}
                 {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
                   <img
                     src={invitation.image_url}
                     alt="Logo"
-                    className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+                    className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60 z-10"
                   />
+                )}
+
+                {/* FREE Plan Watermark - davetim.app branding */}
+                {invitation.owner_subscription_tier === 'free' && (
+                  <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-md z-10">
+                    <a 
+                      href="https://davetim.app" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-primary-600 transition-colors"
+                    >
+                      <span className="text-primary-600">✨</span>
+                      <span>davetim.app</span>
+                    </a>
+                  </div>
                 )}
 
                 {/* QR Code - Dynamic Position (Main Card) */}
@@ -870,20 +900,6 @@ const RSVPPage: React.FC = () => {
               )}
             </div>
         </div>
-
-        {/* Footer */}
-          <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 p-4 shadow-sm">
-            <div className="flex items-center justify-center">
-              <Link to="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                  <span className="text-white font-bold text-base">D</span>
-                </div>
-                <span className="text-base font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Davetim
-                </span>
-          </Link>
-            </div>
-          </div>
         </div>
       </div>
         )}

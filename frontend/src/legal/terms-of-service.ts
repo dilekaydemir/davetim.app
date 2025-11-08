@@ -10,7 +10,7 @@ export const TERMS_OF_SERVICE = {
     {
       id: "1",
       title: "1. GENEL HÜKÜMLER",
-      content: `Bu Kullanım Koşulları ("Sözleşme"), Dilcomsys Dijital Çözümler ("Şirket") tarafından işletilen davetim.app platformu ("Platform") ile kullanıcı ("Kullanıcı") arasında elektronik ortamda akdedilmiş bir sözleşmedir.
+      content: `Bu Kullanım Koşulları ("Sözleşme"), Diligent Computer System & Digital Commerce ("Şirket") tarafından işletilen davetim.app platformu ("Platform") ile kullanıcı ("Kullanıcı") arasında elektronik ortamda akdedilmiş bir sözleşmedir.
 
 Platforma erişim sağlayarak veya kullanarak bu Kullanım Koşulları'nı kabul etmiş sayılırsınız. Koşulları kabul etmiyorsanız, lütfen Platformu kullanmayınız.`
     },
@@ -28,24 +28,25 @@ Platforma erişim sağlayarak veya kullanarak bu Kullanım Koşulları'nı kabul
       id: "3",
       title: "3. HİZMETLERİN KAPSAMI",
       content: `**3.1. Ücretsiz Hizmetler (FREE Plan):**
-• 1 adet dijital davetiye oluşturma
-• Temel şablon erişimi
+• 1 adet dijital davetiye (tek kullanım)
+• 5 temel şablona erişim
+• PDF ve PNG indirme / link paylaşımı
 • RSVP takibi (50 misafir)
-• QR kod oluşturma
+• Watermark'lı yayın ve 5 MB depolama
 
 **3.2. PRO Plan:**
-• 10 adet dijital davetiye/ay
-• Tüm şablonlara erişim
-• RSVP takibi (sınırsız)
-• HD PDF indirme
-• Özel tasarım öğeleri
+• Aylık 3 dijital davetiye
+• PRO seviyesi şablonlara erişim
+• Görsel yükleme ve renk özelleştirme
+• Sosyal medya paylaşım butonları + Excel export
+• Sınırsız RSVP ve 100 MB depolama
 
 **3.3. PREMIUM Plan:**
 • Sınırsız dijital davetiye
-• Öncelikli destek
-• Özel alan adı (yakında)
-• Gelişmiş analitik
-• Reklamsız deneyim
+• Premium şablonlar ve PRO özelliklerinin tamamı
+• QR medya yükleme (3 ay / yıllıkta 12 ay saklama)
+• 24/7 öncelikli destek
+• Watermark'sız yayın ve 500 MB depolama
 
 Şirket, hizmet kapsamında değişiklik yapma hakkını saklı tutar.`
     },
@@ -76,33 +77,44 @@ Platforma erişim sağlayarak veya kullanarak bu Kullanım Koşulları'nı kabul
 • Abonelik ücretleri, fiyatlandırma sayfasında belirtilmiştir
 • Tüm fiyatlar TL cinsindendir ve KDV dahildir
 • Ödeme, kredi kartı veya banka kartı ile yapılır
+• Ödeme işlemleri güvenli ödeme altyapısı (İyzico) üzerinden gerçekleşir
 
-**5.2. Otomatik Yenileme:**
-• Abonelikler, iptal edilmediği sürece otomatik yenilenir
-• Kullanıcı, abonelik bitiş tarihinden önce iptal edebilir
-• İptal sonrası, mevcut dönem sonuna kadar erişim devam eder
+**5.2. Abonelik Sistemi:**
+• **PRO Plan:** Sadece aylık abonelik (79 TL/ay)
+• **PREMIUM Plan:** Aylık (129 TL/ay) veya Yıllık (1.290 TL/yıl)
+• Abonelikler tek seferlik ödemedir, otomatik yenileme yoktur
+• Dönem bitiminde manuel olarak yenileme yapılması gerekir
+• Kullanıcı, dönem bitiminden önce iptal edebilir
 
 **5.3. Ücret Değişiklikleri:**
 • Şirket, fiyatlarda değişiklik yapma hakkını saklı tutar
-• Değişiklikler, mevcut aboneliklere 30 gün önceden bildirilir`
+• Değişiklikler, yeni abonelikler için geçerlidir
+• Mevcut aktif abonelikler, dönem sonuna kadar mevcut fiyattan devam eder`
     },
     {
       id: "6",
       title: "6. İPTAL VE İADE KOŞULLARI",
       content: `**6.1. İptal Hakkı:**
 • Kullanıcı, aboneliğini dilediği zaman iptal edebilir
-• İptal sonrası, mevcut dönem sonuna kadar hizmet kullanılabilir
+• İptal sonrası, mevcut dönem sonuna kadar hizmet kullanılabilir (iade alınmadıysa)
+• İptal işlemi: Hesap Ayarları > Abonelik Yönetimi > İptal Et
 
-**6.2. İade Koşulları:**
-• Abonelik başlangıcından itibaren 3 gün içinde iptal edilirse tam iade
-• 3 gün sonrası iptal işlemlerinde iade yapılmaz
-• İade talepleri, hesap ayarlarından yapılır
-• İadeler, 10 iş günü içinde kredi kartına yansır
+**6.2. Cayma ve İade Koşulları (6502 sayılı Kanun):**
+• **3 gün içinde cayma hakkı:** Abonelik başlangıcından itibaren 3 gün içinde hiçbir gerekçe göstermeksizin cayma hakkı kullanılabilir
+• **Tam iade:** 3 gün içinde iptal edilirse ödenen tutar tam olarak iade edilir
+• **İade süresi:** Onay sonrası 10 iş günü içinde kredi kartına/hesaba iade yapılır
+• **Hemen FREE plana geçiş:** İade alındığında tüm premium özellikler anında sonlandırılır
+• **3 gün sonrası:** İade yapılmaz, ancak mevcut dönem sonuna kadar erişim devam eder
 
 **6.3. İade Hakkı Olmayan Durumlar:**
-• Kullanıcı hesabının askıya alınması veya silinmesi
-• Kullanım Koşulları'nın ihlali
-• Hizmetin kullanılmış olması (free olmayan özellikler kullanılmışsa)`
+• 3 günlük cayma süresi geçtikten sonra
+• Kullanıcı hesabının kural ihlali nedeniyle askıya alınması
+• Dolandırıcılık veya kötüye kullanım tespit edilmesi
+• Kullanım Koşulları'nın ciddi ihlali
+
+**6.4. Otomatik Yenileme:**
+• Abonelikler otomatik yenilenmez (tek seferlik ödeme sistemi)
+• Dönem bitiminde manuel olarak yenileme yapılması gerekir`
     },
     {
       id: "7",
@@ -176,11 +188,9 @@ Değişiklikler sonrasında Platform kullanımına devam edilmesi, yeni koşulla
       title: "13. İLETİŞİM",
       content: `Kullanım Koşulları ile ilgili sorularınız için:
 
-**Şirket:** Dilcomsys Dijital Çözümler
-**E-posta:** info@dilcomsys.com
-**Telefon:** +90 (555) 123-4567
-**Adres:** Şirinevler Mah. Adnan Kahveci Bulvarı No:208 Bahçelievler/İstanbul
-**MERSİS:** XXXXXXXXXXXXXXXXXX`
+**Şirket:** Diligent Computer System & Digital Commerce
+**E-posta:** info@davetim.app
+**Telefon:** +905359216894`
     },
     {
       id: "14",

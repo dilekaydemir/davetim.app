@@ -20,10 +20,10 @@ const Footer: React.FC = () => {
               Düğün, doğum günü, baby shower ve tüm özel anlarınız için.
             </p>
             <div className="flex space-x-4">
-              <a href="mailto:info@davetim.com" className="text-gray-400 hover:text-primary-400 transition-colors">
+              <a href="mailto:info@davetim.app" className="text-gray-400 hover:text-primary-400 transition-colors">
                 <Mail className="h-5 w-5" />
               </a>
-              <a href="tel:+905555555555" className="text-gray-400 hover:text-primary-400 transition-colors">
+              <a href="tel:+905359216894" className="text-gray-400 hover:text-primary-400 transition-colors">
                 <Phone className="h-5 w-5" />
               </a>
             </div>
