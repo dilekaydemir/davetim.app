@@ -6,6 +6,7 @@ interface SEOHeadProps {
   keywords?: string;
   image?: string;
   url?: string;
+  canonical?: string;
   type?: 'website' | 'article';
   author?: string;
   publishedTime?: string;
@@ -24,6 +25,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   keywords = 'dijital davetiye, online davetiye, davetiye tasarımı, düğün davetiyesi, nişan davetiyesi, doğum günü davetiyesi',
   image = 'https://davetim.app/og-image.jpg',
   url,
+  canonical,
   type = 'website',
   author = 'Davetim',
   publishedTime,
@@ -48,6 +50,10 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     
     if (url) {
       updateMetaTag('og:url', url, 'property');
+    }
+
+    if (canonical) {
+      updateCanonicalLink(canonical);
     }
 
     // Twitter Card
@@ -80,7 +86,11 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     updateMetaTag('apple-mobile-web-app-status-bar-style', 'default', 'name');
     updateMetaTag('apple-mobile-web-app-title', 'Davetim', 'name');
 
-  }, [title, description, keywords, image, url, type, author, publishedTime, modifiedTime]);
+    if (canonical) {
+      updateCanonicalLink(canonical);
+    }
+
+  }, [title, description, keywords, image, url, canonical, type, author, publishedTime, modifiedTime]);
 
   return null; // This component doesn't render anything
 };
@@ -98,6 +108,20 @@ const updateMetaTag = (name: string, content: string, attribute: 'name' | 'prope
   }
   
   element.setAttribute('content', content);
+};
+
+const updateCanonicalLink = (href: string) => {
+  if (!href) return;
+
+  let link = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'canonical';
+    document.head.appendChild(link);
+  }
+
+  link.href = href;
 };
 
 /**

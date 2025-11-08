@@ -26,6 +26,11 @@ interface PreviewModalProps {
     text: string;
     accent: string;
   };
+  qrData?: {
+    qrImageUrl: string;
+    qrPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+    qrSize: number;
+  } | null;
 }
 
 const PreviewModal: React.FC<PreviewModalProps> = ({
@@ -39,7 +44,8 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
     background: '#ffffff',
     text: '#ffffff',
     accent: '#f56565'
-  }
+  },
+  qrData = null
 }) => {
   const previewRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = React.useState(false);
@@ -99,31 +105,40 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
     });
   };
 
+  const isDraft = invitation?.status !== 'published';
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
+      {/* Backdrop - Modern blur */}
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* Modal */}
+      {/* Modal - Modern & Minimalist */}
       <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden mx-auto">
-          {/* Close button - mobile friendly */}
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden mx-auto border border-gray-200/50">
+          {/* Close button - Modern */}
           <button
             onClick={onClose}
-            className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors touch-target"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 p-2 bg-white/90 backdrop-blur-sm rounded-xl shadow-md hover:bg-gray-100 transition-all touch-target"
             aria-label="Kapat"
           >
-            <X className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
+            <X className="h-5 w-5 text-gray-600" />
           </button>
           
-          {/* Header */}
-          <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
-              Davetiye Önizleme
-            </h2>
+          {/* Header - Modern */}
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50 to-white">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+                Davetiye Önizleme
+              </h2>
+              {isDraft && (
+                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                  <span>⚠️</span> Taslak - Paylaşmak için yayınlayın
+                </p>
+              )}
+            </div>
             {/* Spacer for close button */}
             <div className="w-10"></div>
           </div>
@@ -158,6 +173,22 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                   src={invitationData.imageUrl}
                   alt="Logo"
                   className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+                />
+              )}
+
+              {/* QR Code - Dynamic Position */}
+              {qrData?.qrImageUrl && (
+                <img
+                  src={qrData.qrImageUrl}
+                  alt="QR"
+                  style={{ width: `${qrData.qrSize}px`, height: `${qrData.qrSize}px` }}
+                  className={
+                    `absolute bg-white p-2 rounded-md shadow-md z-20 ` +
+                    (qrData.qrPosition === 'top-left' ? 'top-4 left-4' : '') +
+                    (qrData.qrPosition === 'top-right' ? 'top-4 right-4' : '') +
+                    (qrData.qrPosition === 'bottom-left' ? 'bottom-4 left-4' : '') +
+                    (qrData.qrPosition === 'bottom-right' ? 'bottom-4 right-4' : '')
+                  }
                 />
               )}
               
@@ -260,21 +291,33 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-3 sm:p-4 border-t border-gray-200 bg-gray-50">
+          {/* Actions - Modern & Responsive */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200/50 bg-gradient-to-r from-white to-gray-50">
+            {/* Share Button */}
             <button
-              onClick={handleShare}
-              className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto"
-              disabled={!invitation?.id}
+              onClick={isDraft ? undefined : handleShare}
+              disabled={isDraft || !invitation?.id}
+              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+                isDraft || !invitation?.id
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-500 hover:text-primary-600 hover:shadow-md'
+              }`}
+              title={isDraft ? 'Paylaşmak için önce yayınlayın' : 'Paylaş'}
             >
               <Share2 className="h-4 w-4" />
-              <span className="sm:inline">Paylaş</span>
+              <span>Paylaş</span>
             </button>
             
+            {/* PNG Export Button */}
             <button
-              onClick={handleExportImage}
-              className="btn-secondary flex items-center justify-center gap-2 w-full sm:w-auto"
-              disabled={isExporting}
+              onClick={isDraft ? undefined : handleExportImage}
+              disabled={isDraft || isExporting}
+              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+                isDraft || isExporting
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:shadow-md'
+              }`}
+              title={isDraft ? 'İndirmek için önce yayınlayın' : 'PNG olarak indir'}
             >
               {isExporting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -284,17 +327,23 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
               <span>PNG</span>
             </button>
 
+            {/* PDF Export Button */}
             <button
-              onClick={handleExportPDF}
-              className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
-              disabled={isExporting}
+              onClick={isDraft ? undefined : handleExportPDF}
+              disabled={isDraft || isExporting}
+              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all shadow-sm ${
+                isDraft || isExporting
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white hover:shadow-lg'
+              }`}
+              title={isDraft ? 'İndirmek için önce yayınlayın' : 'PDF olarak indir'}
             >
               {isExporting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Download className="h-4 w-4" />
               )}
-              <span>PDF</span>
+              <span>PDF İndir</span>
             </button>
           </div>
         </div>

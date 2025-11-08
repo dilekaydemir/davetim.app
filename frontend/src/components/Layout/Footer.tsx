@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Mail, Phone, MapPin } from 'lucide-react';
+import { Heart, Mail, Phone } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -20,10 +20,10 @@ const Footer: React.FC = () => {
               Düğün, doğum günü, baby shower ve tüm özel anlarınız için.
             </p>
             <div className="flex space-x-4">
-              <a href="mailto:info@davetim.com" className="text-gray-400 hover:text-primary-400 transition-colors">
+              <a href="mailto:info@davetim.app" className="text-gray-400 hover:text-primary-400 transition-colors">
                 <Mail className="h-5 w-5" />
               </a>
-              <a href="tel:+905555555555" className="text-gray-400 hover:text-primary-400 transition-colors">
+              <a href="tel:+905359216894" className="text-gray-400 hover:text-primary-400 transition-colors">
                 <Phone className="h-5 w-5" />
               </a>
             </div>
@@ -56,28 +56,33 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Support */}
+          {/* Legal */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Destek</h3>
+            <h3 className="text-lg font-semibold mb-4">Bilgi Al</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/help" className="text-gray-400 hover:text-white transition-colors">
-                  Yardım Merkezi
-                </Link>
-              </li>
-              <li>
-                <Link to="/faq" className="text-gray-400 hover:text-white transition-colors">
-                  Sık Sorulan Sorular
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="/legal/gizlilik-politikasi" className="text-gray-400 hover:text-white transition-colors">
                   Gizlilik Politikası
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="/legal/kullanim-kosullari" className="text-gray-400 hover:text-white transition-colors">
                   Kullanım Koşulları
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/iptal-ve-iade-kosullari" className="text-gray-400 hover:text-white transition-colors">
+                  İptal ve İade
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/kvkk-aydinlatma" className="text-gray-400 hover:text-white transition-colors">
+                  KVKK Aydınlatma
+                </Link>
+              </li>
+              <li>
+                <Link to="/legal/ticari-elektronik-ileti" className="text-gray-400 hover:text-white transition-colors">
+                  Ticari İleti Onayı
                 </Link>
               </li>
             </ul>

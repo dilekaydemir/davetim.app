@@ -138,6 +138,9 @@ class GuestService {
    */
   async createGuest(guestData: CreateGuestData): Promise<Guest | null> {
     try {
+      // Generate unique guest token
+      const guestToken = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      
       const { data, error } = await supabase
         .from('guests')
         .insert([{
@@ -147,7 +150,8 @@ class GuestService {
           phone: guestData.phone || null,
           companion_count: guestData.companion_count || 0,
           notes: guestData.notes || null,
-          rsvp_status: 'pending'
+          rsvp_status: 'pending',
+          guest_token: guestToken
         }])
         .select()
         .single();

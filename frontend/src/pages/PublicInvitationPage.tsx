@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Download, Share2, Loader2 } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
+import { mediaService, type Media } from '../services/mediaService';
 import { pdfService } from '../services/pdfService';
 import { PublicInvitationSkeleton } from '../components/Skeleton/Skeleton';
 import toast from 'react-hot-toast';
@@ -11,6 +12,7 @@ const PublicInvitationPage: React.FC = () => {
   const navigate = useNavigate();
   
   const [invitation, setInvitation] = useState<Invitation | null>(null);
+  const [qrMedia, setQrMedia] = useState<Media | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   
@@ -56,6 +58,21 @@ const PublicInvitationPage: React.FC = () => {
       }
 
       setInvitation(data);
+      
+      // Load QR media if exists
+      try {
+        const media = await mediaService.getMediaByInvitationId(invitationId);
+        if (media) {
+          console.log('✅ QR Media loaded:', media);
+          console.log('📍 QR Settings:', data.settings);
+          setQrMedia(media);
+        } else {
+          console.log('ℹ️ No QR media found for invitation');
+        }
+      } catch (error) {
+        // QR media is optional, don't show error
+        console.log('⚠️ Error loading QR media:', error);
+      }
       
       // Increment view count only for published invitations
       if (data.status === 'published') {
@@ -133,59 +150,73 @@ const PublicInvitationPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      {/* Draft Banner */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20">
+      {/* Draft Banner - Modern */}
       {invitation.status !== 'published' && (
-        <div className="bg-yellow-50 border-b border-yellow-200 py-3">
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-b border-amber-200/50 backdrop-blur-sm py-4">
           <div className="max-w-4xl mx-auto px-4">
-            <p className="text-sm text-yellow-800 text-center">
-              ⚠️ <strong>Önizleme Modu:</strong> Bu davetiye henüz yayınlanmamış. Sadece linke sahip olanlar görebilir.
-            </p>
+            <div className="flex items-center justify-center gap-2 text-sm">
+              <div className="bg-amber-200 rounded-full p-1.5">
+                <span className="text-amber-700 text-xs">⚠️</span>
+              </div>
+              <p className="text-amber-900">
+                <strong className="font-semibold">Önizleme Modu:</strong> Bu davetiye henüz yayınlanmamış
+              </p>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Header Actions */}
-      <div className="max-w-4xl mx-auto px-4 mb-6">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={() => navigate('/')}
-            className="text-gray-600 hover:text-gray-900 font-medium"
-          >
-            ← Ana Sayfa
-          </button>
-          <div className="flex items-center gap-3">
+      {/* Header Actions - Modern & Sticky */}
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             <button
-              onClick={handleShare}
-              className="btn-secondary flex items-center gap-2"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all font-medium"
             >
-              <Share2 className="h-4 w-4" />
-              Paylaş
+              <span className="text-lg">←</span>
+              <span className="hidden sm:inline">Ana Sayfa</span>
             </button>
-            <button
-              onClick={handleDownloadPDF}
-              disabled={isExporting}
-              className="btn-primary flex items-center gap-2"
-            >
-              {isExporting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="h-4 w-4" />
-              )}
-              {isExporting ? 'İndiriliyor...' : 'PDF İndir'}
-            </button>
+            {/* Only show share/download buttons for published invitations */}
+            {invitation.status === 'published' && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleShare}
+                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-500 hover:text-primary-600 rounded-xl transition-all font-medium shadow-sm hover:shadow-md"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Paylaş</span>
+                </button>
+                <button
+                  onClick={handleDownloadPDF}
+                  disabled={isExporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">{isExporting ? 'İndiriliyor...' : 'PDF İndir'}</span>
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Invitation Preview */}
+      {/* Main Content */}
+      <div className="py-8">
+
+      {/* Invitation Preview - Modern Card */}
       <div className="max-w-4xl mx-auto px-4">
         <div 
           id="invitation-preview"
-          className="bg-white shadow-2xl rounded-lg overflow-hidden relative"
+          className="bg-white shadow-2xl rounded-2xl overflow-hidden relative border border-white/50 backdrop-blur-sm"
           style={{
             minHeight: '600px',
-            backgroundImage: invitation.content?.imagePosition === 'background' && invitation.image_url
+            backgroundImage: invitation.image_url && invitation.content?.imagePosition === 'background'
               ? `url(${invitation.image_url})`
               : invitation.content?.colors 
                 ? `linear-gradient(135deg, ${invitation.content.colors.primary} 0%, ${invitation.content.colors.secondary} 100%)`
@@ -206,12 +237,46 @@ const PublicInvitationPage: React.FC = () => {
             />
           )}
           
-          {/* Watermark - bottom right */}
+          {/* User Watermark - bottom right */}
           {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
             <img
               src={invitation.image_url}
               alt="Logo"
-              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
+              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60 z-10"
+            />
+          )}
+
+          {/* FREE Plan Watermark - davetim.app branding */}
+          {invitation.owner_subscription_tier === 'free' && (
+            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-md z-10">
+              <a 
+                href="https://davetim.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-primary-600 transition-colors"
+              >
+                <span className="text-primary-600">✨</span>
+                <span>davetim.app</span>
+              </a>
+            </div>
+          )}
+
+          {/* QR Code - Dynamic Position */}
+          {qrMedia?.qr_image_url && invitation.settings?.showQrOnDesign && (
+            <img
+              src={qrMedia.qr_image_url}
+              alt="QR"
+              style={{ 
+                width: `${invitation.settings?.qrSize || 96}px`, 
+                height: `${invitation.settings?.qrSize || 96}px` 
+              }}
+              className={
+                `absolute bg-white p-2 rounded-md shadow-md z-20 ` +
+                (invitation.settings?.qrPosition === 'top-left' ? 'top-4 left-4' : '') +
+                (invitation.settings?.qrPosition === 'top-right' ? 'top-4 right-4' : '') +
+                (invitation.settings?.qrPosition === 'bottom-left' ? 'bottom-4 left-4' : '') +
+                (invitation.settings?.qrPosition === 'bottom-right' ? 'bottom-4 right-4' : '')
+              }
             />
           )}
           
@@ -330,28 +395,34 @@ const PublicInvitationPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="mt-8 text-center text-gray-600">
-          <p className="text-sm">
-            Bu davetiye{' '}
-            <a 
-              href="/" 
-              className="text-primary-600 hover:text-primary-700 font-medium"
-            >
-              Davetim
-            </a>
-            {' '}ile oluşturulmuştur
-          </p>
-          <p className="text-xs mt-2 text-gray-500">
-            Kendi davetiyenizi oluşturmak için{' '}
-            <a 
-              href="/signup" 
-              className="text-primary-600 hover:text-primary-700 font-medium"
-            >
-              ücretsiz kayıt olun
-            </a>
-          </p>
+        {/* Footer Info - Modern */}
+        <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 p-4 shadow-sm">
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center">
+              <a href="/" className="flex items-center gap-2 group">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
+                  <span className="text-white font-bold text-base">D</span>
+                </div>
+                <span className="text-base font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                  Davetim
+                </span>
+              </a>
+            </div>
+            <div className="pt-2 border-t border-gray-200/50">
+              <p className="text-xs text-gray-600">
+                Kendi davetiyenizi oluşturmak için{' '}
+                <a 
+                  href="/signup" 
+                  className="text-primary-600 hover:text-primary-700 font-semibold transition-colors inline-flex items-center gap-1"
+                >
+                  ücretsiz kayıt olun
+                  <span className="text-base">→</span>
+                </a>
+              </p>
+            </div>
+          </div>
         </div>
+      </div>
       </div>
     </div>
   );

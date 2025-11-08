@@ -593,9 +593,11 @@ class MediaService {
       }
 
       // Upload to storage (public; bucket RLS handles public access)
-      const { url } = await this.uploadGuestToStorage(input.file, input.qrCode);
+      const { url, path } = await this.uploadGuestToStorage(input.file, input.qrCode);
 
       const type: 'video' | 'image' = input.file.type.startsWith('video/') ? 'video' : 'image';
+
+      console.log('📤 Guest upload - URL:', url, 'Path:', path);
 
       // Insert record
       const { data: inserted, error } = await supabase
@@ -610,6 +612,7 @@ class MediaService {
           file_size: input.file.size,
           mime_type: input.file.type,
           storage_url: url,
+          storage_path: path, // ✅ storage_path eklendi!
         })
         .select()
         .single();

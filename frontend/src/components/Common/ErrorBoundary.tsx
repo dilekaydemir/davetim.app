@@ -126,8 +126,8 @@ class ErrorBoundary extends Component<Props, State> {
               {/* Support Link */}
               <p className="text-sm text-gray-500 mt-6">
                 Sorun devam ederse{' '}
-                <a href="mailto:destek@davetim.app" className="text-primary-600 hover:text-primary-700 font-medium">
-                  destek@davetim.app
+                <a href="mailto:info@davetim.app" className="text-primary-600 hover:text-primary-700 font-medium">
+                  info@davetim.app
                 </a>{' '}
                 adresinden bize ulaşabilirsiniz.
               </p>

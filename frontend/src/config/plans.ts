@@ -132,7 +132,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     name: 'PRO',
     userType: 'individual',
     price: {
-      monthly: 39,
+      monthly: 79,
     },
     limits: {
       // Aylık 3 davetiye
@@ -179,8 +179,8 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
     name: 'PREMIUM',
     userType: 'individual',
     price: {
-      monthly: 79,
-      yearly: 790,
+      monthly: 129,
+      yearly: 1290,
     },
     limits: {
       // Sınırsız davetiye
@@ -208,7 +208,7 @@ export const PLAN_CONFIGS: Record<PlanTier, PlanConfig> = {
       // Gelişmiş özellikler - Var
       qrMediaUpload: true,
       qrMediaStorageDays: 90, // Aylık: 3 ay, Yıllık: 365 gün (kod içinde kontrol)
-      aiDesign: true,
+      aiDesign: false, // Henüz geliştirilmedi
       brandLogo: false, // Sadece kurumsal
       whiteLabel: false,
       

@@ -175,6 +175,23 @@ class InvitationService {
         throw error;
       }
 
+      // Fetch owner's subscription tier for watermark control
+      if (data && data.user_id) {
+        try {
+          const { data: subscription, error: subError } = await supabase
+            .from('subscriptions')
+            .select('tier')
+            .eq('user_id', data.user_id)
+            .single();
+          
+          if (subscription && !subError) {
+            data.owner_subscription_tier = subscription.tier;
+          }
+        } catch (subError) {
+          console.warn('⚠️ Could not fetch owner subscription tier:', subError);
+        }
+      }
+
       return data;
     } catch (error: any) {
       console.error('Get invitation error:', error);

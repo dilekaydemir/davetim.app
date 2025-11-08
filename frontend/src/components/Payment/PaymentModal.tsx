@@ -8,7 +8,6 @@ import { authService } from '../../services/authService';
 import { useSubscription } from '../../hooks/useSubscription';
 import toast from 'react-hot-toast';
 import type { CardInfo, AddressInfo } from '../../types/payment';
-import type { PlanTier } from '../../config/plans';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -26,7 +25,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   amount,
 }) => {
   const navigate = useNavigate();
-  const { user, initialize, updateUser } = useAuthStore();
+  const { user, updateUser } = useAuthStore();
   const { refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [useTestCard, setUseTestCard] = useState(false);
@@ -132,7 +131,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         },
         installment: 1,
       });
-
       // Status codes: 0 = SUCCESS, 1 = PENDING, 2 = FAILED, 3 = WAITING_3D_SECURE
       if (result.success && (result.status === 'WAITING_3D' || result.status === 1 || result.status === 3)) {
         // Save pending payment data and transaction ID for callback
@@ -166,7 +164,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         
         // Close payment modal (3D Secure modal is now open)
         onClose();
-      } else if (result.success && (result.status === 'SUCCESS' || result.status === 0)) {
+      } else if (result.success && result.status === 0) {
         // Direct success (without 3D Secure)
         await subscriptionService.upgradeSubscription(
           user.id,
@@ -261,271 +259,311 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 overflow-y-auto animate-fade-in">
+      {/* Backdrop with blur */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-          {/* Close button */}
+      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
+        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden animate-scale-in max-h-[95vh] flex flex-col">
+          {/* Close button - Modern floating style */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-200 flex items-center justify-center hover:rotate-90 disabled:opacity-50"
             disabled={loading}
+            aria-label="Kapat"
           >
-            <X className="h-6 w-6" />
+            <X className="h-4 w-4" />
           </button>
 
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex items-center mb-2">
-              <CreditCard className="h-6 w-6 text-primary-600 mr-2" />
-              <h2 className="text-2xl font-bold text-gray-900">
-                Ödeme Bilgileri
-              </h2>
+          {/* Split Layout: Left = Info, Right = Form */}
+          <div className="grid md:grid-cols-5 flex-1 overflow-hidden">
+            {/* Left Side - Order Summary (2 cols on desktop) - COMPACT */}
+            <div className="md:col-span-2 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 p-6 text-white flex flex-col justify-between">
+              {/* Header - Compact */}
+              <div>
+                <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/10 backdrop-blur-sm mb-4">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <h2 className="text-xl font-bold mb-1">Sipariş Özeti</h2>
+                <p className="text-primary-100 text-xs">Güvenli ödeme</p>
+              </div>
+
+              {/* Order Details - Compact */}
+              <div className="space-y-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-white/80 text-xs mb-0.5">Seçilen Plan</p>
+                      <p className="text-lg font-bold">{planTier.toUpperCase()}</p>
+                    </div>
+                    <div className="bg-white/20 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                      {billingPeriod === 'monthly' ? 'Aylık' : 'Yıllık'}
+                    </div>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-white/20">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-white/80 text-xs">Toplam</span>
+                      <div className="text-right">
+                        <span className="text-2xl font-bold">₺{amount}</span>
+                        <span className="text-white/60 text-xs ml-1">
+                          / {billingPeriod === 'monthly' ? 'ay' : 'yıl'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security & Payment Methods - Compact */}
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-2 text-xs text-white/80">
+                    <Lock className="h-4 w-4 flex-shrink-0" />
+                    <p>256-bit SSL şifreleme</p>
+                  </div>
+                  <div className="flex gap-1.5">
+                    {['Visa', 'Master Card', 'Troy'].map((card) => (
+                      <div key={card} className="bg-white/10 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium border border-white/20">
+                        {card}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
-            <p className="text-gray-600">
-              {planTier.toUpperCase()} - {billingPeriod === 'monthly' ? 'Aylık' : 'Yıllık'} Abonelik
-            </p>
-            <div className="mt-2">
-              <span className="text-3xl font-bold text-gray-900">₺{amount}</span>
-              <span className="text-gray-600 ml-2">
-                / {billingPeriod === 'monthly' ? 'ay' : 'yıl'}
-              </span>
+
+            {/* Right Side - Payment Form (3 cols on desktop) - COMPACT & SCROLLABLE */}
+            <div className="md:col-span-3 p-6 overflow-y-auto">
+              <div className="mb-5">
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Ödeme Bilgileri</h3>
+                <p className="text-gray-600 text-xs">Kart bilgilerinizi güvenle girebilirsiniz</p>
+              </div>
+
+              {/* Test Card Toggle (Development) */}
+              {import.meta.env.DEV && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={handleTestCardToggle}
+                    className="text-xs text-yellow-800 hover:text-yellow-900 font-medium flex items-center gap-1.5"
+                  >
+                    <span>🧪</span>
+                    <span>{useTestCard ? 'Test kartını temizle' : 'Test kartı kullan'}</span>
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Card Information Section - COMPACT */}
+                <div className="space-y-3">
+                  {/* Card Holder Name */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-900 mb-1.5">
+                      Kart Üzerindeki İsim
+                    </label>
+                    <input
+                      type="text"
+                      value={cardInfo.cardHolderName}
+                      onChange={(e) => setCardInfo({ ...cardInfo, cardHolderName: e.target.value.toUpperCase() })}
+                      className={`w-full px-3 py-2.5 bg-gray-50 border-2 ${errors.cardHolderName ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-primary-500'} rounded-lg text-sm text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                      placeholder="AHMET YILMAZ"
+                      disabled={loading}
+                      autoComplete="cc-name"
+                    />
+                    {errors.cardHolderName && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.cardHolderName}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Card Number */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-900 mb-1.5">
+                      Kart Numarası
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formatCardNumber(cardInfo.cardNumber)}
+                        onChange={(e) => setCardInfo({ ...cardInfo, cardNumber: e.target.value.replace(/\s/g, '') })}
+                        className={`w-full px-3 py-2.5 pr-10 bg-gray-50 border-2 ${errors.cardNumber ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-primary-500'} rounded-lg text-sm text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                        placeholder="1234 5678 9012 3456"
+                        maxLength={19}
+                        disabled={loading}
+                        autoComplete="cc-number"
+                      />
+                      <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+                    {errors.cardNumber && (
+                      <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.cardNumber}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Expiry & CVV - COMPACT */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-900 mb-1.5">Ay</label>
+                      <input
+                        type="text"
+                        value={cardInfo.expireMonth}
+                        onChange={(e) => setCardInfo({ ...cardInfo, expireMonth: e.target.value })}
+                        className={`w-full px-3 py-2.5 bg-gray-50 border-2 ${errors.expireMonth ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-primary-500'} rounded-lg text-sm text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-gray-100 disabled:cursor-not-allowed text-center`}
+                        placeholder="MM"
+                        maxLength={2}
+                        disabled={loading}
+                        autoComplete="cc-exp-month"
+                      />
+                      {errors.expireMonth && <p className="text-xs text-red-600 mt-1">{errors.expireMonth}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-900 mb-1.5">Yıl</label>
+                      <input
+                        type="text"
+                        value={cardInfo.expireYear}
+                        onChange={(e) => setCardInfo({ ...cardInfo, expireYear: e.target.value })}
+                        className={`w-full px-3 py-2.5 bg-gray-50 border-2 ${errors.expireYear ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-primary-500'} rounded-lg text-sm text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-gray-100 disabled:cursor-not-allowed text-center`}
+                        placeholder="YYYY"
+                        maxLength={4}
+                        disabled={loading}
+                        autoComplete="cc-exp-year"
+                      />
+                      {errors.expireYear && <p className="text-xs text-red-600 mt-1">{errors.expireYear}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-900 mb-1.5 flex items-center gap-0.5">
+                        CVV
+                        <span className="text-xs text-gray-500 font-normal">(Arka)</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={cardInfo.cvc}
+                          onChange={(e) => setCardInfo({ ...cardInfo, cvc: e.target.value })}
+                          className={`w-full px-3 py-2.5 pr-8 bg-gray-50 border-2 ${errors.cvc ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-primary-500'} rounded-lg text-sm text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-gray-100 disabled:cursor-not-allowed text-center`}
+                          placeholder="123"
+                          maxLength={3}
+                          disabled={loading}
+                          autoComplete="cc-csc"
+                        />
+                        <Lock className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                      </div>
+                      {errors.cvc && <p className="text-xs text-red-600 mt-1">{errors.cvc}</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Billing Address Section - COMPACT */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Fatura Adresi</h4>
+                  
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-900 mb-1.5">Ad Soyad</label>
+                        <input
+                          type="text"
+                          value={billingAddress.contactName}
+                          onChange={(e) => setBillingAddress({ ...billingAddress, contactName: e.target.value })}
+                          className={`w-full px-3 py-2.5 bg-gray-50 border-2 ${errors.contactName ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-primary-500'} rounded-lg text-sm text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          disabled={loading}
+                          autoComplete="name"
+                        />
+                        {errors.contactName && <p className="text-xs text-red-600 mt-1">{errors.contactName}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-900 mb-1.5">Şehir</label>
+                        <input
+                          type="text"
+                          value={billingAddress.city}
+                          onChange={(e) => setBillingAddress({ ...billingAddress, city: e.target.value })}
+                          className={`w-full px-3 py-2.5 bg-gray-50 border-2 ${errors.city ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-primary-500'} rounded-lg text-sm text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                          placeholder="İstanbul"
+                          disabled={loading}
+                          autoComplete="address-level2"
+                        />
+                        {errors.city && <p className="text-xs text-red-600 mt-1">{errors.city}</p>}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-900 mb-1.5">Adres</label>
+                      <textarea
+                        value={billingAddress.address}
+                        onChange={(e) => setBillingAddress({ ...billingAddress, address: e.target.value })}
+                        className={`w-full px-3 py-2.5 bg-gray-50 border-2 ${errors.address ? 'border-red-400 focus:border-red-500' : 'border-gray-200 focus:border-primary-500'} rounded-lg text-sm text-gray-900 placeholder-gray-400 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-gray-100 disabled:cursor-not-allowed resize-none`}
+                        rows={2}
+                        placeholder="Cadde, Sokak, No, Daire"
+                        disabled={loading}
+                        autoComplete="street-address"
+                      />
+                      {errors.address && <p className="text-xs text-red-600 mt-1">{errors.address}</p>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Button - COMPACT */}
+                <div className="pt-4 space-y-2.5">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full relative overflow-hidden bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
+                  >
+                    <span className="relative z-10 flex items-center justify-center gap-2">
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">İşleniyor...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                          <span>₺{amount} Güvenli Ödeme Yap</span>
+                        </>
+                      )}
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary-700 to-primary-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={loading}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2.5 px-6 rounded-lg text-sm transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    İptal
+                  </button>
+                </div>
+
+                {/* Terms & Security - COMPACT */}
+                <div className="pt-3 space-y-2">
+                  <p className="text-xs text-gray-500 text-center leading-relaxed">
+                    Ödeme yaparak{' '}
+                    <a href="/terms" className="text-primary-600 hover:text-primary-700 underline">Kullanım Koşulları</a>
+                    {' '}ve{' '}
+                    <a href="/privacy" className="text-primary-600 hover:text-primary-700 underline">Gizlilik Politikası</a>
+                    'nı kabul etmiş olursunuz.
+                  </p>
+                  
+                  <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Lock className="h-3 w-3 text-green-600" />
+                      <span>SSL Korumalı</span>
+                    </div>
+                    <span>•</span>
+                    <span>PCI DSS Uyumlu</span>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
-
-          {/* Test Card Toggle (Development) */}
-          {import.meta.env.DEV && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <button
-                type="button"
-                onClick={handleTestCardToggle}
-                className="text-sm text-yellow-800 hover:text-yellow-900 font-medium"
-              >
-                🧪 {useTestCard ? 'Test kartını temizle' : 'Test kartı kullan'}
-              </button>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Card Information */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Kart Bilgileri</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Kart Sahibi Adı
-                  </label>
-                  <input
-                    type="text"
-                    value={cardInfo.cardHolderName}
-                    onChange={(e) => setCardInfo({ ...cardInfo, cardHolderName: e.target.value.toUpperCase() })}
-                    className={`input ${errors.cardHolderName ? 'border-red-500' : ''}`}
-                    placeholder="AHMET YILMAZ"
-                    disabled={loading}
-                  />
-                  {errors.cardHolderName && (
-                    <p className="text-sm text-red-600 mt-1">{errors.cardHolderName}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Kart Numarası
-                  </label>
-                  <input
-                    type="text"
-                    value={formatCardNumber(cardInfo.cardNumber)}
-                    onChange={(e) => setCardInfo({ ...cardInfo, cardNumber: e.target.value.replace(/\s/g, '') })}
-                    className={`input ${errors.cardNumber ? 'border-red-500' : ''}`}
-                    placeholder="1234 5678 9012 3456"
-                    maxLength={19}
-                    disabled={loading}
-                  />
-                  {errors.cardNumber && (
-                    <p className="text-sm text-red-600 mt-1">{errors.cardNumber}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Ay
-                    </label>
-                    <input
-                      type="text"
-                      value={cardInfo.expireMonth}
-                      onChange={(e) => setCardInfo({ ...cardInfo, expireMonth: e.target.value })}
-                      className={`input ${errors.expireMonth ? 'border-red-500' : ''}`}
-                      placeholder="12"
-                      maxLength={2}
-                      disabled={loading}
-                    />
-                    {errors.expireMonth && (
-                      <p className="text-sm text-red-600 mt-1">{errors.expireMonth}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Yıl
-                    </label>
-                    <input
-                      type="text"
-                      value={cardInfo.expireYear}
-                      onChange={(e) => setCardInfo({ ...cardInfo, expireYear: e.target.value })}
-                      className={`input ${errors.expireYear ? 'border-red-500' : ''}`}
-                      placeholder="2030"
-                      maxLength={4}
-                      disabled={loading}
-                    />
-                    {errors.expireYear && (
-                      <p className="text-sm text-red-600 mt-1">{errors.expireYear}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      CVV
-                    </label>
-                    <input
-                      type="text"
-                      value={cardInfo.cvc}
-                      onChange={(e) => setCardInfo({ ...cardInfo, cvc: e.target.value })}
-                      className={`input ${errors.cvc ? 'border-red-500' : ''}`}
-                      placeholder="123"
-                      maxLength={3}
-                      disabled={loading}
-                    />
-                    {errors.cvc && (
-                      <p className="text-sm text-red-600 mt-1">{errors.cvc}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Billing Address */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Fatura Adresi</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ad Soyad
-                  </label>
-                  <input
-                    type="text"
-                    value={billingAddress.contactName}
-                    onChange={(e) => setBillingAddress({ ...billingAddress, contactName: e.target.value })}
-                    className={`input ${errors.contactName ? 'border-red-500' : ''}`}
-                    disabled={loading}
-                  />
-                  {errors.contactName && (
-                    <p className="text-sm text-red-600 mt-1">{errors.contactName}</p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Şehir
-                    </label>
-                    <input
-                      type="text"
-                      value={billingAddress.city}
-                      onChange={(e) => setBillingAddress({ ...billingAddress, city: e.target.value })}
-                      className={`input ${errors.city ? 'border-red-500' : ''}`}
-                      placeholder="Istanbul"
-                      disabled={loading}
-                    />
-                    {errors.city && (
-                      <p className="text-sm text-red-600 mt-1">{errors.city}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Posta Kodu
-                    </label>
-                    <input
-                      type="text"
-                      value={billingAddress.zipCode}
-                      onChange={(e) => setBillingAddress({ ...billingAddress, zipCode: e.target.value })}
-                      className="input"
-                      placeholder="34000"
-                      disabled={loading}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Adres
-                  </label>
-                  <textarea
-                    value={billingAddress.address}
-                    onChange={(e) => setBillingAddress({ ...billingAddress, address: e.target.value })}
-                    className={`input ${errors.address ? 'border-red-500' : ''}`}
-                    rows={3}
-                    disabled={loading}
-                  />
-                  {errors.address && (
-                    <p className="text-sm text-red-600 mt-1">{errors.address}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Security Notice */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <Lock className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">Güvenli Ödeme</p>
-                  <p>Ödemeniz SSL sertifikası ile korunmaktadır. Kart bilgileriniz asla saklanmaz.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="space-y-3">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full btn-primary flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    İşleniyor...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-5 w-5" />
-                    ₺{amount} Öde
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={loading}
-                className="w-full btn-outline"
-              >
-                İptal
-              </button>
-            </div>
-
-            {/* Terms */}
-            <p className="text-xs text-gray-500 text-center">
-              Ödeme yaparak <a href="/terms" className="text-primary-600 hover:underline">Kullanım Koşulları</a> ve <a href="/privacy" className="text-primary-600 hover:underline">Gizlilik Politikası</a>'nı kabul etmiş olursunuz.
-            </p>
-          </form>
         </div>
       </div>
     </div>

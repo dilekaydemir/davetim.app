@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Mail, Phone, Trash2, Edit2, Link2, Check, X, Loader2, FileSpreadsheet, Download, Lock } from 'lucide-react';
+import { UserPlus, Mail, Phone, Trash2, Edit2, Link2, Check, X, Loader2, FileSpreadsheet, Download, Lock, Users } from 'lucide-react';
 import { guestService, type Guest, type CreateGuestData, type GuestStats } from '../../services/guestService';
 import { excelService } from '../../services/excelService';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -10,9 +10,10 @@ import ConfirmDialog from '../Common/ConfirmDialog';
 interface GuestListProps {
   invitationId: string;
   invitationTitle?: string;
+  invitationStatus?: 'draft' | 'published' | 'archived';
 }
 
-const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = 'Davetiye' }) => {
+const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = 'Davetiye', invitationStatus = 'draft' }) => {
   const subscription = useSubscription();
   
   const [guests, setGuests] = useState<Guest[]>([]);
@@ -58,12 +59,22 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
   const loadGuests = async () => {
     try {
       setIsLoading(true);
-      const [guestsData, statsData] = await Promise.all([
-        guestService.getInvitationGuests(invitationId),
-        guestService.getGuestStats(invitationId)
-      ]);
+      const guestsData = await guestService.getInvitationGuests(invitationId);
       setGuests(guestsData);
-      setStats(statsData);
+      
+      // Calculate stats from guests data
+      const calculatedStats: GuestStats = {
+        total: guestsData.length,
+        pending: guestsData.filter(g => g.rsvp_status === 'pending').length,
+        attending: guestsData.filter(g => g.rsvp_status === 'attending').length,
+        declined: guestsData.filter(g => g.rsvp_status === 'declined').length,
+        total_companions: guestsData.reduce((sum, g) => sum + (g.companion_count || 0), 0),
+        total_attending: guestsData
+          .filter(g => g.rsvp_status === 'attending')
+          .reduce((sum, g) => sum + 1 + (g.companion_count || 0), 0)
+      };
+      
+      setStats(calculatedStats);
     } catch (error) {
       console.error('Error loading guests:', error);
     } finally {
@@ -245,44 +256,74 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
 
   return (
     <div className="space-y-6">
-      {/* Statistics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-700">{stats.total}</div>
-          <div className="text-sm text-blue-600">Toplam Davetli</div>
+      {/* Statistics - Modern Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-2 border-blue-200 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="bg-blue-200 rounded-lg p-2">
+              <Users className="h-4 w-4 text-blue-700" />
+            </div>
+            <div className="text-3xl font-bold text-blue-700">{stats.total}</div>
+          </div>
+          <div className="text-xs font-semibold text-blue-600">Toplam Davetli</div>
         </div>
-        <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-700">{stats.attending}</div>
-          <div className="text-sm text-green-600">Gelecek</div>
+        <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-4 border-2 border-green-200 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="bg-green-200 rounded-lg p-2">
+              <span className="text-green-700 text-sm">✓</span>
+            </div>
+            <div className="text-3xl font-bold text-green-700">{stats.attending}</div>
+          </div>
+          <div className="text-xs font-semibold text-green-600">Gelecek</div>
         </div>
-        <div className="bg-yellow-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-yellow-700">{stats.pending}</div>
-          <div className="text-sm text-yellow-600">Bekliyor</div>
+        <div className="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-xl p-4 border-2 border-yellow-200 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="bg-yellow-200 rounded-lg p-2">
+              <span className="text-yellow-700 text-sm">⏳</span>
+            </div>
+            <div className="text-3xl font-bold text-yellow-700">{stats.pending}</div>
+          </div>
+          <div className="text-xs font-semibold text-yellow-600">Bekliyor</div>
         </div>
-        <div className="bg-red-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-red-700">{stats.declined}</div>
-          <div className="text-sm text-red-600">Gelemeyecek</div>
+        <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-xl p-4 border-2 border-red-200 hover:shadow-md transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="bg-red-200 rounded-lg p-2">
+              <span className="text-red-700 text-sm">✗</span>
+            </div>
+            <div className="text-3xl font-bold text-red-700">{stats.declined}</div>
+          </div>
+          <div className="text-xs font-semibold text-red-600">Gelemeyecek</div>
         </div>
       </div>
 
-      {/* Total Attending with Companions */}
-      <div className="bg-purple-50 rounded-lg p-4 text-center">
-        <div className="text-3xl font-bold text-purple-700">{stats.total_attending}</div>
-        <div className="text-sm text-purple-600">
-          Toplam Katılımcı (Davetli + Refakatçi)
+      {/* Total Attending with Companions - Prominent Card */}
+      <div className="bg-gradient-to-br from-purple-50 via-purple-100 to-pink-50 rounded-2xl p-6 border-2 border-purple-300 shadow-sm hover:shadow-md transition-all">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-purple-200 rounded-xl p-3">
+              <Users className="h-6 w-6 text-purple-700" />
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-purple-700">{stats.total_attending}</div>
+              <div className="text-sm font-semibold text-purple-600">
+                Toplam Katılımcı (Davetli + Refakatçi)
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3">
+      {/* Action Buttons - Modern */}
+      <div className="flex flex-wrap gap-2">
         {!isAddingGuest && !editingGuestId && (
           <>
             <button
               onClick={() => setIsAddingGuest(true)}
-              className="btn-primary flex items-center gap-2"
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all"
             >
               <UserPlus className="h-4 w-4" />
-              Yeni Davetli Ekle
+              <span className="hidden sm:inline">Yeni Davetli Ekle</span>
+              <span className="sm:hidden">Ekle</span>
             </button>
             
             {guests.length > 0 && (
@@ -296,18 +337,21 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                     }
                     excelService.exportGuestsToExcel(guests, invitationTitle);
                   }}
-                  className={`btn-secondary flex items-center gap-2 ${
-                    !subscription.planConfig?.limits.excelExport ? 'opacity-50 cursor-not-allowed' : ''
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                    subscription.planConfig?.limits.excelExport
+                      ? 'bg-white border-2 border-gray-200 text-gray-700 hover:border-green-500 hover:text-green-600 shadow-sm hover:shadow-md'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                   title={
                     subscription.planConfig?.limits.excelExport 
                       ? "Basit Excel listesi indir"
                       : "PRO plana yükseltin"
                   }
+                  disabled={!subscription.planConfig?.limits.excelExport}
                 >
                   {!subscription.planConfig?.limits.excelExport && <Lock className="h-4 w-4" />}
                   <Download className="h-4 w-4" />
-                  Excel İndir
+                  <span className="hidden sm:inline">Excel</span>
                 </button>
                 
                 <button
@@ -319,18 +363,21 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                     }
                     excelService.exportGuestsWithStats(guests, invitationTitle, stats);
                   }}
-                  className={`btn-outline flex items-center gap-2 ${
-                    !subscription.planConfig?.limits.excelExport ? 'opacity-50 cursor-not-allowed' : ''
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                    subscription.planConfig?.limits.excelExport
+                      ? 'bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-500 hover:text-blue-600 shadow-sm hover:shadow-md'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                   title={
                     subscription.planConfig?.limits.excelExport
                       ? "İstatistiklerle birlikte detaylı rapor indir"
                       : "PRO plana yükseltin"
                   }
+                  disabled={!subscription.planConfig?.limits.excelExport}
                 >
                   {!subscription.planConfig?.limits.excelExport && <Lock className="h-4 w-4" />}
                   <FileSpreadsheet className="h-4 w-4" />
-                  Detaylı Rapor
+                  <span className="hidden sm:inline">Detaylı Rapor</span>
                 </button>
               </>
             )}
@@ -338,12 +385,17 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
         )}
       </div>
 
-      {/* Add/Edit Guest Form */}
+      {/* Add/Edit Guest Form - Modern */}
       {(isAddingGuest || editingGuestId) && (
-        <div className="bg-gray-50 rounded-lg p-4 border-2 border-primary-200">
-          <h3 className="text-lg font-semibold mb-4">
-            {editingGuestId ? 'Davetli Düzenle' : 'Yeni Davetli'}
-          </h3>
+        <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl p-6 border-2 border-primary-300 shadow-sm">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-primary-600 rounded-xl p-2.5">
+              <UserPlus className="h-5 w-5 text-white" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">
+              {editingGuestId ? 'Davetli Düzenle' : 'Yeni Davetli Ekle'}
+            </h3>
+          </div>
           <form onSubmit={editingGuestId ? (e) => { e.preventDefault(); handleUpdateGuest(editingGuestId); } : handleAddGuest} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -449,21 +501,21 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                 placeholder="Örn: VIP masaya oturacak, anne tarafından akraba..."
               />
               <p className="text-xs text-gray-500 mt-1">
-                💡 Bu notlar sadece sizin görebilirsiniz, davetli göremez. Davetlinin RSVP'de yazdığı notlar ayrı gösterilir.
+                💡 Bu notları sadece siz görebilirsiniz, davetli göremez. Davetlinin RSVP'de yazdığı notlar ayrı gösterilir.
               </p>
             </div>
 
-            <div className="flex gap-2">
-              <button type="submit" className="btn-primary flex items-center gap-2">
-                <Check className="h-4 w-4" />
+            <div className="flex gap-3 pt-2">
+              <button type="submit" className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all">
+                <Check className="h-5 w-5" />
                 {editingGuestId ? 'Güncelle' : 'Ekle'}
               </button>
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="btn-secondary flex items-center gap-2"
+                className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl font-semibold transition-all flex items-center gap-2"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
                 İptal
               </button>
             </div>
@@ -471,19 +523,21 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
         </div>
       )}
 
-      {/* Guest List */}
+      {/* Guest List - Modern Cards */}
       <div className="space-y-3">
         {guests.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <UserPlus className="h-12 w-12 mx-auto mb-3 opacity-50" />
-            <p>Henüz davetli eklenmemiş</p>
-            <p className="text-sm mt-1">Başlamak için "Yeni Davetli Ekle" butonuna tıklayın</p>
+          <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-300">
+            <div className="bg-gray-200 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <UserPlus className="h-10 w-10 text-gray-500" />
+            </div>
+            <p className="text-lg font-semibold text-gray-900 mb-1">Henüz davetli eklenmemiş</p>
+            <p className="text-sm text-gray-600">Başlamak için "Yeni Davetli Ekle" butonuna tıklayın</p>
           </div>
         ) : (
           guests.map((guest) => (
             <div
               key={guest.id}
-              className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl border-2 border-gray-200 p-5 hover:border-primary-300 hover:shadow-md transition-all"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -538,22 +592,27 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => guestService.copyRSVPLink(guest.guest_token)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                    title="RSVP linkini kopyala"
+                    onClick={invitationStatus === 'published' ? () => guestService.copyRSVPLink(guest.guest_token) : undefined}
+                    disabled={invitationStatus !== 'published'}
+                    className={`p-2.5 rounded-xl transition-all ${
+                      invitationStatus === 'published'
+                        ? 'text-blue-600 hover:bg-blue-50 hover:scale-110 cursor-pointer'
+                        : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                    }`}
+                    title={invitationStatus === 'published' ? 'RSVP linkini kopyala' : 'Yayınlamadan RSVP linki paylaşılamaz'}
                   >
                     <Link2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleEditClick(guest)}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                    className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
                     title="Düzenle"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteClick(guest)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-110"
                     title="Sil"
                   >
                     <Trash2 className="h-4 w-4" />
