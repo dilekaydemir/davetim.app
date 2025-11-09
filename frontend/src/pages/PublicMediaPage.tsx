@@ -29,8 +29,6 @@ const PublicMediaPage: React.FC = () => {
     setError(null);
 
     try {
-      console.log('Loading media for QR code:', qrCode);
-      
       const data = await mediaService.getMediaByQRCode(qrCode!);
       
       if (!data) {
@@ -51,38 +49,29 @@ const PublicMediaPage: React.FC = () => {
       // Load guest uploads if allowed
       if (data.allow_guest_upload) {
         const uploads = await mediaService.getGuestUploads(qrCode!);
-        console.log('📦 Raw guest uploads:', uploads.length, uploads);
         
         // Generate signed URLs for guest uploads
         const uploadsWithSignedUrls = await Promise.all(
           uploads.map(async (upload) => {
-            console.log('🔄 Processing upload:', upload.id, 'storage_path:', upload.storage_path, 'current storage_url:', upload.storage_url);
-            
             // Always try to create signed URL from storage_path
             if (upload.storage_path) {
               const { data: signed, error } = await supabase.storage
                 .from('qr-media')
                 .createSignedUrl(upload.storage_path, 60 * 60); // 1 hour
               
-              if (error) {
-                console.error('❌ Signed URL error for', upload.id, ':', error);
+              if (error || !signed?.signedUrl) {
                 // Return upload without storage_url to show placeholder
                 return { ...upload, storage_url: undefined };
               }
               
-              if (signed?.signedUrl) {
-                console.log('✅ Signed URL created for', upload.id, ':', signed.signedUrl);
-                return { ...upload, storage_url: signed.signedUrl };
-              }
+              return { ...upload, storage_url: signed.signedUrl };
             }
             
-            console.warn('⚠️ No storage_path for upload:', upload.id, '- cannot create signed URL');
             // Return upload without storage_url to show placeholder
             return { ...upload, storage_url: undefined };
           })
         );
         
-        console.log('✅ Guest uploads with signed URLs:', uploadsWithSignedUrls);
         setGuestUploads(uploadsWithSignedUrls);
       }
 
@@ -147,15 +136,12 @@ const PublicMediaPage: React.FC = () => {
       // Generate signed URL for the newly uploaded media
       let recordWithSignedUrl = record;
       if (record.storage_path) {
-        const { data: signed, error } = await supabase.storage
+        const { data: signed } = await supabase.storage
           .from('qr-media')
           .createSignedUrl(record.storage_path, 60 * 60); // 1 hour
         
         if (signed?.signedUrl) {
-          console.log('✅ Signed URL created for new upload:', signed.signedUrl);
           recordWithSignedUrl = { ...record, storage_url: signed.signedUrl };
-        } else if (error) {
-          console.error('❌ Signed URL error for new upload:', error);
         }
       }
       
@@ -498,25 +484,21 @@ const PublicMediaPage: React.FC = () => {
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {guestUploads.map(item => {
-                console.log('🖼️ Rendering upload:', item.id, 'URL:', item.storage_url);
-                return (
-                  <div key={item.id} className="group relative bg-gray-50 rounded-xl overflow-hidden border border-gray-200 hover:shadow-md transition-all">
-                    {item.type === 'video' ? (
-                      <video 
-                        src={item.storage_url} 
-                        controls 
-                        className="w-full h-40 object-cover"
-                        onError={(e) => console.error('❌ Video load error:', item.id, e)}
-                      />
-                    ) : (
-                      <img 
-                        src={item.storage_url} 
-                        alt={item.file_name} 
-                        className="w-full h-40 object-cover"
-                        onError={(e) => console.error('❌ Image load error:', item.id, e)}
-                      />
-                    )}
+              {guestUploads.map(item => (
+                <div key={item.id} className="group relative bg-gray-50 rounded-xl overflow-hidden border border-gray-200 hover:shadow-md transition-all">
+                  {item.type === 'video' ? (
+                    <video 
+                      src={item.storage_url} 
+                      controls 
+                      className="w-full h-40 object-cover"
+                    />
+                  ) : (
+                    <img 
+                      src={item.storage_url} 
+                      alt={item.file_name} 
+                      className="w-full h-40 object-cover"
+                    />
+                  )}
                     {!item.storage_url && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200 p-4">
                         <AlertTriangle className="h-8 w-8 text-gray-400 mb-2" />
@@ -533,8 +515,7 @@ const PublicMediaPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                );
-              })}
+                ))}
             </div>
           </div>
         )}
