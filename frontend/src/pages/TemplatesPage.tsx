@@ -365,7 +365,7 @@ const TemplatesPage: React.FC = () => {
                 Özel tasarım talepleriniz için destek ekibimizle iletişime geçebilirsiniz
               </p>
               <button
-                onClick={() => navigate('/account?tab=support')}
+                onClick={() => navigate('/contact')}
                 className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-105 text-sm"
               >
                 Destek Talebi Oluştur
