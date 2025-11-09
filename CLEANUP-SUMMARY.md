@@ -15,10 +15,14 @@
 - ❌ `database/01-COMPLETE-REBUILD.sql` - Sadece development için  
 - ❌ `database/02-TROUBLESHOOTING-QUERIES.sql` - Sadece development için
 
-#### Kaldırılan Konfigürasyon Dosyaları:
-- ❌ `docker-compose.yml` - Docker kullanılmıyor
+**Toplam Silinen:** 7 dosya
 
-**Toplam Silinen:** 8 dosya
+#### ⚠️ Önemli Not:
+`docker-compose.yml` başta yanlışlıkla kaldırıldı ancak **geri oluşturuldu**. Bu dosya **production deployment için aktif olarak kullanılıyor**:
+- Docker-based deployment
+- Nginx + Node.js multi-stage build
+- Port 8087'de production serve
+- `docker-compose up -d --build` ile deploy
 
 ---
 

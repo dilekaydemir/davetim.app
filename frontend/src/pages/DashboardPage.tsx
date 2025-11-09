@@ -693,7 +693,7 @@ const DashboardPage: React.FC = () => {
                 </div>
               </div>
               <Link 
-                to="/account?tab=support" 
+                to="/contact" 
                 className="inline-flex items-center gap-1.5 text-xs text-green-700 hover:text-green-800 font-bold group"
               >
                 Destek Talebi

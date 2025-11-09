@@ -344,10 +344,16 @@ const PricingPage: React.FC = () => {
             Ekibimiz size en uygun planı seçmenizde yardımcı olmaktan mutluluk duyar
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <button className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-sm">
+            <button
+              onClick={() => navigate('/contact')}
+              className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 text-sm"
+            >
               Canlı Destek
             </button>
-            <button className="px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border border-gray-300 hover:border-primary-300 transition-all text-sm">
+            <button
+              onClick={() => window.open('https://wa.me/905359216894?text=Merhaba%20Davetim%2C%20planlar%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum.', '_blank')}
+              className="px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl border border-gray-300 hover:border-primary-300 transition-all text-sm"
+            >
               WhatsApp
             </button>
           </div>
