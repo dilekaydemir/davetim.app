@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Eye, Star, Crown, Lock } from 'lucide-react';
 import type { Template } from '../../services/templateService';
 import { useSubscription } from '../../hooks/useSubscription';
-import { getOptimizedUnsplashUrl, getResponsiveImageSrcSet } from '../../utils/imageOptimization';
+import { getTemplateThumbnailUrl } from '../../utils/templateImageUrl';
 
 interface TemplateCardProps {
   template: Template;
@@ -75,7 +75,7 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
         className: `group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer opacity-90`
       }
     : {
-        to: `/editor?template=${template.slug}`,
+        to: `/editor?template=${template.id}`,
         className: `group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden`
       };
 
@@ -84,9 +84,7 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
       {/* Image Container */}
       <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
         <img
-          src={getOptimizedUnsplashUrl(template.preview_image_url, { width: 400, quality: 85 })}
-          srcSet={getResponsiveImageSrcSet(template.preview_image_url, [320, 480, 640])}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          src={getTemplateThumbnailUrl(template.thumbnail_url || template.default_image_url)}
           alt={template.name}
           className={`w-full h-full object-cover transition-transform duration-300 ${
             isLocked ? 'blur-sm' : 'group-hover:scale-105'
@@ -131,11 +129,6 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
               Öne Çıkan
             </span>
           )}
-          {template.is_popular && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              🔥 Popüler
-            </span>
-          )}
         </div>
 
         {/* Save/Favorite Button */}
@@ -169,30 +162,13 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
           </p>
         )}
 
-        {/* Tags */}
-        {template.tags && template.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {template.tags.slice(0, 3).map((tag, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700"
-              >
-                {tag}
-              </span>
-            ))}
-            {template.tags.length > 3 && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
-                +{template.tags.length - 3}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Category */}
+        {/* Category Badge */}
         {template.category && (
-          <p className="text-xs text-gray-500">
-            {template.category.name}
-          </p>
+          <div className="mb-3">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700">
+              {template.category}
+            </span>
+          </div>
         )}
       </div>
     </WrapperComponent>

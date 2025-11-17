@@ -7,6 +7,7 @@ import {
   CANCELLATION_REFUND_POLICY,
   KVKK_CLARIFICATION,
   COMMERCIAL_ELECTRONIC_MESSAGE,
+  DISTANCE_SALES_CONTRACT,
   LEGAL_DOCUMENTS,
   type LegalDocument,
 } from '../legal';
@@ -31,6 +32,8 @@ const LegalPage: React.FC = () => {
         return KVKK_CLARIFICATION;
       case 'ticari-elektronik-ileti':
         return COMMERCIAL_ELECTRONIC_MESSAGE;
+      case 'mesafeli-satis-sozlesmesi':
+        return DISTANCE_SALES_CONTRACT;
       default:
         return null;
     }

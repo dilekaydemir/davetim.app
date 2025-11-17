@@ -16,9 +16,11 @@ interface ImageUploadProps {
   userId: string;
   currentImageUrl?: string | null;
   currentPosition?: 'profile' | 'background' | 'banner' | 'watermark';
+  currentLogoShape?: 'circle' | 'square';
   onImageUploaded: (imageUrl: string) => void;
   onImageRemoved: () => void;
   onPositionChange?: (position: 'profile' | 'background' | 'banner' | 'watermark') => void;
+  onLogoShapeChange?: (shape: 'circle' | 'square') => void;
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -26,9 +28,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   userId,
   currentImageUrl,
   currentPosition = 'profile',
+  currentLogoShape = 'circle',
   onImageUploaded,
   onImageRemoved,
-  onPositionChange
+  onPositionChange,
+  onLogoShapeChange
 }) => {
   const subscription = useSubscription();
   const [isUploading, setIsUploading] = useState(false);
@@ -304,64 +308,232 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         </div>
       )}
 
-      {/* Image Position Selector - only show if image exists */}
+      {/* 🎨 NEW: Modern Image Position Selector */}
       {currentImageUrl && onPositionChange && (
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Görsel Konumu
-          </label>
+        <div className="space-y-3">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-gray-900 flex items-center gap-2">
+              <span className="w-5 h-5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-md flex items-center justify-center">
+                <span className="text-white text-xs">📍</span>
+              </span>
+              Görsel Stili
+            </label>
+            <span className="px-2 py-0.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-bold rounded-full">
+              YENİ
+            </span>
+          </div>
+
+          {/* Position Cards - Modern & Compact */}
           <div className="grid grid-cols-2 gap-2">
+            {/* Profile - Circular */}
             <button
               type="button"
               onClick={() => onPositionChange('profile')}
-              className={`p-3 rounded-lg border-2 text-sm transition-all ${
+              className={`group relative p-3 rounded-xl border-2 transition-all ${
                 currentPosition === 'profile'
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 hover:border-primary-200'
+                  ? 'border-purple-500 bg-gradient-to-br from-purple-50 to-pink-50 shadow-md'
+                  : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/30'
               }`}
             >
-              <div className="font-semibold">👤 Profil</div>
-              <div className="text-xs text-gray-500">Yuvarlak, orta üstte</div>
+              {/* Icon */}
+              <div className={`w-8 h-8 mx-auto mb-2 rounded-full flex items-center justify-center transition-all ${
+                currentPosition === 'profile'
+                  ? 'bg-purple-500 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-400 group-hover:bg-purple-100 group-hover:text-purple-500'
+              }`}>
+                <span className="text-sm">●</span>
+              </div>
+              {/* Label */}
+              <div className={`text-xs font-bold text-center ${
+                currentPosition === 'profile' ? 'text-purple-700' : 'text-gray-700'
+              }`}>
+                Profil
+              </div>
+              {/* Description */}
+              <div className="text-xs text-gray-500 text-center mt-1">
+                Yuvarlak
+              </div>
+              {/* Selected Badge */}
+              {currentPosition === 'profile' && (
+                <div className="absolute top-2 right-2">
+                  <div className="w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                </div>
+              )}
             </button>
-            
-            <button
-              type="button"
-              onClick={() => onPositionChange('background')}
-              className={`p-3 rounded-lg border-2 text-sm transition-all ${
-                currentPosition === 'background'
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 hover:border-primary-200'
-              }`}
-            >
-              <div className="font-semibold">🖼️ Arka Plan</div>
-              <div className="text-xs text-gray-500">Tüm davetiyeyi kaplar</div>
-            </button>
-            
+
+            {/* Banner - Wide Rectangle */}
             <button
               type="button"
               onClick={() => onPositionChange('banner')}
-              className={`p-3 rounded-lg border-2 text-sm transition-all ${
+              className={`group relative p-3 rounded-xl border-2 transition-all ${
                 currentPosition === 'banner'
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 hover:border-primary-200'
+                  ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-cyan-50 shadow-md'
+                  : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/30'
               }`}
             >
-              <div className="font-semibold">📋 Üst Banner</div>
-              <div className="text-xs text-gray-500">Üstte dikdörtgen</div>
+              {/* Icon */}
+              <div className={`w-12 h-6 mx-auto mb-2 rounded flex items-center justify-center transition-all ${
+                currentPosition === 'banner'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500'
+              }`}>
+                <span className="text-xs">━</span>
+              </div>
+              {/* Label */}
+              <div className={`text-xs font-bold text-center ${
+                currentPosition === 'banner' ? 'text-blue-700' : 'text-gray-700'
+              }`}>
+                Banner
+              </div>
+              {/* Description */}
+              <div className="text-xs text-gray-500 text-center mt-1">
+                Geniş
+              </div>
+              {/* Selected Badge */}
+              {currentPosition === 'banner' && (
+                <div className="absolute top-2 right-2">
+                  <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                </div>
+              )}
             </button>
-            
+
+            {/* Background - Full Cover */}
+            <button
+              type="button"
+              onClick={() => onPositionChange('background')}
+              className={`group relative p-3 rounded-xl border-2 transition-all ${
+                currentPosition === 'background'
+                  ? 'border-emerald-500 bg-gradient-to-br from-emerald-50 to-teal-50 shadow-md'
+                  : 'border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30'
+              }`}
+            >
+              {/* Icon */}
+              <div className={`w-12 h-8 mx-auto mb-2 rounded-lg flex items-center justify-center transition-all ${
+                currentPosition === 'background'
+                  ? 'bg-emerald-500 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-400 group-hover:bg-emerald-100 group-hover:text-emerald-500'
+              }`}>
+                <span className="text-xs">⬚</span>
+              </div>
+              {/* Label */}
+              <div className={`text-xs font-bold text-center ${
+                currentPosition === 'background' ? 'text-emerald-700' : 'text-gray-700'
+              }`}>
+                Arka Plan
+              </div>
+              {/* Description */}
+              <div className="text-xs text-gray-500 text-center mt-1">
+                Tam Ekran
+              </div>
+              {/* Selected Badge */}
+              {currentPosition === 'background' && (
+                <div className="absolute top-2 right-2">
+                  <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                </div>
+              )}
+            </button>
+
+            {/* Watermark - Small Logo */}
             <button
               type="button"
               onClick={() => onPositionChange('watermark')}
-              className={`p-3 rounded-lg border-2 text-sm transition-all ${
+              className={`group relative p-3 rounded-xl border-2 transition-all ${
                 currentPosition === 'watermark'
-                  ? 'border-primary-500 bg-primary-50 text-primary-700'
-                  : 'border-gray-200 hover:border-primary-200'
+                  ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-orange-50 shadow-md'
+                  : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/30'
               }`}
             >
-              <div className="font-semibold">💧 Logo/Filigran</div>
-              <div className="text-xs text-gray-500">Sağ alt köşede</div>
+              {/* Icon */}
+              <div className={`w-6 h-6 mx-auto mb-2 rounded flex items-center justify-center transition-all ${
+                currentPosition === 'watermark'
+                  ? 'bg-amber-500 text-white shadow-lg'
+                  : 'bg-gray-100 text-gray-400 group-hover:bg-amber-100 group-hover:text-amber-500'
+              }`}>
+                <span className="text-xs">◇</span>
+              </div>
+              {/* Label */}
+              <div className={`text-xs font-bold text-center ${
+                currentPosition === 'watermark' ? 'text-amber-700' : 'text-gray-700'
+              }`}>
+                Logo
+              </div>
+              {/* Description */}
+              <div className="text-xs text-gray-500 text-center mt-1">
+                Küçük
+              </div>
+              {/* Selected Badge */}
+              {currentPosition === 'watermark' && (
+                <div className="absolute top-2 right-2">
+                  <div className="w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs">✓</span>
+                  </div>
+                </div>
+              )}
             </button>
+          </div>
+
+          {/* Logo Shape Selector (only for watermark) */}
+          {currentPosition === 'watermark' && onLogoShapeChange && (
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-900">Logo Şekli</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => onLogoShapeChange('circle')}
+                  className={`p-2.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                    currentLogoShape === 'circle'
+                      ? 'border-amber-500 bg-amber-50 text-amber-700'
+                      : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/40'
+                  }`}
+                >
+                  ● Yuvarlak
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onLogoShapeChange('square')}
+                  className={`p-2.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                    currentLogoShape === 'square'
+                      ? 'border-amber-500 bg-amber-50 text-amber-700'
+                      : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/40'
+                  }`}
+                >
+                  ■ Kare
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Current Selection Info */}
+          <div className={`p-2.5 rounded-lg border transition-all ${
+            currentPosition === 'profile' ? 'bg-purple-50/50 border-purple-200/50' :
+            currentPosition === 'banner' ? 'bg-blue-50/50 border-blue-200/50' :
+            currentPosition === 'background' ? 'bg-emerald-50/50 border-emerald-200/50' :
+            'bg-amber-50/50 border-amber-200/50'
+          }`}>
+            <div className="flex items-start gap-2">
+              <span className="text-sm flex-shrink-0">ℹ️</span>
+              <div className="text-xs text-gray-700">
+                {currentPosition === 'profile' && (
+                  <><strong>Profil:</strong> Görsel yuvarlak şekilde, davetiyenin üst ortasında görünür.</>
+                )}
+                {currentPosition === 'banner' && (
+                  <><strong>Banner:</strong> Görsel geniş banner olarak davetiyenin en üstünde görünür.</>
+                )}
+                {currentPosition === 'background' && (
+                  <><strong>Arka Plan:</strong> Görsel tüm davetiyeyi kaplayan arka plan olarak görünür.</>
+                )}
+                {currentPosition === 'watermark' && (
+                  <><strong>Logo:</strong> Görsel küçük logo olarak sağ alt köşede görünür.</>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -339,13 +339,22 @@ const RSVPPage: React.FC = () => {
           )}
           
                 {/* User Watermark */}
-          {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
-            <img
-              src={invitation.image_url}
-              alt="Logo"
-              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60 z-10"
-            />
-          )}
+              {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
+                <div
+                  className="absolute bottom-4 right-4 w-16 h-16 z-10"
+                  style={{
+                    borderRadius: invitation.content?.logoShape === 'square' ? '0' : '50%',
+                    overflow: 'hidden',
+                    opacity: 0.6
+                  }}
+                >
+                  <img
+                    src={invitation.image_url}
+                    alt="Logo"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
 
           {/* FREE Plan Watermark - davetim.app branding */}
           {invitation.owner_subscription_tier === 'free' && (
@@ -388,11 +397,12 @@ const RSVPPage: React.FC = () => {
             >
                     {/* Banner Image */}
               {invitation.content?.imagePosition === 'banner' && invitation.image_url && (
-                      <div className="mb-5 -mx-10 -mt-10">
+                <div className="-mx-10 -mt-10 mb-5 overflow-hidden rounded-t-lg">
                   <img
                     src={invitation.image_url}
                     alt="Banner"
-                    className="w-full h-32 object-cover"
+                    className="block w-full object-cover rounded-none"
+                    style={{ aspectRatio: '5 / 2' }}
                   />
                 </div>
               )}
@@ -532,11 +542,12 @@ const RSVPPage: React.FC = () => {
           <div className="max-w-6xl mx-auto w-full">
             <div className="grid lg:grid-cols-5 gap-6 items-center">
               
-              {/* Left: Full Invitation Card - 3 columns */}
-              <div className="lg:col-span-3">
+              {/* Left: Full Invitation Card - 3 columns (unified canvas size) */}
+              <div className="lg:col-span-3 flex justify-center">
                 <div 
-                  className="rounded-2xl shadow-2xl overflow-hidden border-2 border-white/80 backdrop-blur-sm min-h-[600px] relative"
+                  className="rounded-2xl shadow-2xl overflow-hidden border-2 border-white/80 backdrop-blur-sm min-h-[600px] relative w-full"
                   style={{
+                    maxWidth: '480px',
                     backgroundImage: invitation.image_url && invitation.content?.imagePosition === 'background'
                       ? `url(${invitation.image_url})`
                       : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
@@ -555,13 +566,22 @@ const RSVPPage: React.FC = () => {
                 )}
                 
                 {/* User Watermark */}
-                {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
-                  <img
-                    src={invitation.image_url}
-                    alt="Logo"
-                    className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60 z-10"
-                  />
-                )}
+                    {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
+                      <div
+                        className="absolute bottom-4 right-4 w-16 h-16 z-10"
+                        style={{
+                          borderRadius: invitation.content?.logoShape === 'square' ? '0' : '50%',
+                          overflow: 'hidden',
+                          opacity: 0.6
+                        }}
+                      >
+                        <img
+                          src={invitation.image_url}
+                          alt="Logo"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
 
                 {/* FREE Plan Watermark - davetim.app branding */}
                 {invitation.owner_subscription_tier === 'free' && (
@@ -604,11 +624,12 @@ const RSVPPage: React.FC = () => {
                   >
                     {/* Banner Image */}
                     {invitation.content?.imagePosition === 'banner' && invitation.image_url && (
-                      <div className="mb-6 -mx-10 -mt-10 md:-mx-12 md:-mt-12">
+                      <div className="-mx-10 -mt-10 md:-mx-12 md:-mt-12 mb-6 overflow-hidden rounded-t-lg">
                         <img
                           src={invitation.image_url}
                           alt="Banner"
-                          className="w-full h-40 object-cover"
+                          className="block w-full object-cover rounded-none"
+                          style={{ aspectRatio: '5 / 2' }}
                         />
                       </div>
                     )}
@@ -697,8 +718,59 @@ const RSVPPage: React.FC = () => {
                         </div>
                       </>
                     )}
+
+                    {/* V2: Dynamic Text Fields - Positioned */}
+                    {invitation.content?.textFields && Array.isArray(invitation.content.textFields) && invitation.content.textFields.length > 0 && invitation.content.textFields.map((field: any) => (
+                      field.value && field.position && field.size && (
+                        <div
+                          key={field.id}
+                          style={{
+                            position: 'absolute',
+                            left: `${field.position.x}%`,
+                            top: `${field.position.y}%`,
+                            width: 'auto',
+                            maxWidth: `${field.size.width}px`,
+                            transform: 'translate(-50%, -50%)',
+                            fontSize: `${field.style?.fontSize || 24}px`,
+                            fontWeight: field.style?.fontWeight || 'normal',
+                            color: field.style?.color || colors.text,
+                            textAlign: field.style?.textAlign || 'center',
+                            fontFamily: field.style?.fontFamily || 'Playfair Display',
+                            zIndex: field.zIndex || 310,
+                            pointerEvents: 'none'
+                          }}
+                        >
+                          {field.value}
+                        </div>
+                      )
+                    ))}
                   </div>
                 </div>
+
+                {/* V2: Decorative Elements - Positioned with zIndex */}
+                {invitation.content?.decorativeElements && Array.isArray(invitation.content.decorativeElements) && invitation.content.decorativeElements.length > 0 && invitation.content.decorativeElements.map((elem: any) => (
+                  <div
+                    key={elem.id}
+                    style={{
+                      position: 'absolute',
+                      left: `${elem.position.x}%`,
+                      top: `${elem.position.y}%`,
+                      width: `${elem.size.width}px`,
+                      height: `${elem.size.height}px`,
+                      transform: `translate(-50%, -50%) rotate(${elem.rotation}deg)`,
+                      opacity: elem.opacity,
+                      zIndex: elem.zIndex || 250,
+                      pointerEvents: 'none'
+                    }}
+                  >
+                    <img
+                      src={elem.imageUrl}
+                      alt={elem.name}
+                      className="w-full h-full object-contain"
+                      draggable={false}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
 

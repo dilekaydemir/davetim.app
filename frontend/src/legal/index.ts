@@ -8,7 +8,13 @@ export { TERMS_OF_SERVICE } from './terms-of-service';
 export { CANCELLATION_REFUND_POLICY } from './cancellation-refund-policy';
 export { COMMERCIAL_ELECTRONIC_MESSAGE, COMMERCIAL_MESSAGE_CONSENT_TEXT } from './commercial-electronic-message';
 export { KVKK_CLARIFICATION } from './kvkk-clarification';
-export { generateDistanceSalesContract, type DistanceSalesContractData } from './distance-sales-contract';
+export { 
+  generateDistanceSalesContract, 
+  generateDistanceSalesContractText,
+  DISTANCE_SALES_CONTRACT,
+  type DistanceSalesContractData,
+  type DistanceSalesContractParams
+} from './distance-sales-contract';
 
 // Legal document types
 export interface LegalDocument {
@@ -68,6 +74,13 @@ export const LEGAL_DOCUMENTS = [
     slug: 'ticari-elektronik-ileti',
     icon: '📧',
     description: 'Pazarlama iletişimi onayı ve koşulları',
+  },
+  {
+    id: 'distance-sales',
+    title: 'Mesafeli Satış Sözleşmesi',
+    slug: 'mesafeli-satis-sozlesmesi',
+    icon: '📦',
+    description: 'E-ticaret ve dijital hizmet satış sözleşmesi',
   },
 ] as const;
 

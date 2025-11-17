@@ -208,10 +208,10 @@ const AccountPage: React.FC = () => {
         phone: profileData.phone || undefined,
       });
       
-      toast.success('Profil güncellendi!');
+      // Toast is shown by authService
     } catch (error) {
       console.error('Profile update error:', error);
-      toast.error('Profil güncellenemedi');
+      // Toast is shown by authService
     } finally {
       setIsSaving(false);
     }
@@ -239,10 +239,10 @@ const AccountPage: React.FC = () => {
       
       setShowPasswordModal(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      toast.success('Şifre başarıyla değiştirildi!');
+      // Toast is shown by authService
     } catch (error: any) {
       console.error('Password change error:', error);
-      toast.error(error.message || 'Şifre değiştirilemedi');
+      // Toast is shown by authService
     } finally {
       setIsSaving(false);
     }
@@ -273,7 +273,7 @@ const AccountPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Cancel subscription error:', error);
-      toast.error('Abonelik iptal edilemedi');
+      // Don't show toast here - subscriptionService already shows it
     } finally {
       setIsCancelling(false);
     }

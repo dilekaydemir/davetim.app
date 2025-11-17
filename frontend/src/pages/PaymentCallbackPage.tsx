@@ -322,43 +322,8 @@ const PaymentCallbackPage: React.FC = () => {
         }, 3000);
 
       } else if (result.status === 'FAILURE') {
-        // Payment failed
-        setStatus('failure');
-        setMessage(result.errorMessage || 'Ödeme işlemi başarısız oldu');
-        
-        toast.error('Ödeme başarısız! Lütfen tekrar deneyin.');
-
-        // Save failed payment to history
-        if (user) {
-          const planData = sessionStorage.getItem('pending_payment');
-          if (planData) {
-            const { planTier, billingPeriod, amount: planAmount } = JSON.parse(planData);
-            
-            // Use amount from result if available, fallback to planAmount
-            const paymentAmount = result.amount || planAmount || 0;
-            
-            await subscriptionService.savePaymentHistory(
-              user.id,
-              txId,
-              result.transactionId,
-              'iyzico',
-              paymentAmount,
-              result.currency || 'TRY',
-              'FAILURE',
-              planTier,
-              billingPeriod,
-              undefined,
-              result.errorMessage
-            );
-          }
-          sessionStorage.removeItem('pending_payment');
-          sessionStorage.removeItem('last_transaction_id');
-        }
-
-        // Redirect to pricing after 5 seconds
-        setTimeout(() => {
-          navigate('/pricing');
-        }, 5000);
+        // Payment failed - use handleFailedPayment to avoid duplicate toasts
+        await handleFailedPayment(txId, result.errorMessage);
 
       } else if (result.status === 'PENDING' || result.status === 'WAITING_3D') {
         // Still processing

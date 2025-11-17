@@ -1,8 +1,16 @@
 import { supabase } from './supabase';
 import toast from 'react-hot-toast';
 import { retry, getUserFriendlyErrorMessage } from '../utils/retry';
+import type { 
+  TemplateV2, 
+  ColorPalette, 
+  TextField, 
+  DecorativeElement,
+  TemplateCategory as TemplateCategoryType,
+  TemplateFilters as TemplateFiltersV2
+} from '../types/template';
 
-// Types
+// Legacy Types (for backward compatibility)
 export interface TemplateCategory {
   id: string;
   name: string;
@@ -15,29 +23,25 @@ export interface TemplateCategory {
   updated_at: string;
 }
 
+// V2 Template Type (matches new database schema)
 export interface Template {
   id: string;
-  category_id: string;
   name: string;
-  slug: string;
   description: string | null;
-  preview_image_url: string;
-  thumbnail_url: string | null;
-  demo_url: string | null;
-  design_config: any; // JSONB
-  tags: string[];
-  features: string[];
+  category: string; // V2: text field instead of foreign key
+  subcategory: string | null;
   tier: 'free' | 'pro' | 'premium';
-  is_premium: boolean;
-  usage_count: number;
-  is_popular: boolean;
+  thumbnail_url: string | null;
+  default_image_url: string | null;
+  color_palette: ColorPalette;
+  text_fields: TextField[];
+  decorative_elements: DecorativeElement[];
+  available_fonts: string[];
   is_featured: boolean;
   is_active: boolean;
+  sort_order: number;
   created_at: string;
   updated_at: string;
-  
-  // Joined data
-  category?: TemplateCategory;
 }
 
 export interface UserTemplate {
@@ -54,12 +58,12 @@ export interface UserTemplate {
   template?: Template;
 }
 
+// V2 Template Filters
 export interface TemplateFilters {
-  categorySlug?: string;
-  tags?: string[];
+  category?: string; // V2: direct category name
+  subcategory?: string;
   tier?: 'free' | 'pro' | 'premium';
   isFeatured?: boolean;
-  isPopular?: boolean;
   search?: string;
 }
 
@@ -131,18 +135,16 @@ class TemplateService {
       return await retry(async () => {
         let query = supabase
           .from('templates')
-          .select(`
-            *,
-            category:template_categories(*)
-          `)
+          .select('*')
           .eq('is_active', true);
 
-        // Apply filters
-        if (filters?.categorySlug) {
-          const category = await this.getCategoryBySlug(filters.categorySlug);
-          if (category) {
-            query = query.eq('category_id', category.id);
-          }
+        // Apply V2 filters
+        if (filters?.category) {
+          query = query.eq('category', filters.category);
+        }
+
+        if (filters?.subcategory) {
+          query = query.eq('subcategory', filters.subcategory);
         }
 
         if (filters?.tier) {
@@ -153,22 +155,13 @@ class TemplateService {
           query = query.eq('is_featured', filters.isFeatured);
         }
 
-        if (filters?.isPopular !== undefined) {
-          query = query.eq('is_popular', filters.isPopular);
-        }
-
-        if (filters?.tags && filters.tags.length > 0) {
-          query = query.contains('tags', filters.tags);
-        }
-
         if (filters?.search) {
           query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
         }
 
-        // Order by featured first, then popular, then by usage
-        query = query.order('is_featured', { ascending: false })
-                     .order('is_popular', { ascending: false })
-                     .order('usage_count', { ascending: false });
+        // Order by sort_order, then featured
+        query = query.order('sort_order', { ascending: true })
+                     .order('is_featured', { ascending: false });
 
         const { data, error } = await query;
 
@@ -192,15 +185,12 @@ class TemplateService {
     }
   }
 
-  async getTemplateBySlug(slug: string): Promise<Template | null> {
+  async getTemplateById(id: string): Promise<Template | null> {
     try {
       const { data, error } = await supabase
         .from('templates')
-        .select(`
-          *,
-          category:template_categories(*)
-        `)
-        .eq('slug', slug)
+        .select('*')
+        .eq('id', id)
         .eq('is_active', true)
         .single();
 
@@ -215,7 +205,7 @@ class TemplateService {
 
       return data;
     } catch (error: any) {
-      console.error('Get template by slug error:', error);
+      console.error('Get template by ID error:', error);
       return null;
     }
   }
@@ -224,13 +214,10 @@ class TemplateService {
     try {
       const { data, error } = await supabase
         .from('templates')
-        .select(`
-          *,
-          category:template_categories(*)
-        `)
+        .select('*')
         .eq('is_active', true)
         .eq('is_featured', true)
-        .order('usage_count', { ascending: false })
+        .order('sort_order', { ascending: true })
         .limit(limit);
 
       if (error) {
@@ -245,46 +232,30 @@ class TemplateService {
     }
   }
 
-  async getPopularTemplates(limit: number = 6): Promise<Template[]> {
+  async getTemplatesByCategory(category: string, limit?: number): Promise<Template[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('templates')
-        .select(`
-          *,
-          category:template_categories(*)
-        `)
+        .select('*')
         .eq('is_active', true)
-        .eq('is_popular', true)
-        .order('usage_count', { ascending: false })
-        .limit(limit);
+        .eq('category', category)
+        .order('sort_order', { ascending: true });
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
-        console.error('❌ Error fetching popular templates:', error);
+        console.error('❌ Error fetching templates by category:', error);
         throw error;
       }
 
       return data || [];
     } catch (error: any) {
-      console.error('Get popular templates error:', error);
+      console.error('Get templates by category error:', error);
       return [];
-    }
-  }
-
-  async incrementTemplateUsage(templateId: string): Promise<void> {
-    try {
-      const { error } = await supabase.rpc('increment_template_usage', {
-        template_uuid: templateId
-      });
-
-      if (error) {
-        console.error('❌ Error incrementing template usage:', error);
-        throw error;
-      }
-
-      console.log('✅ Template usage incremented');
-    } catch (error: any) {
-      console.error('Increment template usage error:', error);
-      // Don't show toast for this - it's not critical
     }
   }
 
@@ -298,20 +269,26 @@ class TemplateService {
         .from('user_templates')
         .select(`
           *,
-          template:templates(
-            *,
-            category:template_categories(*)
-          )
+          template:templates(*)
         `)
         .order('created_at', { ascending: false });
 
       if (error) {
+        // Tablo yoksa sessizce boş array dön
+        if (error.code === 'PGRST200' || error.code === '42P01') {
+          console.warn('⚠️ user_templates table not found. Please run database/06-user-templates-table.sql');
+          return [];
+        }
         console.error('❌ Error fetching user templates:', error);
         throw error;
       }
 
       return data || [];
     } catch (error: any) {
+      // Tablo yoksa sessizce boş array dön
+      if (error.code === 'PGRST200' || error.code === '42P01') {
+        return [];
+      }
       console.error('Get user templates error:', error);
       toast.error('Kaydedilen şablonlar yüklenirken hata oluştu');
       return [];

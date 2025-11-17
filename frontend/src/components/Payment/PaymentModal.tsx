@@ -6,6 +6,7 @@ import { subscriptionService } from '../../services/subscriptionService';
 import { useAuthStore } from '../../store/authStore';
 import { authService } from '../../services/authService';
 import { useSubscription } from '../../hooks/useSubscription';
+import { generateDistanceSalesContractText } from '../../legal';
 import toast from 'react-hot-toast';
 import type { CardInfo, AddressInfo } from '../../types/payment';
 
@@ -48,8 +49,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [contractAccepted, setContractAccepted] = useState(false);
 
   if (!isOpen || !user) return null;
+  
+  // Generate Distance Sales Contract with user-specific data
+  const distanceSalesContract = generateDistanceSalesContractText({
+    userName: user.fullName,
+    userEmail: user.email,
+    planName: planTier.toUpperCase(),
+    planPeriod: billingPeriod === 'monthly' ? 'Aylık' : 'Yıllık',
+    amount: amount
+  });
+
 
   const handleTestCardToggle = () => {
     if (!useTestCard) {
@@ -98,6 +110,11 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     }
     if (!billingAddress.address.trim()) {
       newErrors.address = 'Adres gerekli';
+    }
+    
+    // Validate contract acceptance
+    if (!contractAccepted) {
+      newErrors.contract = 'Mesafeli Satış Sözleşmesini kabul etmelisiniz';
     }
 
     setErrors(newErrors);
@@ -319,17 +336,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
 
                 {/* Security & Payment Methods - Compact */}
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   <div className="flex items-center gap-2 text-xs text-white/80">
                     <Lock className="h-4 w-4 flex-shrink-0" />
                     <p>256-bit SSL şifreleme</p>
                   </div>
-                  <div className="flex gap-1.5">
-                    {['Visa', 'Master Card', 'Troy'].map((card) => (
-                      <div key={card} className="bg-white/10 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium border border-white/20">
-                        {card}
-                      </div>
-                    ))}
+                  
+                  {/* Payment Infrastructure Logo */}
+                  <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
+                    <img 
+                      src="/images/bank_band_logo.png" 
+                      alt="Desteklenen Ödeme Yöntemleri" 
+                      className="w-full h-auto object-contain opacity-90"
+                    />
                   </div>
                 </div>
               </div>
@@ -509,11 +528,49 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                   </div>
                 </div>
 
+                {/* Mesafeli Satış Sözleşmesi - COMPACT */}
+                <div className="pt-4 border-t border-gray-200">
+                  <label className="block text-xs font-semibold text-gray-900 mb-2">
+                    Mesafeli Satış Sözleşmesi
+                  </label>
+                  <textarea
+                    value={distanceSalesContract}
+                    readOnly
+                    className="w-full px-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg text-xs text-gray-700 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-primary-100"
+                    rows={12}
+                  />
+                  
+                  {/* Contract Acceptance Checkbox */}
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={contractAccepted}
+                        onChange={(e) => setContractAccepted(e.target.checked)}
+                        disabled={loading}
+                        className="mt-0.5 w-5 h-5 text-primary-600 bg-white border-2 border-gray-300 rounded focus:ring-2 focus:ring-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <span className="text-sm text-gray-900 leading-tight group-hover:text-gray-700 transition-colors">
+                        <strong>Mesafeli Satış Sözleşmesi</strong>'ni okudum, anladım ve kabul ediyorum. 
+                        <span className="block mt-1 text-xs text-amber-700">
+                          * Bu sözleşmeyi kabul etmeden ödeme yapamazsınız.
+                        </span>
+                      </span>
+                    </label>
+                    {errors.contract && (
+                      <p className="text-xs text-red-600 mt-2 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.contract}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Submit Button - COMPACT */}
                 <div className="pt-4 space-y-2.5">
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !contractAccepted}
                     className="w-full relative overflow-hidden bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed group"
                   >
                     <span className="relative z-10 flex items-center justify-center gap-2">

@@ -14,7 +14,9 @@ import PaymentCallbackPage from './pages/PaymentCallbackPage'
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('./pages/HomePage'))
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'))
-const EditorPage = lazy(() => import('./pages/EditorPage'))
+const EditorPage = lazy(() => import('./pages/EditorPageV2'))
+const EditorV2TestPage = lazy(() => import('./pages/EditorV2TestPage'))
+const EditorV2SimplePage = lazy(() => import('./pages/EditorV2SimplePage'))
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const AuthPage = lazy(() => import('./pages/AuthPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
@@ -80,6 +82,16 @@ function App() {
             <Route path="editor/:templateId?" element={
               <ProtectedRoute>
                 <EditorPage />
+              </ProtectedRoute>
+            } />
+            <Route path="editor-v2-test" element={
+              <ProtectedRoute>
+                <EditorV2TestPage />
+              </ProtectedRoute>
+            } />
+            <Route path="editor-v2" element={
+              <ProtectedRoute>
+                <EditorV2SimplePage />
               </ProtectedRoute>
             } />
             <Route path="account" element={

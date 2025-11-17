@@ -124,6 +124,11 @@ export const getResponsiveImageSrcSet = (
   baseUrl: string,
   sizes: number[] = [320, 640, 1024, 1920]
 ): string => {
+  // Guard against undefined/null/empty url
+  if (!baseUrl || typeof baseUrl !== 'string') {
+    return '';
+  }
+  
   // Check if it's an Unsplash URL
   if (baseUrl.includes('unsplash.com')) {
     return sizes
@@ -144,6 +149,11 @@ export const getOptimizedUnsplashUrl = (
   options: { width?: number; height?: number; quality?: number; format?: string } = {}
 ): string => {
   const { width, height, quality = 80, format = 'auto' } = options;
+  
+  // Guard against undefined/null/empty url
+  if (!url || typeof url !== 'string') {
+    return '';
+  }
   
   if (!url.includes('unsplash.com')) {
     return url;
