@@ -98,7 +98,7 @@ const PublicInvitationPage: React.FC = () => {
     try {
       await pdfService.exportAndDownload(previewElement, {
         filename: `${invitation.title || 'davetiye'}.pdf`,
-        quality: 2,
+        quality: 4, // ULTRA HIGH QUALITY for professional output
         orientation: 'portrait'
       });
     } finally {
@@ -127,8 +127,7 @@ const PublicInvitationPage: React.FC = () => {
     return date.toLocaleDateString('tr-TR', { 
       day: 'numeric', 
       month: 'long', 
-      year: 'numeric',
-      weekday: 'long'
+      year: 'numeric'
     });
   };
 
@@ -149,6 +148,25 @@ const PublicInvitationPage: React.FC = () => {
     );
   }
 
+  // Extract colors from invitation content
+  const colors = invitation.content?.colors || {
+    primary: '#667eea',
+    secondary: '#764ba2',
+    background: '#ffffff',
+    text: '#ffffff',
+    accent: '#f56565'
+  };
+
+  // Extract font
+  const selectedFont = invitation.custom_design?.font || 'Playfair Display';
+
+  // Extract text elements
+  const textElements = invitation.content?.textElements || [];
+
+  // Canvas size (same as editor / preview)
+  const canvasWidth = invitation.content?.canvasSize?.width || 480;
+  const canvasHeight = invitation.content?.canvasSize?.height || 680;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20">
       {/* Draft Banner - Modern */}
@@ -167,15 +185,15 @@ const PublicInvitationPage: React.FC = () => {
         </div>
       )}
 
-      {/* Header Actions - Modern & Sticky */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      {/* Header Actions - Minimal & Sticky */}
+      <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-lg border-b border-gray-200/50 shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-14">
             <button
               onClick={() => navigate('/')}
-              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all font-medium"
+              className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all text-sm font-medium"
             >
-              <span className="text-lg">←</span>
+              <span className="text-base">←</span>
               <span className="hidden sm:inline">Ana Sayfa</span>
             </button>
             {/* Only show share/download buttons for published invitations */}
@@ -183,22 +201,22 @@ const PublicInvitationPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleShare}
-                  className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-500 hover:text-primary-600 rounded-xl transition-all font-medium shadow-sm hover:shadow-md"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 hover:border-primary-500 hover:text-primary-600 rounded-lg transition-all text-sm font-medium shadow-sm hover:shadow"
                 >
-                  <Share2 className="h-4 w-4" />
+                  <Share2 className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">Paylaş</span>
                 </button>
                 <button
                   onClick={handleDownloadPDF}
                   disabled={isExporting}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg transition-all text-sm font-medium shadow-sm hover:shadow disabled:opacity-50"
                 >
                   {isExporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    <Download className="h-4 w-4" />
+                    <Download className="h-3.5 w-3.5" />
                   )}
-                  <span className="hidden sm:inline">{isExporting ? 'İndiriliyor...' : 'PDF İndir'}</span>
+                  <span className="hidden sm:inline">{isExporting ? 'İndiriliyor...' : 'İndir'}</span>
                 </button>
               </div>
             )}
@@ -206,60 +224,46 @@ const PublicInvitationPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="py-8">
-
-      {/* Invitation Preview - Modern Card */}
-      <div className="max-w-4xl mx-auto px-4">
-        <div 
-          id="invitation-preview"
-          className="bg-white shadow-2xl rounded-2xl overflow-hidden relative border border-white/50 backdrop-blur-sm"
-          style={{
-            minHeight: '600px',
-            backgroundImage: invitation.image_url && invitation.content?.imagePosition === 'background'
-              ? `url(${invitation.image_url})`
-              : invitation.content?.colors 
-                ? `linear-gradient(135deg, ${invitation.content.colors.primary} 0%, ${invitation.content.colors.secondary} 100%)`
-                : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          {/* Gradient overlay for background image */}
+      {/* Main Content - Compact */}
+      <div className="py-6 sm:py-8">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          {/* Invitation Preview - Minimal Card (same size & style as editor canvas) */}
+          <div 
+            id="invitation-preview"
+            className="shadow-2xl rounded-lg overflow-hidden relative mx-auto"
+            style={{
+              width: `${canvasWidth}px`,
+              height: `${canvasHeight}px`,
+              maxWidth: '100%'
+            }}
+          >
+          {/* Background (same as editor canvas) */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: invitation.image_url && invitation.content?.imagePosition === 'background'
+                ? `url(${invitation.image_url})`
+                : invitation.content?.colors 
+                  ? `linear-gradient(135deg, ${invitation.content.colors.primary} 0%, ${invitation.content.colors.secondary} 100%)`
+                  : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          />
+          {/* Gradient overlay for background image (same as editor) */}
           {invitation.content?.imagePosition === 'background' && invitation.image_url && (
             <div 
               className="absolute inset-0" 
               style={{ 
                 background: invitation.content?.colors
                   ? `linear-gradient(135deg, ${invitation.content.colors.primary}CC 0%, ${invitation.content.colors.secondary}CC 100%)`
-                  : 'linear-gradient(135deg, #667eeaCC 0%, #764ba2CC 100%)'
+                  : 'linear-gradient(135deg, #667eeaCC 0%, #764ba2CC 100%)',
+                zIndex: 1
               }}
             />
           )}
-          
-          {/* User Watermark - bottom right */}
-          {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
-            <img
-              src={invitation.image_url}
-              alt="Logo"
-              className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60 z-10"
-            />
-          )}
 
-          {/* FREE Plan Watermark - davetim.app branding */}
-          {invitation.owner_subscription_tier === 'free' && (
-            <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-md z-10">
-              <a 
-                href="https://davetim.app" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 hover:text-primary-600 transition-colors"
-              >
-                <span className="text-primary-600">✨</span>
-                <span>davetim.app</span>
-              </a>
-            </div>
-          )}
+          {/* FREE Plan Watermark - davetim.app branding (moved outside as footer) */}
 
           {/* QR Code - Dynamic Position */}
           {qrMedia?.qr_image_url && invitation.settings?.showQrOnDesign && (
@@ -268,163 +272,285 @@ const PublicInvitationPage: React.FC = () => {
               alt="QR"
               style={{ 
                 width: `${invitation.settings?.qrSize || 96}px`, 
-                height: `${invitation.settings?.qrSize || 96}px` 
+                height: `${invitation.settings?.qrSize || 96}px`,
+                zIndex: 1000,
+                imageRendering: 'pixelated'
               }}
               className={
-                `absolute bg-white p-2 rounded-md shadow-md z-20 ` +
+                `absolute bg-white p-2 rounded-md shadow-md ` +
                 (invitation.settings?.qrPosition === 'top-left' ? 'top-4 left-4' : '') +
                 (invitation.settings?.qrPosition === 'top-right' ? 'top-4 right-4' : '') +
                 (invitation.settings?.qrPosition === 'bottom-left' ? 'bottom-4 left-4' : '') +
                 (invitation.settings?.qrPosition === 'bottom-right' ? 'bottom-4 right-4' : '')
               }
+              crossOrigin="anonymous"
             />
           )}
           
-          <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px] relative z-10">
-            <div 
-              className="text-center space-y-4 max-w-sm"
-              style={{ 
-                color: invitation.content?.colors?.text || '#ffffff'
-              }}
-            >
-              {/* Banner Image - top */}
-              {invitation.content?.imagePosition === 'banner' && invitation.image_url && (
-                <div className="mb-6 -mx-8 -mt-8 mb-8">
-                  <img
-                    src={invitation.image_url}
-                    alt="Banner"
-                    className="w-full h-32 object-cover"
-                  />
-                </div>
-              )}
-              
-              {/* Profile Image - circular */}
-              {invitation.content?.imagePosition === 'profile' && invitation.image_url && (
-                <div className="mb-6">
+          {/* Main content container - All positioned elements here (no padding, same coord system as editor) */}
+          <div className="absolute inset-0" style={{ zIndex: 2 }}>
+            {/* Profile Image - positioned with transforms (supports rotation) */}
+            {invitation.content?.imagePosition === 'profile' && invitation.image_url && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${invitation.content?.imageTransforms?.profile?.position.x || 50}%`,
+                  top: `${invitation.content?.imageTransforms?.profile?.position.y || 15}%`,
+                  transform: `translate(-50%, -50%) rotate(${invitation.content?.imageTransforms?.profile?.rotation || 0}deg)`,
+                  zIndex: invitation.content?.imageLayers?.profile || 200
+                }}
+              >
+                <div
+                  style={{
+                    width: `${invitation.content?.imageTransforms?.profile?.size.width || 160}px`,
+                    height: `${invitation.content?.imageTransforms?.profile?.size.height || 160}px`,
+                    borderRadius: '50%',
+                    border: `4px solid ${colors.accent}`,
+                    overflow: 'hidden',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  }}
+                >
                   <img
                     src={invitation.image_url}
                     alt="Profil"
-                    className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
-                    style={{ borderColor: invitation.content?.colors?.accent || '#f56565' }}
+                    className="w-full h-full object-cover"
+                    style={{
+                      imageRendering: 'high-quality',
+                      WebkitFontSmoothing: 'antialiased',
+                      backfaceVisibility: 'hidden'
+                    }}
+                    crossOrigin="anonymous"
                   />
                 </div>
-              )}
-              
-              {/* Title */}
-              <div className="text-2xl md:text-4xl font-serif font-bold">
-                {invitation.title}
               </div>
-              
-              {/* Accent Divider */}
-              <div 
-                className="w-24 h-1 mx-auto rounded-full"
-                style={{ 
-                  backgroundColor: invitation.content?.colors?.accent || '#f56565'
-                }}
-              />
-              
-              {/* Date & Time Card */}
-              {invitation.event_date && (
-                <div 
-                  className="p-4 rounded-lg"
-                  style={{ 
-                    backgroundColor: invitation.content?.colors?.background || '#ffffff',
-                    color: invitation.content?.colors?.primary || '#667eea'
-                  }}
-                >
-                  <div className="font-medium">
-                    {formatDate(invitation.event_date)}
-                  </div>
-                  {invitation.event_time && (
-                    <div className="mt-1">
-                      {invitation.event_time}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Accent Divider */}
-              <div 
-                className="w-24 h-1 mx-auto rounded-full"
-                style={{ 
-                  backgroundColor: invitation.content?.colors?.accent || '#f56565'
-                }}
-              />
-              
-              {/* Location */}
-              {invitation.event_location_name && (
-                <div style={{ opacity: 0.95 }}>
-                  {invitation.event_location_name}
-                </div>
-              )}
-              
-              {/* Custom Message */}
-              {invitation.content?.message && (
-                <>
-                  <div 
-                    className="w-16 h-1 mx-auto rounded-full"
-                    style={{ 
-                      backgroundColor: invitation.content?.colors?.accent || '#f56565'
-                    }}
-                  />
-                  <div 
-                    className="text-sm italic p-4 rounded-lg"
-                    style={{ 
-                      backgroundColor: invitation.content?.colors?.background || '#ffffff',
-                      color: invitation.content?.colors?.primary || '#667eea',
-                      border: `2px solid ${invitation.content?.colors?.accent || '#f56565'}`
-                    }}
-                  >
-                    "{invitation.content.message}"
-                  </div>
-                </>
-              )}
+            )}
 
-              {/* Decorative Footer */}
-              <div 
-                className="mt-12 pt-8"
-                style={{ 
-                  borderTop: `2px solid ${invitation.content?.colors?.accent || '#ffffff'}40`
+            {/* Banner Image - positioned with transforms (supports rotation) */}
+            {invitation.content?.imagePosition === 'banner' && invitation.image_url && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${invitation.content?.imageTransforms?.banner?.position.x || 50}%`,
+                  top: `${invitation.content?.imageTransforms?.banner?.position.y || 8}%`,
+                  transform: `translate(-50%, -50%) rotate(${invitation.content?.imageTransforms?.banner?.rotation || 0}deg)`,
+                  zIndex: invitation.content?.imageLayers?.banner || 200,
+                  width: `${invitation.content?.imageTransforms?.banner?.size.width || 600}px`,
+                  height: `${invitation.content?.imageTransforms?.banner?.size.height || 200}px`, // match editor default
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                 }}
               >
-                <p className="text-lg italic opacity-90">
-                  Sizleri aramızda görmekten mutluluk duyarız
+                <img
+                  src={invitation.image_url}
+                  alt="Banner"
+                  className="w-full h-full object-cover"
+                  style={{
+                    imageRendering: 'high-quality',
+                    WebkitFontSmoothing: 'antialiased',
+                    backfaceVisibility: 'hidden'
+                  }}
+                  crossOrigin="anonymous"
+                />
+              </div>
+            )}
+
+            {/* Watermark - positioned with transforms */}
+            {invitation.content?.imagePosition === 'watermark' && invitation.image_url && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: `${invitation.content?.imageTransforms?.watermark?.position.x || 90}%`,
+                  top: `${invitation.content?.imageTransforms?.watermark?.position.y || 90}%`,
+                  transform: `translate(-50%, -50%) rotate(${invitation.content?.imageTransforms?.watermark?.rotation || 0}deg)`,
+                  zIndex: invitation.content?.imageLayers?.watermark || 200,
+                  width: `${invitation.content?.imageTransforms?.watermark?.size.width || 64}px`,
+                  height: `${invitation.content?.imageTransforms?.watermark?.size.height || 64}px`,
+                  borderRadius: invitation.content?.logoShape === 'circle' ? '50%' : '0',
+                  overflow: 'hidden',
+                  opacity: 0.6
+                }}
+              >
+                <img
+                  src={invitation.image_url}
+                  alt="Logo"
+                  className="w-full h-full object-cover"
+                  style={{
+                    imageRendering: 'high-quality',
+                    WebkitFontSmoothing: 'antialiased',
+                    backfaceVisibility: 'hidden'
+                  }}
+                  crossOrigin="anonymous"
+                />
+              </div>
+            )}
+            {/* Text Elements - Generic rendering (same as editor canvas / preview) */}
+            {textElements && textElements.length > 0 && textElements.map((elem: any) => {
+              if (!elem.visible) return null;
+              
+              const isDivider = elem.type === 'divider';
+              const opacity = elem.opacity ?? 1;
+              
+              const wrapperStyle: React.CSSProperties = {
+                position: 'absolute',
+                left: `${elem.position.x}%`,
+                top: `${elem.position.y}%`,
+                transform: 'translate(-50%, -50%)',
+                width: isDivider ? `${elem.size.width}px` : 'auto',
+                maxWidth: `${elem.size.width}px`,
+                zIndex: elem.zIndex || 300,
+                pointerEvents: 'none',
+                opacity
+              };
+              
+              let content: React.ReactNode;
+              
+              if (isDivider) {
+                content = (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: `${elem.size.height}px`,
+                      backgroundColor: elem.style?.color || colors.accent,
+                      borderRadius: '2px'
+                    }}
+                  />
+                );
+              } else {
+                content = (
+                  <div
+                    style={{
+                      fontSize: `${elem.style?.fontSize || 16}px`,
+                      fontWeight: elem.style?.fontWeight || 'normal',
+                      fontFamily: elem.style?.fontFamily || selectedFont,
+                      color: elem.style?.color || colors.text,
+                      textAlign: elem.style?.textAlign || 'center',
+                      fontStyle: elem.style?.fontStyle || 'normal',
+                      textDecoration: elem.style?.textDecoration || 'none',
+                      whiteSpace: 'pre-wrap'
+                    }}
+                  >
+                    {elem.content}
+                  </div>
+                );
+              }
+              
+              return (
+                <div key={elem.id} style={wrapperStyle}>
+                  {content}
+                </div>
+              );
+            })}
+
+            {/* V2: Dynamic Text Fields - Positioned */}
+            {invitation.content?.textFields && Array.isArray(invitation.content.textFields) && invitation.content.textFields.length > 0 && invitation.content.textFields.map((field: any) => (
+              field.value && field.position && field.size && (
+                <div
+                  key={field.id}
+                  style={{
+                    position: 'absolute',
+                    left: `${field.position.x}%`,
+                    top: `${field.position.y}%`,
+                    width: 'auto',
+                    maxWidth: `${field.size.width}px`,
+                    transform: 'translate(-50%, -50%)',
+                    fontSize: `${field.style?.fontSize || 24}px`,
+                    fontWeight: field.style?.fontWeight || 'normal',
+                    color: field.style?.color || colors.text,
+                    textAlign: field.style?.textAlign || 'center',
+                    fontFamily: field.style?.fontFamily || selectedFont,
+                    zIndex: field.zIndex || 310,
+                    pointerEvents: 'none'
+                  }}
+                >
+                  {field.value}
+                </div>
+              )
+            ))}
+
+            {/* V2: Decorative Elements - Positioned with zIndex */}
+            {invitation.content?.decorativeElements && Array.isArray(invitation.content.decorativeElements) && invitation.content.decorativeElements.length > 0 && invitation.content.decorativeElements.map((elem: any) => (
+              <div
+                key={elem.id}
+                style={{
+                  position: 'absolute',
+                  left: `${elem.position.x}%`,
+                  top: `${elem.position.y}%`,
+                  width: `${elem.size.width}px`,
+                  height: `${elem.size.height}px`,
+                  transform: `translate(-50%, -50%) rotate(${elem.rotation}deg)`,
+                  opacity: elem.opacity,
+                  zIndex: elem.zIndex || 250,
+                  pointerEvents: 'none'
+                }}
+              >
+                <img
+                  src={elem.imageUrl}
+                  alt={elem.name}
+                  className="w-full h-full object-contain"
+                  draggable={false}
+                  style={{
+                    imageRendering: 'high-quality',
+                    WebkitFontSmoothing: 'antialiased',
+                    backfaceVisibility: 'hidden'
+                  }}
+                  crossOrigin="anonymous"
+                />
+              </div>
+            ))}
+          </div>
+        </div> {/* end of invitation-preview */}
+
+        {/* Footer Info - Minimal (outside of invitation card) */}
+        <div className="mt-6 space-y-3">
+          {/* davetim.app etiketi - FREE planlar için */}
+          {invitation.owner_subscription_tier === 'free' && (
+            <div className="flex items-center justify-center">
+              <a 
+                href="https://davetim.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 border border-gray-200 shadow-sm hover:shadow-md hover:bg-white transition-all text-xs font-semibold text-gray-800"
+              >
+                <span className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-xs font-bold">
+                  D
+                </span>
+                <span>davetim.app ile hazırlandı</span>
+              </a>
+            </div>
+          )}
+
+          {/* Genel footer bilgisi */}
+          <div className="bg-white/70 backdrop-blur-sm rounded-lg border border-gray-200/50 p-4">
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center">
+                <a href="/" className="flex items-center gap-2 group">
+                  <div className="w-7 h-7 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center group-hover:shadow-md transition-all">
+                    <span className="text-white font-bold text-sm">D</span>
+                  </div>
+                  <span className="text-sm font-bold text-gray-900">
+                    Davetim
+                  </span>
+                </a>
+              </div>
+              <div className="pt-2 border-t border-gray-200/50">
+                <p className="text-xs text-gray-600">
+                  Kendi davetiyenizi oluşturmak için{' '}
+                  <a 
+                    href="/auth" 
+                    className="text-primary-600 hover:text-primary-700 font-semibold transition-colors inline-flex items-center gap-0.5"
+                  >
+                    ücretsiz kayıt olun
+                    <span className="text-sm">→</span>
+                  </a>
                 </p>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Footer Info - Modern */}
-        <div className="mt-8 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 p-4 shadow-sm">
-          <div className="text-center space-y-3">
-            <div className="flex items-center justify-center">
-              <a href="/" className="flex items-center gap-2 group">
-                <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-all">
-                  <span className="text-white font-bold text-base">D</span>
-                </div>
-                <span className="text-base font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Davetim
-                </span>
-              </a>
-            </div>
-            <div className="pt-2 border-t border-gray-200/50">
-              <p className="text-xs text-gray-600">
-                Kendi davetiyenizi oluşturmak için{' '}
-                <a 
-                  href="/signup" 
-                  className="text-primary-600 hover:text-primary-700 font-semibold transition-colors inline-flex items-center gap-1"
-                >
-                  ücretsiz kayıt olun
-                  <span className="text-base">→</span>
-                </a>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
       </div>
     </div>
+  </div>
   );
 };
 

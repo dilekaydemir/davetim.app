@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Download, Share2, Eye, Save, Palette, Loader2, FileText, Users, QrCode } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Eye, Save, Palette, Loader2, FileText, Users, QrCode, Sparkles, Plus, AlignCenter, Type } from 'lucide-react';
 import { mediaService, type Media } from '../services/mediaService';
 import { templateService, type Template } from '../services/templateService';
 import { invitationService, type Invitation } from '../services/invitationService';
@@ -11,8 +11,13 @@ import PreviewModal from '../components/Editor/PreviewModal';
 import ColorPicker from '../components/Editor/ColorPicker';
 import ImageUpload from '../components/Editor/ImageUpload';
 import GuestList from '../components/Editor/GuestList';
+import { DraggableElement } from '../components/Editor/DraggableElement';
+import { DecorativeElementsGallery } from '../components/Editor/DecorativeElementsGallery';
+import { AccordionSection } from '../components/Editor/AccordionSection';
 import toast from 'react-hot-toast';
 import { validateTitle, validateLocation, validateTime, validateFutureDate } from '../utils/validation';
+import { ALL_FONTS, type FontFamily, getFontFamily } from '../utils/fonts';
+import { getTemplateFullUrl } from '../utils/templateImageUrl';
 
 const EditorPage: React.FC = () => {
   const { templateId: invitationId } = useParams();
@@ -29,6 +34,8 @@ const EditorPage: React.FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'guests'>('details');
   const [qrMedia, setQrMedia] = useState<Media | null>(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
   
   // Use ref to prevent duplicate creation across re-renders
   const isCreatingRef = useRef(false);
@@ -42,7 +49,8 @@ const EditorPage: React.FC = () => {
     location: '',
     customMessage: '',
     imageUrl: '' as string | null,
-    imagePosition: 'profile' as 'profile' | 'background' | 'banner' | 'watermark'
+    imagePosition: 'profile' as 'profile' | 'background' | 'banner' | 'watermark',
+    logoShape: 'circle' as 'circle' | 'square'
   });
 
   // Color customization
@@ -61,10 +69,100 @@ const EditorPage: React.FC = () => {
     imagePosition?: typeof formData.imagePosition;
   } | null>(null);
 
-  const [selectedFont, setSelectedFont] = useState('normal');
+  const [selectedFont, setSelectedFont] = useState<FontFamily>('Playfair Display');
   const [showQrOnDesign, setShowQrOnDesign] = useState(false);
   const [qrPosition, setQrPosition] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('top-right');
   const [qrSize, setQrSize] = useState<number>(96);
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  
+  // Accordion states for compact UI
+  const [expandedSections, setExpandedSections] = useState({
+    colors: false,
+    fonts: false,
+    textFields: true,
+    decorative: false,
+    alignment: false,
+    textElements: false,
+    qr: false
+  });
+  
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+  
+  // V2: Dynamic text fields from template
+  const [textFields, setTextFields] = useState<Array<{
+    id: string;
+    label: string;
+    value: string;
+    position?: { x: number; y: number };
+    size?: { width: number; height: number };
+    zIndex?: number;
+    style: {
+      fontSize: number;
+      fontWeight: string;
+      color: string;
+      textAlign: 'left' | 'center' | 'right';
+      fontFamily?: string;
+    };
+  }>>([]);
+  
+  // V2: Decorative elements from template
+  const [decorativeElements, setDecorativeElements] = useState<Array<{
+    id: string;
+    type: string;
+    name: string;
+    imageUrl: string;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+    rotation: number;
+    opacity: number;
+    zIndex?: number;
+  }>>([]);
+  
+  // CANVA-STYLE: All text elements with full control (position, size, content, style)
+  const [textElements, setTextElements] = useState<Array<{
+    id: string;
+    type: 'title' | 'date' | 'time' | 'location' | 'message' | 'divider' | 'footer';
+    content: string; // Dynamic content - will be synced with form inputs
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+    style: {
+      fontSize?: number;
+      fontWeight?: string;
+      color?: string;
+      textAlign?: 'left' | 'center' | 'right';
+      fontFamily?: string;
+    };
+    visible: boolean;
+    zIndex?: number;
+  }>>([
+    { id: 'title', type: 'title', content: '', position: { x: 50, y: 25 }, size: { width: 400, height: 80 }, style: { fontSize: 32, fontWeight: 'bold', textAlign: 'center' }, visible: true, zIndex: 300 },
+    { id: 'date-time', type: 'date', content: '', position: { x: 50, y: 40 }, size: { width: 350, height: 60 }, style: { fontSize: 16, textAlign: 'center' }, visible: true, zIndex: 300 },
+    { id: 'divider-1', type: 'divider', content: '', position: { x: 50, y: 50 }, size: { width: 100, height: 4 }, style: {}, visible: true, zIndex: 300 },
+    { id: 'location', type: 'location', content: '', position: { x: 50, y: 58 }, size: { width: 350, height: 40 }, style: { fontSize: 16, textAlign: 'center' }, visible: true, zIndex: 300 },
+    { id: 'message', type: 'message', content: '', position: { x: 50, y: 68 }, size: { width: 400, height: 80 }, style: { fontSize: 14, textAlign: 'center' }, visible: true, zIndex: 300 },
+    { id: 'divider-2', type: 'divider', content: '', position: { x: 50, y: 78 }, size: { width: 80, height: 4 }, style: {}, visible: true, zIndex: 300 },
+    { id: 'footer', type: 'footer', content: 'Sizleri aramızda görmekten mutluluk duyarız', position: { x: 50, y: 85 }, size: { width: 400, height: 30 }, style: { fontSize: 12, textAlign: 'center' }, visible: true, zIndex: 300 }
+  ]);
+  
+  // Image layer ordering per mode
+  const [imageLayers, setImageLayers] = useState<{ profile: number; banner: number; watermark: number }>({
+    profile: 260,
+    banner: 240,
+    watermark: 280
+  });
+  // Image transforms for draggable/resizable image (excluding background)
+  const [imageTransforms, setImageTransforms] = useState<{
+    profile: { position: { x: number; y: number }; size: { width: number; height: number } };
+    banner: { position: { x: number; y: number }; size: { width: number; height: number } };
+    watermark: { position: { x: number; y: number }; size: { width: number; height: number } };
+  }>({
+    profile: { position: { x: 50, y: 15 }, size: { width: 160, height: 160 } },
+    banner: { position: { x: 50, y: 8 }, size: { width: 600, height: 200 } },
+    watermark: { position: { x: 90, y: 90 }, size: { width: 64, height: 64 } }
+  });
+
 
   // Form validation errors
   const [errors, setErrors] = useState({
@@ -82,16 +180,14 @@ const EditorPage: React.FC = () => {
       return;
     }
     
+    // Subscription yüklenene kadar bekle
+    if (subscription.isLoading && user?.id) {
+      return;
+    }
+    
     loadData();
-  }, [invitationId, searchParams, isAuthenticated]);
+  }, [invitationId, searchParams, isAuthenticated, subscription.isLoading, user?.id]);
 
-  // Debug: Log formData changes
-  useEffect(() => {
-    console.log('🖼️ FormData updated:');
-    console.log('  - imagePosition:', formData.imagePosition);
-    console.log('  - imageUrl:', formData.imageUrl);
-    console.log('  - Should show background?', formData.imagePosition === 'background' && formData.imageUrl);
-  }, [formData.imageUrl, formData.imagePosition]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -119,17 +215,19 @@ const EditorPage: React.FC = () => {
         console.log('📸 Invitation image_url:', invitationData.image_url);
         console.log('📍 Invitation imagePosition:', invitationData.content?.imagePosition);
         
-        // Store template's original design for reset functionality
+        // Store template's original design for reset functionality (V2 Schema)
         if (invitationData.template) {
-          const templateDesign = invitationData.template.design_config || {};
-          const templateImageUrl = templateDesign.backgroundImage || invitationData.template.preview_image_url || null;
-          const templateImagePosition = templateDesign.imagePosition || 'background';
-          const templateColors = templateDesign.colors ? {
-            primary: templateDesign.colors.primary || '#667eea',
-            secondary: templateDesign.colors.secondary || '#764ba2',
-            background: templateDesign.colors.background || '#ffffff',
-            text: templateDesign.colors.text || '#ffffff',
-            accent: templateDesign.colors.accent || '#f56565'
+          // V2: Use color_palette and default_image_url/thumbnail_url
+          const templateImageUrl = getTemplateFullUrl(
+            invitationData.template.default_image_url || invitationData.template.thumbnail_url
+          );
+          const templateImagePosition = 'background';
+          const templateColors = invitationData.template.color_palette ? {
+            primary: invitationData.template.color_palette.primary || '#667eea',
+            secondary: invitationData.template.color_palette.secondary || '#764ba2',
+            background: invitationData.template.color_palette.background || '#ffffff',
+            text: invitationData.template.color_palette.text || '#ffffff',
+            accent: invitationData.template.color_palette.accent || '#f56565'
           } : undefined;
           
           setTemplateOriginalDesign({
@@ -147,7 +245,8 @@ const EditorPage: React.FC = () => {
           location: invitationData.event_location_name || '',
           customMessage: invitationData.content?.message || '',
           imageUrl: invitationData.image_url || null,
-          imagePosition: invitationData.content?.imagePosition || 'profile'
+          imagePosition: invitationData.content?.imagePosition || 'profile',
+          logoShape: invitationData.content?.logoShape === 'square' ? 'square' : 'circle'
         });
         
         // Load colors if exists
@@ -166,6 +265,82 @@ const EditorPage: React.FC = () => {
           if (invitationData.settings.qrSize) {
             setQrSize(invitationData.settings.qrSize);
           }
+        }
+        
+        // V2: Load text fields from saved invitation
+        if (invitationData.content?.textFields && Array.isArray(invitationData.content.textFields)) {
+          setTextFields(invitationData.content.textFields);
+          console.log('📝 Loaded saved text fields:', invitationData.content.textFields);
+        } else if (invitationData.template?.text_fields) {
+          // Fallback to template text fields if not saved yet - with default position/size
+          const loadedTextFields = invitationData.template.text_fields.map((field: any, index: number) => ({
+            id: field.id || `field-${Date.now()}-${Math.random()}`,
+            label: field.label || 'Text Field',
+            value: field.defaultValue || '',
+            position: { x: 50, y: 50 + (index * 10) }, // Default center, stacked vertically
+            size: { width: 400, height: 60 },
+            zIndex: 310 + index,
+            style: field.style || {}
+          }));
+          setTextFields(loadedTextFields);
+          console.log('📝 Loaded template text fields:', loadedTextFields);
+        }
+        
+        // V2: Load decorative elements from saved invitation ONLY
+        if (invitationData.content?.decorativeElements && Array.isArray(invitationData.content.decorativeElements)) {
+          // Filter out old elements without imageUrl (backward compatibility)
+          const validElements = invitationData.content.decorativeElements
+            .filter((elem: any) => elem.imageUrl && elem.name)
+            .map((elem: any, i: number) => ({ ...elem, zIndex: typeof elem.zIndex === 'number' ? elem.zIndex : 250 + i }));
+          setDecorativeElements(validElements);
+          console.log('🎨 Loaded saved decorative elements:', validElements);
+        } else {
+          // Don't load template decorative elements automatically - user should add them manually
+          setDecorativeElements([]);
+          console.log('🎨 No decorative elements - user will add manually');
+        }
+        
+        // CANVA-STYLE: Load text element positions AND content if saved
+        if (invitationData.content?.textElements && Array.isArray(invitationData.content.textElements)) {
+          const loaded = invitationData.content.textElements.map((e: any) => ({
+            ...e,
+            zIndex: typeof e.zIndex === 'number' ? e.zIndex : 300,
+            // Ensure content is synced with form data
+            content: e.type === 'title' ? (invitationData.title || e.content || '') :
+                     e.type === 'location' ? (invitationData.event_location_name || e.content || '') :
+                     e.type === 'message' ? (invitationData.content?.message || e.content || '') :
+                     e.content || ''
+          }));
+          setTextElements(loaded);
+          console.log('📍 Loaded saved text elements with content:', loaded);
+        } else {
+          // Initialize textElements content from form data
+          setTextElements(prev => prev.map(el => ({
+            ...el,
+            content: el.type === 'title' ? (invitationData.title || '') :
+                     el.type === 'location' ? (invitationData.event_location_name || '') :
+                     el.type === 'message' ? (invitationData.content?.message || '') :
+                     el.content
+          })));
+        }
+        
+        // Load image layers if saved
+        if (invitationData.content?.imageLayers) {
+          setImageLayers({
+            profile: invitationData.content.imageLayers.profile ?? 260,
+            banner: invitationData.content.imageLayers.banner ?? 240,
+            watermark: invitationData.content.imageLayers.watermark ?? 280
+          });
+        }
+        
+        // Load image transforms if saved
+        if (invitationData.content?.imageTransforms) {
+          setImageTransforms(prev => ({
+            profile: invitationData.content.imageTransforms.profile || prev.profile,
+            banner: invitationData.content.imageTransforms.banner || prev.banner,
+            watermark: invitationData.content.imageTransforms.watermark || prev.watermark
+          }));
+          console.log('🖼️ Loaded saved image transforms:', invitationData.content.imageTransforms);
         }
         
       } else {
@@ -187,7 +362,8 @@ const EditorPage: React.FC = () => {
         isCreatingRef.current = true;
         console.log('✨ Creating new invitation for template:', templateSlug);
         
-        const templateData = await templateService.getTemplateBySlug(templateSlug);
+        // V2: templateSlug is actually template ID now
+        const templateData = await templateService.getTemplateById(templateSlug);
         
         if (!templateData) {
           toast.error('Şablon bulunamadı');
@@ -198,7 +374,9 @@ const EditorPage: React.FC = () => {
         
         // Şablon erişim kontrolü - Kullanıcının bu tier'a erişimi var mı?
         const templateTier = templateData.tier as 'free' | 'pro' | 'premium';
-        if (!subscription.canAccessTemplate(templateTier)) {
+        const canAccess = subscription.canAccessTemplate(templateTier);
+        
+        if (!canAccess) {
           const tierNames = { free: 'Ücretsiz', pro: 'PRO', premium: 'PREMIUM' };
           toast.error(`Bu şablon ${tierNames[templateTier]} plan gerektirir!`);
           navigate('/templates');
@@ -208,31 +386,55 @@ const EditorPage: React.FC = () => {
         
         setTemplate(templateData);
         
-        // Load template design configuration
-        const templateDesign = templateData.design_config || {};
-        console.log('🎨 Template design config:', templateDesign);
+        // V2: Load template design from color_palette
+        const templateColorPalette = templateData.color_palette || {};
+        console.log('🎨 Template color palette:', templateColorPalette);
         
         // Apply template colors if exists
-        const templateColors = templateDesign.colors ? {
-          primary: templateDesign.colors.primary || '#667eea',
-          secondary: templateDesign.colors.secondary || '#764ba2',
-          background: templateDesign.colors.background || '#ffffff',
-          text: templateDesign.colors.text || '#ffffff',
-          accent: templateDesign.colors.accent || '#f56565'
-        } : null;
+        const templateColors = {
+          primary: templateColorPalette.primary || '#667eea',
+          secondary: templateColorPalette.secondary || '#764ba2',
+          background: templateColorPalette.background || '#ffffff',
+          text: templateColorPalette.text || '#ffffff',
+          accent: templateColorPalette.accent || '#f56565'
+        };
         
-        if (templateColors) {
-          setColors(templateColors);
+        setColors(templateColors);
+        
+        // V2: Load text fields from template
+        if (templateData.text_fields && Array.isArray(templateData.text_fields)) {
+          const loadedTextFields = templateData.text_fields.map((field: any, index: number) => ({
+            id: field.id || `field-${Date.now()}-${Math.random()}`,
+            label: field.label || 'Text Field',
+            value: field.defaultValue || '',
+            // Default position/size/zIndex so they are consistent across editor, public view and exports
+            position: field.position || { x: 50, y: 50 + (index * 10) },
+            size: field.size || { width: 400, height: 60 },
+            zIndex: typeof field.zIndex === 'number' ? field.zIndex : 310 + index,
+            style: {
+              fontSize: field.style?.fontSize || 24,
+              fontWeight: field.style?.fontWeight || 'normal',
+              color: field.style?.color || templateColors.text,
+              textAlign: field.style?.textAlign || 'center',
+              fontFamily: field.style?.fontFamily || 'Playfair Display'
+            }
+          }));
+          setTextFields(loadedTextFields);
+          console.log('📝 Loaded text fields:', loadedTextFields);
         }
         
-        // Apply template background image and position
-        // Use design_config.backgroundImage if available, otherwise use preview_image_url
-        const templateImageUrl = templateDesign.backgroundImage || templateData.preview_image_url || null;
-        const templateImagePosition = templateDesign.imagePosition || 'background';
+        // V2: Don't load decorative elements from template automatically
+        // User should add them manually from the gallery
+        setDecorativeElements([]);
+        console.log('🎨 Decorative elements empty - user will add manually from gallery');
+        
+        // V2: Use default_image_url or thumbnail_url with Storage helper
+        const templateImageUrl = getTemplateFullUrl(templateData.default_image_url || templateData.thumbnail_url);
+        const templateImagePosition = 'background'; // Default position
         
         // Store original design for reset
         setTemplateOriginalDesign({
-          colors: templateColors || undefined,
+          colors: templateColors,
           imageUrl: templateImageUrl,
           imagePosition: templateImagePosition
         });
@@ -242,24 +444,26 @@ const EditorPage: React.FC = () => {
         
         // Set default form data with template info
         setFormData({
-          title: `${templateData.category?.name || 'Etkinlik'} Davetiyesi`,
+          title: `${templateData.category || 'Etkinlik'} Davetiyesi`,
           eventDate: '',
           eventTime: '',
           location: '',
           customMessage: `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`,
           imageUrl: templateImageUrl,
-          imagePosition: templateImagePosition
+          imagePosition: templateImagePosition,
+          logoShape: 'circle'
         });
         
         // Create new invitation with template design
         const newInvitation = await invitationService.createInvitation({
           template_id: templateData.id,
-          title: `${templateData.category?.name || 'Etkinlik'} Davetiyesi`,
-          event_type: templateData.category?.slug || '',
+          title: `${templateData.category || 'Etkinlik'} Davetiyesi`,
+          event_type: templateData.category || '',
           image_url: templateImageUrl,
           content: {
-            colors: templateDesign.colors || colors,
+            colors: templateColors,
             imagePosition: templateImagePosition,
+            logoShape: 'circle',
             message: `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`
           }
         });
@@ -292,6 +496,21 @@ const EditorPage: React.FC = () => {
       ...formData,
       [name]: value
     });
+
+    // CANVA-STYLE: Sync form inputs with textElements content
+    if (name === 'title') {
+      setTextElements(prev => prev.map(el => 
+        el.type === 'title' ? { ...el, content: value } : el
+      ));
+    } else if (name === 'location') {
+      setTextElements(prev => prev.map(el => 
+        el.type === 'location' ? { ...el, content: value } : el
+      ));
+    } else if (name === 'customMessage') {
+      setTextElements(prev => prev.map(el => 
+        el.type === 'message' ? { ...el, content: value } : el
+      ));
+    }
 
     // Clear error for this field when user starts typing
     if (errors[name as keyof typeof errors]) {
@@ -401,7 +620,14 @@ const EditorPage: React.FC = () => {
         content: {
           message: formData.customMessage,
           colors: colors,
-          imagePosition: formData.imagePosition
+          imagePosition: formData.imagePosition,
+          logoShape: formData.logoShape,
+          imageLayers: imageLayers,
+          imageTransforms: imageTransforms,
+          // V2: Save text fields, decorative elements, and text positioning
+          textFields: textFields,
+          decorativeElements: decorativeElements,
+          textElements: textElements
         },
         custom_design: {
           font: selectedFont
@@ -626,8 +852,8 @@ const EditorPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 lg:py-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
           {/* Editor Panel - Modern & Minimalist */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
             {/* Tabs - Modern Design */}
@@ -658,10 +884,10 @@ const EditorPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-4 sm:p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="p-3 sm:p-4 max-h-[calc(100vh-160px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               {/* Details Tab */}
               {activeTab === 'details' && (
-                <div className="space-y-4">
+                <div className="space-y-3">
               {/* Title - Compact */}
               <div>
                 <label className="block text-xs font-bold text-gray-900 mb-1.5">
@@ -791,6 +1017,7 @@ const EditorPage: React.FC = () => {
                     userId={user.id}
                     currentImageUrl={formData.imageUrl}
                     currentPosition={formData.imagePosition}
+                    currentLogoShape={formData.logoShape}
                     onImageUploaded={(imageUrl) => {
                       setFormData({ ...formData, imageUrl });
                     }}
@@ -799,6 +1026,9 @@ const EditorPage: React.FC = () => {
                     }}
                     onPositionChange={(position) => {
                       setFormData({ ...formData, imagePosition: position });
+                    }}
+                    onLogoShapeChange={(shape) => {
+                      setFormData({ ...formData, logoShape: shape });
                     }}
                   />
                 </div>
@@ -825,30 +1055,383 @@ const EditorPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Color Customization - Compact */}
-              <div className="border-t border-gray-200/50 pt-4">
-                <div className="mb-3 flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-gray-700" />
-                  <h3 className="text-xs font-bold text-gray-900">Renk Özelleştirme</h3>
-                </div>
+              {/* Color Customization - Accordion */}
+              <AccordionSection
+                id="colors"
+                title="Renk Özelleştirme"
+                icon={Palette}
+                isExpanded={expandedSections.colors}
+                onToggle={() => toggleSection('colors')}
+              >
                 <ColorPicker
                   colors={colors}
                   onChange={setColors}
                   defaultColors={templateOriginalDesign?.colors}
                 />
-              </div>
+              </AccordionSection>
 
-              {/* QR Media (Optional) - Ultra Compact & Modern */}
-              <div className="border-t border-gray-200/50 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
-                      <QrCode className="h-3.5 w-3.5 text-purple-700" />
-                    </div>
-                    <h3 className="text-xs font-bold text-gray-900">QR Medya <span className="text-xs text-gray-500 font-normal">(Opsiyonel)</span></h3>
+              {/* Font Selection - Accordion */}
+              <AccordionSection
+                id="fonts"
+                title="Yazı Tipi"
+                icon={FileText}
+                isExpanded={expandedSections.fonts}
+                onToggle={() => toggleSection('fonts')}
+              >
+                <select
+                  value={selectedFont}
+                  onChange={(e) => setSelectedFont(e.target.value as FontFamily)}
+                  className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm bg-white hover:border-gray-300"
+                  style={{ fontFamily: getFontFamily(selectedFont) }}
+                >
+                  {ALL_FONTS.map((font) => (
+                    <option key={font} value={font} style={{ fontFamily: getFontFamily(font) }}>
+                      {font}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-gray-500">
+                  Seçilen yazı tipi davetiye metninde kullanılacak
+                </p>
+              </AccordionSection>
+
+              {/* V2: Dynamic Text Fields - Accordion (PRO/PREMIUM only) */}
+              {textFields.length > 0 && (subscription.currentPlan === 'pro' || subscription.currentPlan === 'premium') && (
+                <AccordionSection
+                  id="textFields"
+                  title="Metin Alanları (Dinamik)"
+                  icon={FileText}
+                  badge={subscription.currentPlan === 'premium' ? 'PREMIUM' : 'PRO'}
+                  badgeColor="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700"
+                  isExpanded={expandedSections.textFields}
+                  onToggle={() => toggleSection('textFields')}
+                >
+                  <div className="space-y-3">
+                    {textFields.map((field, index) => (
+                      <div key={field.id} className="p-3 bg-gray-50 rounded-lg space-y-2">
+                        {/* Visibility Toggle & Label */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={field.value !== ''}
+                              onChange={() => {
+                                const newFields = [...textFields];
+                                if (field.value === '') {
+                                  // If empty, restore default value
+                                  newFields[index].value = field.label;
+                                } else {
+                                  // If has value, clear it
+                                  newFields[index].value = '';
+                                }
+                                setTextFields(newFields);
+                                toast.success(field.value === '' ? '✅ Alan gösteriliyor' : '👁️ Alan gizlendi', { duration: 2000 });
+                              }}
+                              className="w-4 h-4 text-primary-600 rounded focus:ring-2 focus:ring-primary-500"
+                            />
+                            <label className="text-xs font-bold text-gray-900">
+                              {field.label}
+                            </label>
+                          </div>
+                          {field.value !== '' && field.style.fontSize && (
+                            <span className="text-xs text-gray-500 font-mono">
+                              {field.style.fontSize}px
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Text Input */}
+                        {field.value !== '' && (
+                          <>
+                            <input
+                              type="text"
+                              value={field.value}
+                              onChange={(e) => {
+                                const newFields = [...textFields];
+                                newFields[index].value = e.target.value;
+                                setTextFields(newFields);
+                              }}
+                              className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm"
+                              placeholder={`${field.label} girin...`}
+                              style={{ fontFamily: field.style.fontFamily || getFontFamily(selectedFont) }}
+                            />
+
+                            {/* Font Size Slider */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-600 min-w-[50px]">Boyut:</span>
+                              <input
+                                type="range"
+                                min={12}
+                                max={48}
+                                value={field.style.fontSize || 24}
+                                onChange={(e) => {
+                                  const newFields = [...textFields];
+                                  newFields[index].style.fontSize = Number(e.target.value);
+                                  setTextFields(newFields);
+                                }}
+                                className="flex-1 h-2 accent-primary-600 cursor-pointer"
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
                   </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    💡 Checkbox ile göster/gizle, slider ile boyut ayarla
+                  </p>
+                </AccordionSection>
+              )}
+
+              {/* V2: Decorative Elements Panel (PREMIUM only) */}
+              {/* Alignment Toolbar - Accordion */}
+              <AccordionSection
+                id="alignment"
+                title="Hizalama"
+                icon={AlignCenter}
+                badge={selectedElementId ? "Seçili" : "Öğe seçin"}
+                badgeColor={selectedElementId ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-500"}
+                isExpanded={expandedSections.alignment}
+                onToggle={() => toggleSection('alignment')}
+              >
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    disabled={!selectedElementId}
+                    onClick={() => {
+                      if (!selectedElementId || !previewContainerRef.current) return;
+                      setTextElements(prev => prev.map(el => 
+                        el.id === selectedElementId ? { ...el, position: { ...el.position, x: 20 } } : el
+                      ));
+                      setTextFields(prev => prev.map(f => 
+                        f.id === selectedElementId && f.position ? { ...f, position: { ...f.position, x: 20 } } : f
+                      ));
+                    }}
+                    className="px-2 py-1 text-xs rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Sola
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selectedElementId}
+                    onClick={() => {
+                      if (!selectedElementId) return;
+                      setTextElements(prev => prev.map(el => 
+                        el.id === selectedElementId ? { ...el, position: { ...el.position, x: 50 } } : el
+                      ));
+                      setTextFields(prev => prev.map(f => 
+                        f.id === selectedElementId && f.position ? { ...f, position: { ...f.position, x: 50 } } : f
+                      ));
+                    }}
+                    className="px-2 py-1 text-xs rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Ortala
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selectedElementId}
+                    onClick={() => {
+                      if (!selectedElementId) return;
+                      setTextElements(prev => prev.map(el => 
+                        el.id === selectedElementId ? { ...el, position: { ...el.position, x: 80 } } : el
+                      ));
+                      setTextFields(prev => prev.map(f => 
+                        f.id === selectedElementId && f.position ? { ...f, position: { ...f.position, x: 80 } } : f
+                      ));
+                    }}
+                    className="px-2 py-1 text-xs rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Sağa
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selectedElementId}
+                    onClick={() => {
+                      if (!selectedElementId) return;
+                      setTextElements(prev => prev.map(el => 
+                        el.id === selectedElementId ? { ...el, position: { ...el.position, y: 15 } } : el
+                      ));
+                      setTextFields(prev => prev.map(f => 
+                        f.id === selectedElementId && f.position ? { ...f, position: { ...f.position, y: 15 } } : f
+                      ));
+                    }}
+                    className="px-2 py-1 text-xs rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Üste
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selectedElementId}
+                    onClick={() => {
+                      if (!selectedElementId) return;
+                      setTextElements(prev => prev.map(el => 
+                        el.id === selectedElementId ? { ...el, position: { ...el.position, y: 50 } } : el
+                      ));
+                      setTextFields(prev => prev.map(f => 
+                        f.id === selectedElementId && f.position ? { ...f, position: { ...f.position, y: 50 } } : f
+                      ));
+                    }}
+                    className="px-2 py-1 text-xs rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Orta
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!selectedElementId}
+                    onClick={() => {
+                      if (!selectedElementId) return;
+                      setTextElements(prev => prev.map(el => 
+                        el.id === selectedElementId ? { ...el, position: { ...el.position, y: 85 } } : el
+                      ));
+                      setTextFields(prev => prev.map(f => 
+                        f.id === selectedElementId && f.position ? { ...f, position: { ...f.position, y: 85 } } : f
+                      ));
+                    }}
+                    className="px-2 py-1 text-xs rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40"
+                  >
+                    Alta
+                  </button>
+                </div>
+                <p className="mt-2 text-[11px] text-gray-500">
+                  Bir öğeye tıklayıp seçin, sonra hizalama butonlarını kullanın.
+                </p>
+              </AccordionSection>
+
+              {/* Text Elements Visibility & Font Size Control - Accordion */}
+              <AccordionSection
+                id="textElements"
+                title="Metin Alanları (Standart)"
+                icon={Type}
+                isExpanded={expandedSections.textElements}
+                onToggle={() => toggleSection('textElements')}
+              >
+                <div className="space-y-2">
+                  {textElements.map((elem) => (
+                    <div key={elem.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center gap-2 flex-1">
+                        <input
+                          type="checkbox"
+                          checked={elem.visible}
+                          onChange={() => {
+                            const newElements = [...textElements];
+                            const index = newElements.findIndex(e => e.id === elem.id);
+                            if (index !== -1) {
+                              newElements[index].visible = !newElements[index].visible;
+                              setTextElements(newElements);
+                              toast.success(newElements[index].visible ? '✅ Metin gösteriliyor' : '👁️ Metin gizlendi', { duration: 2000 });
+                            }
+                          }}
+                          className="w-4 h-4 text-primary-600 rounded focus:ring-2 focus:ring-primary-500"
+                        />
+                        <span className="text-xs font-medium text-gray-700 min-w-[80px]">
+                          {elem.type === 'title' && '📝 Başlık'}
+                          {elem.type === 'date' && '📅 Tarih'}
+                          {elem.type === 'location' && '📍 Konum'}
+                          {elem.type === 'message' && '💬 Mesaj'}
+                          {elem.type === 'divider' && '➖ Çizgi'}
+                          {elem.type === 'footer' && '👥 Footer'}
+                        </span>
+                      </div>
+                      {elem.type !== 'divider' && elem.style.fontSize && (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="range"
+                            min={10}
+                            max={elem.type === 'title' ? 48 : elem.type === 'footer' ? 14 : 24}
+                            value={elem.style.fontSize || 16}
+                            onChange={(e) => {
+                              const newElements = [...textElements];
+                              const index = newElements.findIndex(el => el.id === elem.id);
+                              if (index !== -1) {
+                                newElements[index].style.fontSize = Number(e.target.value);
+                                setTextElements(newElements);
+                              }
+                            }}
+                            className="w-16 h-1 accent-primary-600 cursor-pointer"
+                            title={`Font boyutu: ${elem.style.fontSize}px`}
+                          />
+                          <span className="text-xs font-mono text-gray-600 w-9 text-right">{elem.style.fontSize}px</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-3 p-2 bg-blue-50/50 rounded-lg border border-blue-200/30">
+                  <p className="text-xs text-gray-600">
+                    💡 <strong>İpucu:</strong> Önizlemede metinlere tıklayarak konumlarını değiştirebilirsiniz
+                  </p>
+                </div>
+              </AccordionSection>
+
+              {subscription.currentPlan === 'premium' && (
+                <AccordionSection
+                  id="decorative"
+                  title="Dekoratif Öğeler"
+                  icon={Sparkles}
+                  badge="PREMIUM"
+                  badgeColor="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700"
+                  isExpanded={expandedSections.decorative}
+                  onToggle={() => toggleSection('decorative')}
+                  defaultPadding={false}
+                >
+                  <div className="px-3 pb-3">
+                    <button
+                      onClick={() => setIsGalleryOpen(true)}
+                      className="w-full mb-3 px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg transition-all shadow-sm hover:shadow-md text-xs font-semibold flex items-center justify-center gap-2"
+                      title="Öğe Galerisi"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Öğe Ekle
+                    </button>
+
+                  {decorativeElements.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-600 mb-2">
+                        <span className="font-semibold text-purple-600">{decorativeElements.length}</span> öğe eklendi
+                      </p>
+                      <div className="p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                        <p className="text-xs text-gray-700 font-medium mb-1">
+                          💡 Nasıl Kullanılır?
+                        </p>
+                        <ul className="text-xs text-gray-600 space-y-1">
+                          <li>• Önizlemede öğeye <strong>tıklayın</strong></li>
+                          <li>• <strong>Sürükleyerek</strong> konumlandırın</li>
+                          <li>• Köşeden <strong>boyutlandırın</strong></li>
+                          <li>• Döndürme butonuyla <strong>çevirin</strong></li>
+                          <li>• Sil butonuyla <strong>kaldırın</strong></li>
+                        </ul>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200 text-center">
+                      <Sparkles className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+                      <p className="text-xs text-gray-600">
+                        Henüz dekoratif öğe eklenmedi
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        "Öğe Ekle" butonuna tıklayın
+                      </p>
+                    </div>
+                  )}
+                  </div>
+                </AccordionSection>
+              )}
+
+              {/* QR Media (Optional) - Accordion */}
+              <AccordionSection
+                id="qr"
+                title="QR Medya (Opsiyonel)"
+                icon={QrCode}
+                badge={qrMedia ? "Oluşturuldu" : "Boş"}
+                badgeColor={qrMedia ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}
+                isExpanded={expandedSections.qr}
+                onToggle={() => toggleSection('qr')}
+                defaultPadding={false}
+              >
+                <div className="px-3 pb-3">
                   {qrMedia && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <button
                         onClick={invitation.status === 'published' ? () => navigate(`/media/manage?invitationId=${invitation.id}`) : undefined}
                         disabled={invitation.status !== 'published'}
@@ -875,7 +1458,7 @@ const EditorPage: React.FC = () => {
                       </button>
                     </div>
                   )}
-                </div>
+                
                 {qrMedia ? (
                   <div className="mt-3 p-3 bg-gradient-to-br from-purple-50/50 to-pink-50/50 rounded-xl border border-purple-200/30">
                     <div className="flex items-center justify-between mb-3">
@@ -987,7 +1570,8 @@ const EditorPage: React.FC = () => {
                     )}
                   </div>
                 )}
-              </div>
+                </div>
+              </AccordionSection>
                 </div>
               )}
 
@@ -1003,7 +1587,7 @@ const EditorPage: React.FC = () => {
           </div>
 
           {/* Preview Panel */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-white rounded-lg shadow p-6 relative" style={{ zIndex: 1 }}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
                 Önizleme
@@ -1013,18 +1597,65 @@ const EditorPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Live Preview */}
+            {/* Live Preview - unified invitation canvas size */}
             <div 
-              className="rounded-lg shadow-lg overflow-hidden relative"
+              ref={previewContainerRef}
+              className="rounded-lg shadow-lg relative mx-auto"
               style={{
                 minHeight: '600px',
+                maxWidth: '480px',
+                width: '100%',
                 backgroundImage: formData.imagePosition === 'background' && formData.imageUrl
                   ? `url(${formData.imageUrl})` 
                   : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center'
+                backgroundPosition: 'center',
+                overflow: 'hidden',
+                position: 'relative'
               }}
             >
+              {/* V2: Decorative Elements - Draggable (only when preview/gallery is closed) */}
+              {!isPreviewOpen && !isGalleryOpen && decorativeElements.map((elem, index) => (
+                <DraggableElement
+                  key={elem.id}
+                  id={elem.id}
+                  type="decoration"
+                  imageUrl={elem.imageUrl}
+                  zIndex={elem.zIndex ?? 250 + index}
+                  position={elem.position}
+                  size={elem.size}
+                  rotation={elem.rotation}
+                  opacity={elem.opacity}
+                  onUpdate={(updates) => {
+                    const newElements = [...decorativeElements];
+                    if (updates.position) newElements[index].position = updates.position;
+                    if (updates.size) newElements[index].size = updates.size;
+                    if (updates.rotation !== undefined) newElements[index].rotation = updates.rotation;
+                    if (updates.opacity !== undefined) newElements[index].opacity = updates.opacity;
+                    setDecorativeElements(newElements);
+                  }}
+                  onChangeZ={(action) => {
+                    const allZ = [
+                      ...decorativeElements.map(e => e.zIndex ?? 250),
+                      ...textElements.map(e => e.zIndex ?? 300),
+                      imageLayers.profile,
+                      imageLayers.banner,
+                      imageLayers.watermark
+                    ];
+                    const maxZ = Math.max(...allZ);
+                    const minZ = Math.min(...allZ);
+                    const newElements = [...decorativeElements];
+                    newElements[index].zIndex = action === 'front' ? maxZ + 1 : minZ - 1;
+                    setDecorativeElements(newElements);
+                  }}
+                  onDelete={() => {
+                    setDecorativeElements(decorativeElements.filter(e => e.id !== elem.id));
+                    toast.success('Grafik kaldırıldı');
+                  }}
+                  containerRef={previewContainerRef}
+                />
+              ))}
+              
               {/* Show QR on design */}
               {showQrOnDesign && qrMedia?.qr_image_url && (
                 <img
@@ -1045,123 +1676,316 @@ const EditorPage: React.FC = () => {
                 <div 
                   className="absolute inset-0" 
                   style={{ 
-                    background: `linear-gradient(135deg, ${colors.primary}CC 0%, ${colors.secondary}CC 100%)`
+                    background: `linear-gradient(135deg, ${colors.primary}CC 0%, ${colors.secondary}CC 100%)`,
+                    zIndex: 1
                   }}
                 />
               )}
               
-              {/* Watermark - bottom right */}
-              {formData.imagePosition === 'watermark' && formData.imageUrl && (
-                <img
-                  src={formData.imageUrl}
-                  alt="Logo"
-                  className="absolute bottom-4 right-4 w-16 h-16 object-contain opacity-60"
-                />
-              )}
-              
-              <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px] relative z-10">
-                <div className="text-center space-y-4 max-w-sm">
-                  {/* Banner Image - top */}
-                  {formData.imagePosition === 'banner' && formData.imageUrl && (
-                    <div className="mb-6 -mx-8 -mt-8 mb-8">
-                      <img
-                        src={formData.imageUrl}
-                        alt="Banner"
-                        className="w-full h-32 object-cover"
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Profile Image - circular */}
-                  {formData.imagePosition === 'profile' && formData.imageUrl && (
-                    <div className="mb-6">
-                      <img
-                        src={formData.imageUrl}
-                        alt="Profil"
-                        className="w-32 h-32 md:w-40 md:h-40 object-cover rounded-full mx-auto border-4"
-                        style={{ borderColor: colors.accent }}
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Title */}
-                  <div 
-                    className="text-2xl md:text-4xl font-serif font-bold"
-                    style={{ color: colors.text }}
-                  >
-                    {formData.title || 'Etkinlik Başlığı'}
-                  </div>
-                  
-                  {/* Accent Divider */}
-                  <div 
-                    className="w-24 h-1 mx-auto rounded-full"
-                    style={{ backgroundColor: colors.accent }}
-                  />
-                  
-                  {/* Date & Time Card */}
-                  <div 
-                    className="p-4 rounded-lg"
-                    style={{ 
-                      backgroundColor: colors.background,
-                      color: colors.primary
+              {/* Draggable main image (Profile/Banner/Watermark) - only when preview/gallery is closed */}
+              {!isPreviewOpen && !isGalleryOpen && formData.imageUrl && formData.imagePosition !== 'background' && (() => {
+                const currentMode = formData.imagePosition as 'profile' | 'banner' | 'watermark';
+                const t = imageTransforms[currentMode];
+                return (
+                  <DraggableElement
+                    id={`main-image-${currentMode}`}
+                    type="decoration"
+                    imageUrl={formData.imageUrl}
+                    imageFit="cover"
+                    zIndex={imageLayers[currentMode]}
+                    position={t.position}
+                    size={t.size}
+                    rotation={0}
+                    opacity={currentMode === 'watermark' ? 0.6 : 1}
+                    onUpdate={(updates) => {
+                      setImageTransforms(prev => ({
+                        ...prev,
+                        [currentMode]: {
+                          position: updates.position || prev[currentMode].position,
+                          size: updates.size || prev[currentMode].size
+                        }
+                      }));
                     }}
-                  >
-                    <div className="font-medium">
-                      {formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('tr-TR', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      }) : 'Tarih Seçin'}
-                    </div>
-                    <div className="mt-1">
-                      {formData.eventTime || 'Saat Seçin'}
-                    </div>
-                  </div>
-                  
-                  {/* Accent Divider */}
-                  <div 
-                    className="w-24 h-1 mx-auto rounded-full"
-                    style={{ backgroundColor: colors.accent }}
+                    onChangeZ={(action) => {
+                      const allZ = [
+                        ...decorativeElements.map(e => e.zIndex ?? 250),
+                        ...textElements.map(e => e.zIndex ?? 300),
+                        imageLayers.profile,
+                        imageLayers.banner,
+                        imageLayers.watermark
+                      ];
+                      const maxZ = Math.max(...allZ);
+                      const minZ = Math.min(...allZ);
+                      setImageLayers(prev => ({
+                        ...prev,
+                        [currentMode]: action === 'front' ? maxZ + 1 : minZ - 1
+                      }));
+                    }}
+                    onDelete={() => {
+                      setFormData({ ...formData, imageUrl: null });
+                      toast.success('Görsel kaldırıldı');
+                    }}
+                    containerRef={previewContainerRef}
+                    style={{
+                      borderRadius: currentMode === 'profile'
+                        ? '50%'
+                        : (currentMode === 'watermark'
+                          ? (formData.logoShape === 'circle' ? '50%' : '0')
+                          : '8px'),
+                      border: currentMode === 'profile' ? `4px solid ${colors.accent}` : 'none',
+                      overflow: 'hidden'
+                    }}
                   />
+                );
+              })()}
+              
+              <div className="p-8 md:p-12 flex items-center justify-center min-h-[600px] relative">
+                <div className="text-center space-y-4 max-w-sm">
+                
+                {/* DRAGGABLE TEXT ELEMENTS (only when preview/gallery is closed) */}
+                {!isPreviewOpen && !isGalleryOpen && textElements.map((elem) => {
+                  if (!elem.visible) return null;
                   
-                  {/* Location */}
-                  <div style={{ color: colors.text, opacity: 0.95 }}>
-                    {formData.location || 'Konum Belirtin'}
-                  </div>
+                  let content: React.ReactNode = null;
                   
-                  {/* Custom Message */}
-                  {formData.customMessage && (
-                    <>
+                  // Title - CANVA-STYLE: Use elem.content (synced with formData)
+                  if (elem.type === 'title') {
+                    content = (
                       <div 
-                        className="w-16 h-1 mx-auto rounded-full"
-                        style={{ backgroundColor: colors.accent }}
-                      />
+                        className="font-bold whitespace-pre-wrap"
+                        style={{ 
+                          color: colors.text, 
+                          fontFamily: getFontFamily(selectedFont),
+                          fontSize: `${elem.style.fontSize || 32}px`,
+                          fontWeight: elem.style.fontWeight || 'bold',
+                          textAlign: elem.style.textAlign || 'center'
+                        }}
+                      >
+                        {elem.content || formData.title || 'Etkinlik Başlığı'}
+                      </div>
+                    );
+                  }
+                  
+                  // Date & Time
+                  else if (elem.type === 'date') {
+                    content = (
                       <div 
-                        className="text-sm italic p-4 rounded-lg"
+                        className="p-4 rounded-lg"
                         style={{ 
                           backgroundColor: colors.background,
                           color: colors.primary,
-                          border: `2px solid ${colors.accent}`
+                          fontFamily: getFontFamily(selectedFont),
+                          fontSize: `${elem.style.fontSize || 16}px`,
+                          textAlign: elem.style.textAlign || 'center'
                         }}
                       >
-                        "{formData.customMessage}"
+                        <div className="font-medium">
+                          {formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('tr-TR', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          }) : 'Tarih Seçin'}
+                        </div>
+                        <div className="mt-1">
+                          {formData.eventTime || 'Saat Seçin'}
+                        </div>
                       </div>
-                    </>
-                  )}
-
-                  {/* Decorative Footer */}
-                  <div 
-                    className="mt-12 pt-8"
-                    style={{ 
-                      borderTop: `2px solid ${colors.accent}40`,
-                      color: colors.text
+                    );
+                  }
+                  
+                  // Location - CANVA-STYLE: Use elem.content
+                  else if (elem.type === 'location') {
+                    content = (
+                      <div 
+                        style={{ 
+                          color: colors.text, 
+                          opacity: 0.95, 
+                          fontFamily: getFontFamily(selectedFont),
+                          fontSize: `${elem.style.fontSize || 16}px`,
+                          textAlign: elem.style.textAlign || 'center'
+                        }}
+                      >
+                        {elem.content || formData.location || 'Konum Belirtin'}
+                      </div>
+                    );
+                  }
+                  
+                  // Message - CANVA-STYLE: Use elem.content, show if content exists
+                  else if (elem.type === 'message' && (elem.content || formData.customMessage)) {
+                    content = (
+                      <div 
+                        className="italic p-4 rounded-lg"
+                        style={{ 
+                          backgroundColor: colors.background,
+                          color: colors.primary,
+                          border: `2px solid ${colors.accent}`,
+                          fontFamily: getFontFamily(selectedFont),
+                          fontSize: `${elem.style.fontSize || 14}px`,
+                          textAlign: elem.style.textAlign || 'center'
+                        }}
+                      >
+                        "{elem.content || formData.customMessage}"
+                      </div>
+                    );
+                  }
+                  
+                  // Divider (horizontal line)
+                  else if (elem.type === 'divider') {
+                    content = (
+                      <div 
+                        className="rounded-full"
+                        style={{ 
+                          backgroundColor: colors.accent,
+                          width: `${elem.size.width}px`,
+                          height: `${elem.size.height}px`
+                        }}
+                      />
+                    );
+                  }
+                  
+                  // Footer
+                  else if (elem.type === 'footer') {
+                    content = (
+                      <div 
+                        style={{ 
+                          color: colors.text, 
+                          opacity: 0.9, 
+                          fontFamily: getFontFamily(selectedFont),
+                          fontSize: `${elem.style.fontSize || 12}px`,
+                          textAlign: elem.style.textAlign || 'center'
+                        }}
+                      >
+                        {elem.content || 'Sizleri aramızda görmekten mutluluk duyarız'}
+                      </div>
+                    );
+                  }
+                  
+                  // Don't render message if it's empty - CANVA-STYLE: Check elem.content
+                  if (elem.type === 'message' && !elem.content && !formData.customMessage) return null;
+                  
+                  return (
+                    <DraggableElement
+                      key={elem.id}
+                      id={elem.id}
+                      type="text"
+                      content={content}
+                      zIndex={elem.zIndex ?? 300}
+                      position={elem.position}
+                      size={elem.size}
+                      rotation={0}
+                      opacity={1}
+                      resizeMode={elem.type === 'divider' ? 'horizontal' : 'both'}
+                      isSelected={selectedElementId === elem.id}
+                      onSelect={(id) => setSelectedElementId(id)}
+                      onUpdate={(updates) => {
+                        const newElements = [...textElements];
+                        const index = newElements.findIndex(e => e.id === elem.id);
+                        if (index !== -1) {
+                          if (updates.position) newElements[index].position = updates.position;
+                          if (updates.size) newElements[index].size = updates.size;
+                          setTextElements(newElements);
+                        }
+                      }}
+                    onChangeZ={(action) => {
+                      const allZ = [
+                        ...decorativeElements.map(e => e.zIndex ?? 250),
+                        ...textElements.map(e => e.zIndex ?? 300),
+                        imageLayers.profile,
+                        imageLayers.banner,
+                        imageLayers.watermark
+                      ];
+                      const maxZ = Math.max(...allZ);
+                      const minZ = Math.min(...allZ);
+                      const newElements = [...textElements];
+                      const idx = newElements.findIndex(e => e.id === elem.id);
+                      if (idx !== -1) {
+                        newElements[idx].zIndex = action === 'front' ? maxZ + 1 : minZ - 1;
+                        setTextElements(newElements);
+                      }
                     }}
-                  >
-                    <p className="text-lg italic opacity-90">
-                      Sizleri aramızda görmekten mutluluk duyarız
-                    </p>
-                  </div>
+                      onDelete={() => {
+                        const newElements = [...textElements];
+                        const index = newElements.findIndex(e => e.id === elem.id);
+                        if (index !== -1) {
+                          newElements[index].visible = false;
+                          setTextElements(newElements);
+                          toast.success('Metin alanı gizlendi');
+                        }
+                      }}
+                      containerRef={previewContainerRef}
+                    />
+                  );
+                })}
+
+              {/* V2: Dynamic Text Fields (PRO/PREMIUM templates) - Draggable & Resizable */}
+              {!isPreviewOpen && !isGalleryOpen && textFields.length > 0 && textFields.map((field, index) => {
+                if (!field.value) return null;
+
+                // Use saved position/size if available, otherwise fall back to deterministic defaults
+                const position = field.position || { x: 50, y: 50 + (index * 10) };
+                const size = field.size || { width: 400, height: 60 };
+                const zIndex = typeof field.zIndex === 'number' ? field.zIndex : 310 + index;
+                
+                return (
+                  <DraggableElement
+                    key={field.id}
+                    id={field.id}
+                    type="text"
+                    content={
+                      <div
+                        style={{
+                          fontSize: `${field.style.fontSize}px`,
+                          fontWeight: field.style.fontWeight,
+                          color: field.style.color || colors.text,
+                          textAlign: field.style.textAlign,
+                          fontFamily: field.style.fontFamily || getFontFamily(selectedFont),
+                          textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                          whiteSpace: 'pre-wrap'
+                        }}
+                      >
+                        {field.value}
+                      </div>
+                    }
+                    zIndex={zIndex}
+                    position={position}
+                    size={size}
+                    rotation={0}
+                    opacity={1}
+                    resizeMode="both"
+                    onUpdate={(updates) => {
+                      const newFields = [...textFields];
+                      if (updates.position) newFields[index].position = updates.position;
+                      if (updates.size) newFields[index].size = updates.size;
+                      setTextFields(newFields);
+                    }}
+                    onChangeZ={(action) => {
+                      const allZ = [
+                        ...decorativeElements.map(e => e.zIndex ?? 250),
+                        ...textElements.map(e => e.zIndex ?? 300),
+                        ...textFields.map(f => f.zIndex ?? 310),
+                        imageLayers.profile,
+                        imageLayers.banner,
+                        imageLayers.watermark
+                      ];
+                      const maxZ = Math.max(...allZ);
+                      const minZ = Math.min(...allZ);
+                      const newFields = [...textFields];
+                      newFields[index].zIndex = action === 'front' ? maxZ + 1 : minZ - 1;
+                      setTextFields(newFields);
+                    }}
+                    onDelete={() => {
+                      const newFields = [...textFields];
+                      newFields[index].value = ''; // Clear value instead of delete
+                      setTextFields(newFields);
+                      toast.success('Metin alanı temizlendi');
+                    }}
+                    isSelected={selectedElementId === field.id}
+                    onSelect={(id) => setSelectedElementId(id)}
+                    containerRef={previewContainerRef}
+                  />
+                );
+              })}
                 </div>
               </div>
             </div>
@@ -1193,6 +2017,36 @@ const EditorPage: React.FC = () => {
           qrPosition: qrPosition,
           qrSize: qrSize
         } : null}
+        textFields={textFields}
+        decorativeElements={decorativeElements}
+        textElements={textElements}
+        logoShape={formData.logoShape}
+        imageTransforms={imageTransforms}
+        imageLayers={imageLayers}
+        selectedFont={selectedFont}
+      />
+
+      {/* Decorative Elements Gallery */}
+      <DecorativeElementsGallery
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        onSelectGraphic={(graphic) => {
+          const newElement = {
+            id: `graphic-${Date.now()}`,
+            type: graphic.category,
+            name: graphic.name,
+            imageUrl: graphic.imageUrl,
+            position: { x: 50, y: 50 },
+            size: graphic.defaultSize,
+            rotation: 0,
+            opacity: 1
+          };
+          setDecorativeElements([...decorativeElements, newElement]);
+          toast.success(`${graphic.name} eklendi! Önizlemede sürükleyerek konumlandırın.`, {
+            icon: '✨',
+            duration: 3000
+          });
+        }}
       />
     </div>
   );

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Star, Sparkles, Zap, Heart, Shield, QrCode, Wand2 } from 'lucide-react';
 import { SEOHead, JSONLDSchema, CanonicalURL, ResourceHints } from '../components/SEO/SEOHead';
 import { templateService, type Template } from '../services/templateService';
-import { getOptimizedUnsplashUrl } from '../utils/imageOptimization';
+import { getTemplateThumbnailUrl } from '../utils/templateImageUrl';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -240,12 +240,12 @@ const HomePage: React.FC = () => {
                 featuredTemplates.map((template) => (
                   <Link
                     key={template.id}
-                    to={`/editor?template=${template.slug}`}
+                    to={`/editor?template=${template.id}`}
                     className="group bg-white rounded-2xl shadow-md hover:shadow-xl overflow-hidden border border-gray-200 hover:border-primary-300 transition-all"
                   >
                     <div className="h-56 relative overflow-hidden">
                       <img
-                        src={getOptimizedUnsplashUrl(template.preview_image_url, { width: 400, quality: 85 })}
+                        src={getTemplateThumbnailUrl(template.thumbnail_url || template.default_image_url)}
                         alt={template.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         loading="lazy"

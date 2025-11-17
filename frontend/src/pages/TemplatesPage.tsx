@@ -69,9 +69,15 @@ const TemplatesPage: React.FC = () => {
 
       // Load saved templates if authenticated
       if (isAuthenticated) {
-        const userTemplates = await templateService.getUserTemplates();
-        const savedIds = new Set(userTemplates.map(ut => ut.template_id));
-        setSavedTemplates(savedIds);
+        try {
+          const userTemplates = await templateService.getUserTemplates();
+          const savedIds = new Set(userTemplates.map(ut => ut.template_id));
+          setSavedTemplates(savedIds);
+        } catch (error) {
+          // user_templates tablosu henüz oluşturulmamış olabilir
+          console.warn('Could not load saved templates:', error);
+          setSavedTemplates(new Set());
+        }
       }
     } catch (error) {
       console.error('Error loading templates:', error);

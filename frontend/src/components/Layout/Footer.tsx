@@ -85,12 +85,28 @@ const Footer: React.FC = () => {
                   Ticari İleti Onayı
                 </Link>
               </li>
+              <li>
+                <Link to="/legal/mesafeli-satis-sozlesmesi" className="text-gray-400 hover:text-white transition-colors">
+                  Mesafeli Satış Sözleşmesi
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom Bar */}
+        {/* Payment Methods */}
         <div className="border-t border-gray-800 mt-12 pt-8">
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/images/bank_band_logo.png" 
+              alt="Güvenli Ödeme - Desteklenen Banka ve Kartlar" 
+              className="h-12 object-contain opacity-80 hover:opacity-100 transition-opacity"
+            />
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-gray-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="text-gray-400 text-sm mb-4 md:mb-0">
               © 2025 Davetim. Tüm hakları saklıdır.

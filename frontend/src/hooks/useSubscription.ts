@@ -107,6 +107,24 @@ export function useSubscription(): UseSubscriptionReturn {
   const isPremiumPlan = currentPlan === 'premium';
   const isBusinessPlan = false; // Kurumsal planlar kaldırıldı
   
+  /**
+   * Aboneliğin geçerli olup olmadığını kontrol eder
+   * - active: Aktif abonelik
+   * - trialing: Deneme sürümü
+   * - cancelled: İptal edilmiş ama end_date henüz geçmemiş
+   */
+  const isSubscriptionValid = (sub: typeof subscription): boolean => {
+    if (!sub) return false;
+    
+    const now = new Date();
+    const endDate = sub.endDate ? new Date(sub.endDate) : null;
+    const isEndDateValid = endDate && endDate > now;
+    
+    return sub.status === 'active' || 
+           sub.status === 'trialing' ||
+           (sub.status === 'cancelled' && isEndDateValid);
+  };
+  
   // Özellik kontrol fonksiyonları
   const checkFeatureAccess = async (feature: string) => {
     if (!user?.id) {
@@ -115,6 +133,11 @@ export function useSubscription(): UseSubscriptionReturn {
     
     // Get current subscription
     const currentSubscription = await subscriptionService.getUserSubscription(user.id);
+    
+    // Abonelik geçerli mi kontrol et (cancelled ama end_date geçmemişse geçerli)
+    if (currentSubscription && !isSubscriptionValid(currentSubscription)) {
+      return { allowed: false, reason: 'Aboneliğinizin süresi dolmuş' };
+    }
     
     // Check feature access
     const allowed = subscriptionService.canAccessFeature(feature, currentSubscription);
@@ -136,6 +159,11 @@ export function useSubscription(): UseSubscriptionReturn {
     
     if (!currentSubscription) {
       return { allowed: false, reason: 'Abonelik bilgisi bulunamadı' };
+    }
+    
+    // Abonelik geçerli mi kontrol et (cancelled ama end_date geçmemişse geçerli)
+    if (!isSubscriptionValid(currentSubscription)) {
+      return { allowed: false, reason: 'Aboneliğinizin süresi dolmuş. Yenilemek için Hesabım sayfasını ziyaret edin.' };
     }
     
     // Check invitation creation limit (usage limit, not feature access)
@@ -266,10 +294,18 @@ export function useSubscription(): UseSubscriptionReturn {
    * FREE user: sadece 'free' şablonlara erişebilir
    * PRO user: 'free' ve 'pro' şablonlara erişebilir
    * PREMIUM user: tüm şablonlara erişebilir
+   * 
+   * ÖNEMLİ: İptal edilmiş abonelikler (cancelled) için de end_date'e kadar erişim devam eder!
    */
   const canAccessTemplate = (templateTier: 'free' | 'pro' | 'premium'): boolean => {
-    if (!planConfig) return templateTier === 'free';
+    if (!subscription || !planConfig) return templateTier === 'free';
     
+    // Abonelik geçersizse sadece free şablonlara erişebilir
+    if (!isSubscriptionValid(subscription)) {
+      return templateTier === 'free';
+    }
+    
+    // Abonelik geçerliyse tier'a göre kontrol et
     const userAccessLevel = planConfig.limits.templateAccessLevel;
     
     // FREE user
