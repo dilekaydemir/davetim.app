@@ -7,6 +7,17 @@ export interface PDFExportOptions {
   quality?: number;
   orientation?: 'portrait' | 'landscape';
   format?: 'a4' | 'letter';
+  /**
+   * Eğer true ise, PDF boyutu canvas boyutuna birebir uyacak şekilde ayarlanır.
+   * (Davetiye tuvali ile %100 aynı görünüm için kullanılır.)
+   */
+  matchCanvasSize?: boolean;
+  /**
+   * Hedef canvas genişliği / yüksekliği (px). Belirtilirse, ekran boyutundan
+   * bağımsız olarak export bu boyutlara göre yapılır.
+   */
+  targetWidth?: number;
+  targetHeight?: number;
 }
 
 class PDFService {
@@ -14,7 +25,12 @@ class PDFService {
    * PROFESSIONAL QUALITY EXPORT
    * This method ensures maximum quality for paid users
    */
-  private async createHighQualityCanvas(element: HTMLElement, scale: number = 4): Promise<HTMLCanvasElement> {
+  private async createHighQualityCanvas(
+    element: HTMLElement,
+    scale: number = 4,
+    targetWidth?: number,
+    targetHeight?: number
+  ): Promise<HTMLCanvasElement> {
     // Create a high-quality clone
     const clone = element.cloneNode(true) as HTMLElement;
     
@@ -48,8 +64,10 @@ class PDFService {
     clone.style.position = 'fixed';
     clone.style.left = '-99999px';
     clone.style.top = '0';
-    clone.style.width = `${element.offsetWidth}px`;
-    clone.style.height = `${element.offsetHeight}px`;
+    const width = targetWidth ?? element.offsetWidth;
+    const height = targetHeight ?? element.offsetHeight;
+    clone.style.width = `${width}px`;
+    clone.style.height = `${height}px`;
     clone.style.overflow = 'visible';
     clone.style.transform = 'none';
     
@@ -75,11 +93,11 @@ class PDFService {
         // BACKGROUND
         backgroundColor: '#ffffff',      // White background
         
-        // DIMENSIONS - Exact match
-        windowWidth: element.offsetWidth,
-        windowHeight: element.offsetHeight,
-        width: element.offsetWidth,
-        height: element.offsetHeight,
+        // DIMENSIONS - Exact match (ekrandan bağımsız, hedef canvas boyutu)
+        windowWidth: width,
+        windowHeight: height,
+        width: width,
+        height: height,
         
         // POSITIONING
         x: 0,
@@ -105,25 +123,57 @@ class PDFService {
           allElements.forEach((el) => {
             const htmlEl = el as HTMLElement;
             const computedStyle = window.getComputedStyle(el);
+            const inlineTransform = htmlEl.style.transform || '';
             
             // Fix positioned elements
             if (computedStyle.position === 'absolute' || computedStyle.position === 'fixed') {
-              // Get actual position
-              const rect = el.getBoundingClientRect();
-              const parentRect = clonedElement.getBoundingClientRect();
-              
-              htmlEl.style.position = 'absolute';
-              htmlEl.style.left = `${rect.left - parentRect.left}px`;
-              htmlEl.style.top = `${rect.top - parentRect.top}px`;
-              htmlEl.style.transform = 'none';
-              htmlEl.style.margin = '0';
+              const hasRotation =
+                inlineTransform.includes('rotate(') ||
+                inlineTransform.includes('rotate3d') ||
+                inlineTransform.includes('rotateZ');
+
+              // Banner / dekoratif gibi dönen elemanlarda transform'u bozmayalım
+              if (hasRotation) {
+                // FIX: Görselin kesilmemesi için overflow: visible yapıyoruz.
+                // Ancak border-radius'un çalışması için borderRadius'u container'dan alıp
+                // içindeki IMG'ye taşıyacağız (aşağıdaki IMG bloğunda).
+                htmlEl.style.overflow = 'visible';
+                htmlEl.style.transform = inlineTransform;
+              } else {
+                // Get actual position
+                const rect = el.getBoundingClientRect();
+                const parentRect = clonedElement.getBoundingClientRect();
+                
+                htmlEl.style.position = 'absolute';
+                htmlEl.style.left = `${rect.left - parentRect.left}px`;
+                htmlEl.style.top = `${rect.top - parentRect.top}px`;
+                htmlEl.style.transform = 'none';
+                htmlEl.style.margin = '0';
+              }
             }
             
-            // Ensure images have proper sizing
+            // Ensure images have proper sizing and styling
             if (el.tagName === 'IMG') {
               const img = el as HTMLImageElement;
-              img.style.maxWidth = '100%';
-              img.style.height = 'auto';
+              
+              // Parent elementten border-radius'u alıp img'ye uygula
+              // Bu sayede parent overflow:visible olsa bile img yuvarlak köşeli olur
+              const parent = img.parentElement;
+              if (parent) {
+                const parentStyle = window.getComputedStyle(parent);
+                if (parentStyle.borderRadius && parentStyle.borderRadius !== '0px') {
+                  img.style.borderRadius = parentStyle.borderRadius;
+                }
+              }
+
+              // Force image to fill container to respect object-fit: cover
+              img.style.width = '100%';
+              img.style.height = '100%';
+              img.style.maxWidth = 'none';
+              img.style.maxHeight = 'none';
+              img.style.objectFit = 'cover';
+              
+              // High quality rendering
               img.style.imageRendering = 'high-quality';
               img.style.imageRendering = '-webkit-optimize-contrast';
             }
@@ -164,66 +214,97 @@ class PDFService {
     const {
       quality = 4, // ULTRA HIGH QUALITY (4x)
       orientation = 'portrait',
-      format = 'a4'
+      format = 'a4',
+      matchCanvasSize = false,
+      targetWidth,
+      targetHeight
     } = options;
 
     try {
       console.log('📄 Starting PROFESSIONAL PDF generation...');
       toast.loading('Yüksek kaliteli PDF oluşturuluyor...', { id: 'pdf-export' });
 
-      // Create ultra high quality canvas
-      const canvas = await this.createHighQualityCanvas(element, quality);
+      // Create ultra high quality canvas (hedef boyutlarla)
+      const canvas = await this.createHighQualityCanvas(element, quality, targetWidth, targetHeight);
 
       console.log('✅ Ultra quality canvas created:', canvas.width, 'x', canvas.height);
 
       // Convert canvas to high quality PNG data
       const imgData = canvas.toDataURL('image/png', 1.0);
 
-      // Calculate PDF dimensions (A4: 210x297mm)
-      const pdfWidth = orientation === 'portrait' ? 210 : 297;
-      const pdfHeight = orientation === 'portrait' ? 297 : 210;
-      
-      // Calculate aspect ratio
-      const canvasAspectRatio = canvas.width / canvas.height;
-      const pdfAspectRatio = pdfWidth / pdfHeight;
-      
-      let imgWidth, imgHeight, x, y;
-      
-      if (canvasAspectRatio > pdfAspectRatio) {
-        // Canvas is wider - fit to width
-        imgWidth = pdfWidth;
-        imgHeight = pdfWidth / canvasAspectRatio;
-        x = 0;
-        y = (pdfHeight - imgHeight) / 2;
+      let pdf: jsPDF;
+
+      if (matchCanvasSize) {
+        // Davetiye tuvali ile birebir aynı boyutta PDF (1px ≈ 1pt)
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        pdf = new jsPDF({
+          orientation: canvasWidth >= canvasHeight ? 'landscape' : 'portrait',
+          unit: 'pt',
+          format: [canvasWidth, canvasHeight],
+          compress: false,
+          precision: 16
+        });
+
+        pdf.addImage(
+          imgData,
+          'PNG',
+          0,
+          0,
+          canvasWidth,
+          canvasHeight,
+          undefined,
+          'NONE'
+        );
       } else {
-        // Canvas is taller - fit to height
-        imgHeight = pdfHeight;
-        imgWidth = pdfHeight * canvasAspectRatio;
-        x = (pdfWidth - imgWidth) / 2;
-        y = 0;
+        // Varsayılan: A4/Letter sayfa içine oran korunarak sığdır
+        // Calculate PDF dimensions (A4: 210x297mm)
+        const pdfWidth = orientation === 'portrait' ? 210 : 297;
+        const pdfHeight = orientation === 'portrait' ? 297 : 210;
+        
+        // Calculate aspect ratio
+        const canvasAspectRatio = canvas.width / canvas.height;
+        const pdfAspectRatio = pdfWidth / pdfHeight;
+        
+        let imgWidth, imgHeight, x, y;
+        
+        if (canvasAspectRatio > pdfAspectRatio) {
+          // Canvas is wider - fit to width
+          imgWidth = pdfWidth;
+          imgHeight = pdfWidth / canvasAspectRatio;
+          x = 0;
+          y = (pdfHeight - imgHeight) / 2;
+        } else {
+          // Canvas is taller - fit to height
+          imgHeight = pdfHeight;
+          imgWidth = pdfHeight * canvasAspectRatio;
+          x = (pdfWidth - imgWidth) / 2;
+          y = 0;
+        }
+
+        // Create PDF with maximum quality settings
+        pdf = new jsPDF({
+          orientation,
+          unit: 'mm',
+          format,
+          compress: false, // NO COMPRESSION for maximum quality
+          precision: 16,   // Maximum precision
+          userUnit: 1.0
+        });
+
+        // Add image with MAXIMUM quality (PNG, no compression)
+        pdf.addImage(
+          imgData,
+          'PNG',           // PNG format for best quality
+          x,
+          y,
+          imgWidth,
+          imgHeight,
+          undefined,
+          'NONE'          // NO COMPRESSION
+        );
       }
-
-      // Create PDF with maximum quality settings
-      const pdf = new jsPDF({
-        orientation,
-        unit: 'mm',
-        format,
-        compress: false, // NO COMPRESSION for maximum quality
-        precision: 16,   // Maximum precision
-        userUnit: 1.0
-      });
-
-      // Add image with MAXIMUM quality (PNG, no compression)
-      pdf.addImage(
-        imgData,
-        'PNG',           // PNG format for best quality
-        x,
-        y,
-        imgWidth,
-        imgHeight,
-        undefined,
-        'NONE'          // NO COMPRESSION
-      );
 
       // Get PDF as blob
       const pdfBlob = pdf.output('blob');
@@ -280,13 +361,18 @@ class PDFService {
    * @param element - HTML element to convert
    * @param quality - Image quality (4-6 for professional use)
    */
-  async exportToImage(element: HTMLElement, quality: number = 5): Promise<Blob | null> {
+  async exportToImage(
+    element: HTMLElement,
+    quality: number = 5,
+    targetWidth?: number,
+    targetHeight?: number
+  ): Promise<Blob | null> {
     try {
       console.log('🖼️ Generating PROFESSIONAL quality image...');
       toast.loading('Yüksek kaliteli görsel oluşturuluyor...', { id: 'image-export' });
 
-      // Create ultra high quality canvas (5x scale for images)
-      const canvas = await this.createHighQualityCanvas(element, quality);
+      // Create ultra high quality canvas (5x scale for images, hedef boyutlarla)
+      const canvas = await this.createHighQualityCanvas(element, quality, targetWidth, targetHeight);
 
       console.log('✅ Ultra quality canvas created:', canvas.width, 'x', canvas.height);
 

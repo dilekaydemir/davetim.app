@@ -240,13 +240,13 @@ const DashboardPage: React.FC = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'published':
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-gradient-to-r from-green-100 to-green-200 text-green-800 rounded-full">✓ Yayında</span>;
+        return <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-green-100 to-green-200 text-green-800 rounded-full whitespace-nowrap">✓ Yayında</span>;
       case 'draft':
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 rounded-full">📝 Taslak</span>;
+        return <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 rounded-full whitespace-nowrap">📝 Taslak</span>;
       case 'archived':
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-full">🗄️ Arşiv</span>;
+        return <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-full whitespace-nowrap">🗄️ Arşiv</span>;
       default:
-        return <span className="px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-800 rounded-full">Bilinmiyor</span>;
+        return <span className="px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-xs font-semibold bg-gray-100 text-gray-800 rounded-full whitespace-nowrap">Bilinmiyor</span>;
     }
   };
 
@@ -431,57 +431,64 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Invitations List - Compact */}
+        {/* Invitations List - Mobile Optimized */}
         {invitations.length > 0 && (
           <div className="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 animate-fade-in mb-6">
             <div className="divide-y divide-gray-100">
               {invitations.map((invitation, index) => (
                 <div 
                   key={invitation.id} 
-                  className="p-4 hover:bg-gray-50 transition-colors"
+                  className="p-3 sm:p-4 hover:bg-gray-50 transition-colors"
                   style={{ animationDelay: `${index * 30}ms` }}
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h4 className="text-base font-bold text-gray-900 truncate">
+                      {/* Title and Status - Mobile Optimized */}
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                        <h4 className="text-sm sm:text-base font-bold text-gray-900 truncate">
                           {invitation.title}
                         </h4>
-                        {getStatusBadge(invitation.status)}
+                        <div className="flex-shrink-0">
+                          {getStatusBadge(invitation.status)}
+                        </div>
                       </div>
                       
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-600 mb-2">
-                        <span className="flex items-center gap-1">
-                          📋 {invitation.template?.name || 'Bilinmiyor'}
+                      {/* Details Row - More Compact on Mobile */}
+                      <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-[11px] sm:text-xs text-gray-600 mb-2">
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                          <span className="text-[10px] sm:text-xs">📋</span>
+                          <span className="truncate max-w-[120px] sm:max-w-none">{invitation.template?.name || 'Bilinmiyor'}</span>
                         </span>
                         {invitation.event_date && (
-                          <span className="flex items-center gap-1">
-                            📅 {new Date(invitation.event_date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                          <span className="flex items-center gap-0.5 sm:gap-1">
+                            <span className="text-[10px] sm:text-xs">📅</span>
+                            <span>{new Date(invitation.event_date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}</span>
                           </span>
                         )}
-                        <span className="flex items-center gap-1">
-                          👁️ {invitation.view_count}
+                        <span className="flex items-center gap-0.5 sm:gap-1">
+                          <span className="text-[10px] sm:text-xs">👁️</span>
+                          <span>{invitation.view_count}</span>
                         </span>
                       </div>
                       
-                      {/* Guest Stats - Compact */}
+                      {/* Guest Stats - More Compact on Mobile */}
                       {guestStats[invitation.id] && guestStats[invitation.id].total > 0 && (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+                          <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full bg-blue-100 text-blue-700">
                             👥 {guestStats[invitation.id].total}
                           </span>
                           {guestStats[invitation.id].attending > 0 && (
-                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                            <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full bg-green-100 text-green-700">
                               ✓ {guestStats[invitation.id].attending}
                             </span>
                           )}
                           {guestStats[invitation.id].pending > 0 && (
-                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
+                            <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
                               ⏳ {guestStats[invitation.id].pending}
                             </span>
                           )}
                           {guestStats[invitation.id].total_attending > guestStats[invitation.id].attending && (
-                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
+                            <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
                               🎉 {guestStats[invitation.id].total_attending}
                             </span>
                           )}
@@ -489,28 +496,28 @@ const DashboardPage: React.FC = () => {
                       )}
                     </div>
                     
-                    {/* Action Buttons - Compact */}
-                    <div className="flex items-center gap-1">
+                    {/* Action Buttons - Mobile Optimized */}
+                    <div className="flex items-center gap-0.5 sm:gap-1 self-start sm:self-center">
                       <button
                         onClick={() => handleEditInvitation(invitation.id)}
-                        className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-all"
+                        className="p-1.5 sm:p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-all touch-target"
                         title="Düzenle"
                       >
-                        <Edit className="h-4 w-4" />
+                        <Edit className="h-4 w-4 sm:h-4 sm:w-4" />
                       </button>
                       <button
                         onClick={() => handleViewInvitation(invitation.id)}
-                        className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-all"
+                        className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-all touch-target"
                         title="Görüntüle"
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-4 w-4 sm:h-4 sm:w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteClick(invitation)}
-                        className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all"
+                        className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-all touch-target"
                         title="Sil"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                   </div>

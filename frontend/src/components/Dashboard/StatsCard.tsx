@@ -34,17 +34,17 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   const displayValue = isNaN(Number(value)) ? 0 : value;
   
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6 border border-gray-100">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex-1">
-          <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className="text-3xl font-bold text-gray-900">{displayValue}</p>
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 sm:p-6 border border-gray-100">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 mb-1">{title}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-900">{displayValue}</p>
           {subtitle && (
-            <p className="text-xs text-gray-500 mt-2">{subtitle}</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-2">{subtitle}</p>
           )}
         </div>
-        <div className={`p-3 rounded-full ${colorClasses[iconColor]}`}>
-          <Icon className="h-6 w-6" />
+        <div className={`p-2 sm:p-3 rounded-full flex-shrink-0 ${colorClasses[iconColor]}`}>
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
         </div>
       </div>
       

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, User, LogOut, Settings, LayoutDashboard, Crown } from 'lucide-react';
 import { useAuth } from '../../store/authStore';
@@ -242,149 +243,196 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-100 animate-fade-in">
-            <div className="px-3 py-3 space-y-1 bg-white">
-              <Link
-                to="/templates"
-                className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-target ${
-                  isActive('/templates')
-                    ? 'text-primary-600 bg-primary-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
+        {/* Mobile Menu - Fullscreen Drawer (rendered via portal above all content) */}
+        {isMenuOpen &&
+          typeof document !== 'undefined' &&
+          createPortal(
+            <div className="md:hidden fixed inset-0 z-[9000]">
+              {/* Backdrop */}
+              <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={() => setIsMenuOpen(false)}
-              >
-                Şablonlar
-              </Link>
-              <Link
-                to="/pricing"
-                className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-target ${
-                  isActive('/pricing')
-                    ? 'text-primary-600 bg-primary-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Fiyatlar
-              </Link>
-              <Link
-                to="/about"
-                className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-target ${
-                  isActive('/about')
-                    ? 'text-primary-600 bg-primary-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Hakkımızda
-              </Link>
-              <Link
-                to="/contact"
-                className={`block px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-target ${
-                  isActive('/contact')
-                    ? 'text-primary-600 bg-primary-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                İletişim
-              </Link>
-              
-              {!isAuthenticated ? (
-                <div className="pt-3 border-t border-gray-100 space-y-2">
-                  <button
-                    onClick={handleLogin}
-                    className="w-full px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-all text-center"
+              />
+
+              {/* Drawer */}
+              <div className="absolute inset-x-3 top-3 bottom-3 bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                  <Link
+                    to="/"
+                    className="flex items-center gap-3"
+                    onClick={() => setIsMenuOpen(false)}
                   >
-                    Giriş
-                  </button>
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-sm">
+                      <span className="text-white font-bold text-lg">D</span>
+                    </div>
+                    <span className="text-xl font-bold text-gray-900">
+                      Davetim
+                    </span>
+                  </Link>
+
                   <button
-                    onClick={handleSignup}
-                    className="w-full px-4 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 shadow-sm transition-all text-center"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="w-10 h-10 flex items-center justify-center rounded-2xl border border-orange-300 text-gray-700 bg-white hover:bg-orange-50 hover:border-orange-400 transition-all shadow-sm"
+                    aria-label="Menüyü kapat"
                   >
-                    Ücretsiz Başla
+                    <X className="h-5 w-5" />
                   </button>
                 </div>
-              ) : (
-                <div className="pt-3 border-t border-gray-100">
-                  {/* User Info Card */}
-                  <div className="px-1 mb-3">
-                    <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-sm">
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="px-6 py-6 space-y-6">
+                    {/* Primary links */}
+                    <nav className="space-y-3">
+                      <Link
+                        to="/templates"
+                        className={`block text-base font-medium transition-all ${
+                          isActive('/templates')
+                            ? 'text-primary-600'
+                            : 'text-gray-800 hover:text-primary-600'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Şablonlar
+                      </Link>
+                      <Link
+                        to="/pricing"
+                        className={`block text-base font-medium transition-all ${
+                          isActive('/pricing')
+                            ? 'text-primary-600'
+                            : 'text-gray-800 hover:text-primary-600'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Fiyatlar
+                      </Link>
+                      <Link
+                        to="/about"
+                        className={`block text-base font-medium transition-all ${
+                          isActive('/about')
+                            ? 'text-primary-600'
+                            : 'text-gray-800 hover:text-primary-600'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        Hakkımızda
+                      </Link>
+                      <Link
+                        to="/contact"
+                        className={`block text-base font-medium transition-all ${
+                          isActive('/contact')
+                            ? 'text-primary-600'
+                            : 'text-gray-800 hover:text-primary-600'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        İletişim
+                      </Link>
+                    </nav>
+
+                    {/* Auth section */}
+                    {!isAuthenticated ? (
+                      <div className="pt-2 border-t border-gray-100 space-y-3">
+                        <button
+                          onClick={() => {
+                            handleLogin();
+                            setIsMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-3 rounded-xl text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 transition-all text-center"
+                        >
+                          Giriş
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleSignup();
+                            setIsMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-3 rounded-xl text-sm font-medium bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 shadow-md hover:shadow-lg transition-all text-center"
+                        >
+                          Ücretsiz Başla
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="pt-4 border-t border-gray-100 space-y-4">
+                        {/* User card */}
+                        <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl p-4 flex items-center gap-3">
+                          <div className="w-11 h-11 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-sm">
                             <User className="h-5 w-5 text-white" />
                           </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 truncate">{user?.fullName}</div>
-                          <div className="text-xs text-gray-600 truncate">{user?.email}</div>
-                          <div className="mt-1.5">
-                            {subscription.isPremiumPlan && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
-                                <Crown className="h-3 w-3" />
-                                {subscription.planName.toUpperCase()}
-                              </span>
-                            )}
-                            {subscription.isProPlan && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-white/50 text-primary-700">
-                                {subscription.planName.toUpperCase()}
-                              </span>
-                            )}
-                            {subscription.isFreePlan && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-white/50 text-gray-700">
-                                {subscription.planName.toUpperCase()}
-                              </span>
-                            )}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-semibold text-gray-900 truncate">
+                              {user?.fullName}
+                            </div>
+                            <div className="text-xs text-gray-600 truncate">
+                              {user?.email}
+                            </div>
+                            <div className="mt-2">
+                              {subscription.isPremiumPlan && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700">
+                                  <Crown className="h-3 w-3" />
+                                  {subscription.planName.toUpperCase()}
+                                </span>
+                              )}
+                              {subscription.isProPlan && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-white/50 text-primary-700">
+                                  {subscription.planName.toUpperCase()}
+                                </span>
+                              )}
+                              {subscription.isFreePlan && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-white/50 text-gray-700">
+                                  {subscription.planName.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
+
+                        {/* User links */}
+                        <div className="space-y-2">
+                          <Link
+                            to="/dashboard"
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                              isActive('/dashboard')
+                                ? 'text-primary-600 bg-primary-50'
+                                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                            }`}
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            Panel
+                          </Link>
+                          <Link
+                            to="/account"
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                              isActive('/account')
+                                ? 'text-primary-600 bg-primary-50'
+                                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                            }`}
+                            onClick={() => setIsMenuOpen(false)}
+                          >
+                            <Settings className="h-4 w-4" />
+                            Hesap Ayarları
+                          </Link>
+                          <button
+                            onClick={() => {
+                              handleSignOut();
+                              setIsMenuOpen(false);
+                            }}
+                            className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Çıkış Yap
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  
-                  {/* Menu Items */}
-                  <div className="space-y-1">
-                    <Link
-                      to="/dashboard"
-                      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-target ${
-                        isActive('/dashboard')
-                          ? 'text-primary-600 bg-primary-50'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Panel
-                    </Link>
-                    <Link
-                      to="/account"
-                      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all touch-target ${
-                        isActive('/account')
-                          ? 'text-primary-600 bg-primary-50'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                      }`}
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Settings className="h-4 w-4" />
-                      Hesap Ayarları
-                    </Link>
-                    <button
-                      onClick={() => {
-                        handleSignOut();
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full text-left flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all touch-target"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Çıkış Yap
-                    </button>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+              </div>
+            </div>,
+            document.body
+          )}
       </div>
     </nav>
   );

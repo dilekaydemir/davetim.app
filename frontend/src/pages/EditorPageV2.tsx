@@ -20,7 +20,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, Layers as LayersIcon, Settings, Users, Loader2, Palette,
-  AlignLeft, AlignCenter, AlignRight, AlignHorizontalJustifyCenter, AlignVerticalJustifyCenter
+  Save, Eye, Share2, Download
 } from 'lucide-react';
 import { mediaService, type Media } from '../services/mediaService';
 import { templateService, type Template } from '../services/templateService';
@@ -100,7 +100,7 @@ const EditorPageV2: React.FC = () => {
   const [activeTool, setActiveTool] = useState<'select' | 'text' | 'shape'>('select');
   const [elements, setElements] = useState<EditorElement[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-  const [rightPanel, setRightPanel] = useState<'design' | 'properties' | 'layers' | 'guests'>('design');
+  const [rightPanel, setRightPanel] = useState<'design' | 'properties' | 'layers' | 'guests' | 'tools'>('design');
   
   // Image layer ordering per mode (profile/banner/watermark)
   const [imageLayers, setImageLayers] = useState<{ profile: number; banner: number; watermark: number }>({
@@ -126,6 +126,7 @@ const EditorPageV2: React.FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [showMobileActions, setShowMobileActions] = useState(false);
   
   // QR Media
   const [qrMedia, setQrMedia] = useState<Media | null>(null);
@@ -521,7 +522,8 @@ const EditorPageV2: React.FC = () => {
   useKeyboardShortcuts({
     onSave: handleSave,
     onPreview: () => setIsPreviewOpen(true),
-    onExport: handleDownload,
+    // PDF/PNG indirme kaldırıldığı için onExport devre dışı
+    onExport: undefined,
     onUndo: undoRedo.undo,
     onRedo: undoRedo.redo,
     onDelete: handleDeleteSelected,
@@ -734,9 +736,32 @@ const EditorPageV2: React.FC = () => {
   }
 
   async function handleDownload() {
-    if (!invitation) return;
+    if (!invitation || !canvasRef.current) return;
+    
+    // Önce kaydet
     await handleSave();
-    setIsPreviewOpen(true);
+    
+    // Direkt PNG olarak indir
+    try {
+      toast.loading('PNG oluşturuluyor...', { id: 'png-export' });
+      
+      const blob = await pdfService.exportToImage(
+        canvasRef.current,
+        5, // ULTRA HIGH QUALITY (5x scale)
+        canvasDimensions.width,
+        canvasDimensions.height
+      );
+      
+      if (blob) {
+        pdfService.downloadImage(blob, `${formData.title || invitation.title || 'davetiye'}.png`);
+        toast.success('PNG indirildi!', { id: 'png-export' });
+      } else {
+        toast.error('PNG oluşturulamadı', { id: 'png-export' });
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('İndirme hatası', { id: 'png-export' });
+    }
   }
 
   function handleShare() {
@@ -821,95 +846,6 @@ const EditorPageV2: React.FC = () => {
     toast.success('Şablon varsayılanlarına dönüldü');
   }
   
-  // Alignment functions (Canva/Photoshop style)
-  function handleAlignLeft() {
-    if (!selectedElementId) {
-      toast.error('Lütfen bir element seçin');
-      return;
-    }
-    const newElements = elements.map(el => {
-      if (el.id !== selectedElementId) return el;
-      // Convert pixel size to percentage
-      const widthPercent = (el.size.width / canvasDimensions.width) * 100;
-      return { ...el, position: { ...el.position, x: 2 } };
-    });
-    updateElements(newElements);
-    toast.success('Sola hizalandı');
-  }
-  
-  function handleAlignCenter() {
-    if (!selectedElementId) {
-      toast.error('Lütfen bir element seçin');
-      return;
-    }
-    const newElements = elements.map(el => {
-      if (el.id !== selectedElementId) return el;
-      // Convert pixel size to percentage
-      const widthPercent = (el.size.width / canvasDimensions.width) * 100;
-      return { ...el, position: { ...el.position, x: 50 - widthPercent / 2 } };
-    });
-    updateElements(newElements);
-    toast.success('Ortaya hizalandı');
-  }
-  
-  function handleAlignRight() {
-    if (!selectedElementId) {
-      toast.error('Lütfen bir element seçin');
-      return;
-    }
-    const newElements = elements.map(el => {
-      if (el.id !== selectedElementId) return el;
-      // Convert pixel size to percentage
-      const widthPercent = (el.size.width / canvasDimensions.width) * 100;
-      return { ...el, position: { ...el.position, x: 98 - widthPercent } };
-    });
-    updateElements(newElements);
-    toast.success('Sağa hizalandı');
-  }
-  
-  function handleAlignTop() {
-    if (!selectedElementId) {
-      toast.error('Lütfen bir element seçin');
-      return;
-    }
-    const newElements = elements.map(el => {
-      if (el.id !== selectedElementId) return el;
-      return { ...el, position: { ...el.position, y: 2 } };
-    });
-    updateElements(newElements);
-    toast.success('Üste hizalandı');
-  }
-  
-  function handleAlignMiddle() {
-    if (!selectedElementId) {
-      toast.error('Lütfen bir element seçin');
-      return;
-    }
-    const newElements = elements.map(el => {
-      if (el.id !== selectedElementId) return el;
-      // Convert pixel size to percentage
-      const heightPercent = (el.size.height / canvasDimensions.height) * 100;
-      return { ...el, position: { ...el.position, y: 50 - heightPercent / 2 } };
-    });
-    updateElements(newElements);
-    toast.success('Dikey ortaya hizalandı');
-  }
-  
-  function handleAlignBottom() {
-    if (!selectedElementId) {
-      toast.error('Lütfen bir element seçin');
-      return;
-    }
-    const newElements = elements.map(el => {
-      if (el.id !== selectedElementId) return el;
-      // Convert pixel size to percentage
-      const heightPercent = (el.size.height / canvasDimensions.height) * 100;
-      return { ...el, position: { ...el.position, y: 98 - heightPercent } };
-    });
-    updateElements(newElements);
-    toast.success('Alta hizalandı');
-  }
-
   // Convert layers to Layer format for LayersPanel
   const layers: Layer[] = elements.map(el => ({
     id: el.id,
@@ -1074,7 +1010,7 @@ const EditorPageV2: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-gray-100 overflow-hidden">
       {/* Top Header */}
-      <div className="bg-white border-b border-gray-200 px-2 md:px-4 py-2 flex items-center justify-between z-20">
+      <div className="bg-white border-b border-gray-200 px-2 md:px-4 py-2 flex items-center justify-between z-40 relative">
         <div className="flex items-center gap-2 md:gap-3">
           <button
             onClick={() => navigate('/dashboard')}
@@ -1091,57 +1027,8 @@ const EditorPageV2: React.FC = () => {
           </div>
         </div>
 
-         {/* Canvas Size Selector & Alignment - Hidden on mobile */}
+         {/* Canvas Size Selector - Hidden on mobile */}
          <div className="hidden md:flex items-center gap-2">
-           {/* Alignment Tools (Canva style) */}
-           {selectedElementId && (
-             <div className="flex items-center gap-1 mr-2 pr-2 border-r border-gray-300">
-               <button
-                 onClick={handleAlignLeft}
-                 className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                 title="Sola Hizala"
-               >
-                 <AlignLeft className="h-4 w-4 text-gray-600" />
-               </button>
-               <button
-                 onClick={handleAlignCenter}
-                 className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                 title="Yatay Ortala"
-               >
-                 <AlignHorizontalJustifyCenter className="h-4 w-4 text-gray-600" />
-               </button>
-               <button
-                 onClick={handleAlignRight}
-                 className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                 title="Sağa Hizala"
-               >
-                 <AlignRight className="h-4 w-4 text-gray-600" />
-               </button>
-               <div className="w-px h-4 bg-gray-300 mx-1" />
-               <button
-                 onClick={handleAlignTop}
-                 className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                 title="Üste Hizala"
-               >
-                 <AlignLeft className="h-4 w-4 text-gray-600 rotate-90" />
-               </button>
-               <button
-                 onClick={handleAlignMiddle}
-                 className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                 title="Dikey Ortala"
-               >
-                 <AlignVerticalJustifyCenter className="h-4 w-4 text-gray-600" />
-               </button>
-               <button
-                 onClick={handleAlignBottom}
-                 className="p-1.5 hover:bg-gray-100 rounded transition-colors"
-                 title="Alta Hizala"
-               >
-                 <AlignRight className="h-4 w-4 text-gray-600 rotate-90" />
-               </button>
-             </div>
-           )}
-           
            <select
              value={canvasPreset}
              onChange={(e) => setCanvasPreset(e.target.value as CanvasPreset)}
@@ -1159,17 +1046,36 @@ const EditorPageV2: React.FC = () => {
 
         {/* Undo/Redo + Publish - Compact on mobile */}
         <div className="flex items-center gap-1 md:gap-3">
+          {/* Mobile Quick Actions */}
+          <div className="flex md:hidden items-center gap-1">
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              title="Kaydet"
+            >
+              <Save className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setIsPreviewOpen(true)}
+              className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              title="Önizle"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Desktop Undo/Redo */}
           <button
             onClick={undoRedo.undo}
             disabled={!undoRedo.canUndo}
-            className="px-2 md:px-3 py-1.5 text-xs md:text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="hidden md:flex px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors items-center gap-1"
             title="Geri Al (Ctrl+Z)"
           >
-            <span className="hidden md:inline">↶ Geri</span>
-            <span className="md:hidden">↶</span>
+            ↶ Geri
           </button>
 
-          {/* Publish / Unpublish */}
+          {/* Publish / Unpublish - Desktop */}
           <button
             onClick={handleTogglePublish}
             className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all border ${
@@ -1184,20 +1090,21 @@ const EditorPageV2: React.FC = () => {
             </span>
             <span>{invitation.status === 'published' ? 'Yayında' : 'Yayınla'}</span>
           </button>
+          
           <button
             onClick={undoRedo.redo}
             disabled={!undoRedo.canRedo}
-            className="px-2 md:px-3 py-1.5 text-xs md:text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors"
+            className="hidden md:flex px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors items-center gap-1"
             title="İleri Al (Ctrl+Y)"
           >
-            <span className="hidden md:inline">İleri ↷</span>
-            <span className="md:hidden">↷</span>
+            İleri ↷
           </button>
           
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 bg-primary-600 text-white rounded-lg"
+            className="md:hidden p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            title="Menü"
           >
             <Settings className="h-4 w-4" />
           </button>
@@ -1237,7 +1144,8 @@ const EditorPageV2: React.FC = () => {
                   ? `url(${formData.imageUrl})`
                   : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center'
+                backgroundPosition: 'center',
+                isolation: 'isolate' // Create stacking context so elements don't appear above navbar
               }}
             >
               {/* Grid overlay */}
@@ -1463,12 +1371,12 @@ const EditorPageV2: React.FC = () => {
         </div>
 
          {/* Right Panel - Hidden on mobile, shown as bottom sheet */}
-         <div className="hidden lg:flex w-80 bg-white border-l border-gray-200 flex-col">
+         <div className="hidden lg:flex w-[420px] bg-white border-l border-gray-200 flex-col">
            {/* Panel Tabs */}
-           <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-thin">
+           <div className="flex border-b border-gray-200 overflow-x-hidden">
              <button
                onClick={() => setRightPanel('design')}
-               className={`flex-shrink-0 px-3 py-2.5 text-xs font-medium transition-colors ${
+               className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${
                  rightPanel === 'design'
                    ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -1479,7 +1387,7 @@ const EditorPageV2: React.FC = () => {
              </button>
              <button
                onClick={() => setRightPanel('properties')}
-               className={`flex-shrink-0 px-3 py-2.5 text-xs font-medium transition-colors ${
+               className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${
                  rightPanel === 'properties'
                    ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -1490,7 +1398,7 @@ const EditorPageV2: React.FC = () => {
              </button>
              <button
                onClick={() => setRightPanel('layers')}
-               className={`flex-shrink-0 px-3 py-2.5 text-xs font-medium transition-colors ${
+               className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${
                  rightPanel === 'layers'
                    ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -1501,7 +1409,7 @@ const EditorPageV2: React.FC = () => {
              </button>
              <button
                onClick={() => setRightPanel('guests')}
-               className={`flex-shrink-0 px-3 py-2.5 text-xs font-medium transition-colors ${
+               className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${
                  rightPanel === 'guests'
                    ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -1677,133 +1585,288 @@ const EditorPageV2: React.FC = () => {
 
       {/* Mobile Bottom Sheet */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-black/50" onClick={() => setIsMobileMenuOpen(false)}>
+        <div className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}>
           <div 
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[80vh] overflow-hidden flex flex-col"
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Handle */}
-            <div className="flex justify-center py-2">
-              <div className="w-12 h-1 bg-gray-300 rounded-full" />
+            <div className="flex justify-center py-3 border-b border-gray-100">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
 
-             {/* Tabs */}
-             <div className="flex border-b border-gray-200 overflow-x-auto scrollbar-thin">
+             {/* Tabs - Grid Layout for Better Mobile UX */}
+             <div className="grid grid-cols-5 gap-0 border-b border-gray-200 bg-gray-50">
                <button
-                 onClick={() => setRightPanel('design')}
-                 className={`flex-shrink-0 px-3 py-2 text-xs font-medium transition-colors ${
-                   rightPanel === 'design'
-                     ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                 onClick={() => setRightPanel('tools')}
+                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
+                   rightPanel === 'tools'
+                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
                  }`}
                >
-                 <Palette className="h-4 w-4 inline mr-1" />
-                 Tasarım
+                 <Settings className={`h-5 w-5 mb-1 ${rightPanel === 'tools' ? 'text-primary-600' : 'text-gray-400'}`} />
+                 <span className="text-[10px]">Araçlar</span>
+               </button>
+               <button
+                 onClick={() => setRightPanel('design')}
+                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
+                   rightPanel === 'design'
+                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
+                 }`}
+               >
+                 <Palette className={`h-5 w-5 mb-1 ${rightPanel === 'design' ? 'text-primary-600' : 'text-gray-400'}`} />
+                 <span className="text-[10px]">Tasarım</span>
                </button>
                <button
                  onClick={() => setRightPanel('properties')}
-                 className={`flex-shrink-0 px-3 py-2 text-xs font-medium transition-colors ${
+                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
                    rightPanel === 'properties'
-                     ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
                  }`}
                >
-                 <Settings className="h-4 w-4 inline mr-1" />
-                 Özellikler
+                 <Settings className={`h-5 w-5 mb-1 ${rightPanel === 'properties' ? 'text-primary-600' : 'text-gray-400'}`} />
+                 <span className="text-[10px]">Özellik</span>
                </button>
                <button
                  onClick={() => setRightPanel('layers')}
-                 className={`flex-shrink-0 px-3 py-2 text-xs font-medium transition-colors ${
+                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
                    rightPanel === 'layers'
-                     ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
                  }`}
                >
-                 <LayersIcon className="h-4 w-4 inline mr-1" />
-                 Katmanlar
+                 <LayersIcon className={`h-5 w-5 mb-1 ${rightPanel === 'layers' ? 'text-primary-600' : 'text-gray-400'}`} />
+                 <span className="text-[10px]">Katman</span>
                </button>
                <button
                  onClick={() => setRightPanel('guests')}
-                 className={`flex-shrink-0 px-3 py-2 text-xs font-medium transition-colors ${
+                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
                    rightPanel === 'guests'
-                     ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
                  }`}
                >
-                 <Users className="h-4 w-4 inline mr-1" />
-                 Davetliler
+                 <Users className={`h-5 w-5 mb-1 ${rightPanel === 'guests' ? 'text-primary-600' : 'text-gray-400'}`} />
+                 <span className="text-[10px]">Davetli</span>
                </button>
              </div>
 
              {/* Content */}
-             <div className="flex-1 overflow-auto">
+             <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white">
+               {rightPanel === 'tools' && (
+                 <div className="p-4 space-y-3">
+                   {/* Canvas Size */}
+                   <div className="bg-gray-50 p-3 rounded-xl">
+                     <label className="block text-xs font-semibold text-gray-700 mb-2">
+                       📐 Tuval Boyutu
+                     </label>
+                     <select
+                       value={canvasPreset}
+                       onChange={(e) => setCanvasPreset(e.target.value as CanvasPreset)}
+                       className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white"
+                     >
+                       {Object.entries(CANVAS_PRESETS).map(([key, { label }]) => (
+                         <option key={key} value={key}>{label}</option>
+                       ))}
+                     </select>
+                     <p className="text-xs text-gray-500 mt-1.5 text-center">
+                       {canvasDimensions.width} × {canvasDimensions.height}px
+                     </p>
+                   </div>
+
+                   {/* Zoom Controls */}
+                   <div className="bg-gray-50 p-3 rounded-xl">
+                     <label className="block text-xs font-semibold text-gray-700 mb-2">
+                       🔍 Yakınlaştırma: {zoom}%
+                     </label>
+                     <div className="flex gap-2">
+                       <button 
+                         onClick={() => setZoom(Math.max(25, zoom - 10))} 
+                         className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-sm font-semibold transition-colors border border-gray-200"
+                       >
+                         −
+                       </button>
+                       <button 
+                         onClick={() => setZoom(100)} 
+                         className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-xs font-medium transition-colors border border-gray-200"
+                       >
+                         100%
+                       </button>
+                       <button 
+                         onClick={() => setZoom(Math.min(200, zoom + 10))} 
+                         className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-sm font-semibold transition-colors border border-gray-200"
+                       >
+                         +
+                       </button>
+                     </div>
+                   </div>
+
+                   {/* Grid & History */}
+                   <div className="grid grid-cols-2 gap-2">
+                     <button
+                       onClick={() => setShowGrid(!showGrid)}
+                       className={`py-2.5 rounded-lg text-xs font-medium transition-all ${
+                         showGrid 
+                           ? 'bg-primary-600 text-white shadow-md' 
+                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                       }`}
+                     >
+                       {showGrid ? '✓ Izgara' : 'Izgara'}
+                     </button>
+                     <button
+                       onClick={undoRedo.undo}
+                       disabled={!undoRedo.canUndo}
+                       className="py-2.5 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium transition-colors"
+                     >
+                       ↶ Geri
+                     </button>
+                   </div>
+
+                   {/* Divider */}
+                   <div className="border-t border-gray-200"></div>
+
+                   {/* Actions - Compact Grid */}
+                   <div className="grid grid-cols-2 gap-2">
+                     <button 
+                       onClick={handleSave} 
+                       disabled={isSaving}
+                       className="py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
+                     >
+                       <Save className="h-5 w-5" />
+                       <span>{isSaving ? 'Kaydediliyor' : 'Kaydet'}</span>
+                     </button>
+                     
+                     <button 
+                       onClick={() => {
+                         setIsPreviewOpen(true);
+                         setIsMobileMenuOpen(false);
+                       }}
+                       className="py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
+                     >
+                       <Eye className="h-5 w-5" />
+                       <span>Önizle</span>
+                     </button>
+                     
+                     <button 
+                       onClick={() => {
+                         handleShare();
+                         setIsMobileMenuOpen(false);
+                       }}
+                       className="py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
+                     >
+                       <Share2 className="h-5 w-5" />
+                       <span>Paylaş</span>
+                     </button>
+                     
+                     <button 
+                       onClick={() => {
+                         handleDownload();
+                         setIsMobileMenuOpen(false);
+                       }}
+                       className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
+                     >
+                       <Download className="h-5 w-5" />
+                       <span>İndir</span>
+                     </button>
+                   </div>
+
+                   <button 
+                     onClick={() => {
+                       handleTogglePublish();
+                       setIsMobileMenuOpen(false);
+                     }}
+                     className={`w-full py-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+                       invitation.status === 'published'
+                         ? 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+                         : 'bg-orange-600 hover:bg-orange-700 text-white shadow-md'
+                     }`}
+                   >
+                     <span className="text-lg">
+                       {invitation.status === 'published' ? '✓' : '📝'}
+                     </span>
+                     <span>
+                       {invitation.status === 'published' ? 'Yayında' : 'Yayınla'}
+                     </span>
+                   </button>
+                 </div>
+               )}
+               
                {rightPanel === 'design' && invitation && user && (
-                 <DesignPanel
-                   formData={formData}
-                   onFormChange={handleInputChange}
-                   colors={colors}
-                   onColorsChange={(newColors) => {
-                     setColors(newColors);
-                     // Update all text and divider elements with new colors
-                     const updatedElements = elements.map(el => {
-                       if (el.type === 'text' && el.style) {
-                         return { ...el, style: { ...el.style, color: newColors.text } };
-                       } else if (el.type === 'divider' && el.style) {
-                         return { ...el, style: { ...el.style, color: newColors.accent } };
-                       }
-                       return el;
-                     });
-                     updateElements(updatedElements);
-                     toast.success('Renkler tüm elementlere uygulandı');
-                   }}
-                   defaultColors={templateOriginalDesign?.colors}
-                   selectedFont={selectedFont}
-                   onFontChange={(newFont) => {
-                     setSelectedFont(newFont);
-                     // Update all text elements with new font
-                     const updatedElements = elements.map(el => {
-                       if (el.type === 'text' && el.style) {
-                         return { ...el, style: { ...el.style, fontFamily: newFont } };
-                       }
-                       return el;
-                     });
-                     updateElements(updatedElements);
-                     toast.success('Yazı tipi tüm metinlere uygulandı');
-                   }}
-                   invitationId={invitation.id}
-                   userId={user.id}
-                   onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
-                   onImageRemoved={() => setFormData({ ...formData, imageUrl: null })}
-                   onPositionChange={(position) => setFormData({ ...formData, imagePosition: position })}
-                   onLogoShapeChange={(shape) => setFormData({ ...formData, logoShape: shape })}
-                   onOpenGallery={() => setIsGalleryOpen(true)}
-                   onResetToTemplate={handleResetToTemplate}
-                   hasTemplateOriginal={!!templateOriginalDesign}
-                   currentPlan={subscription.currentPlan}
-                 />
+                 <div className="h-full overflow-y-auto overflow-x-hidden">
+                   <DesignPanel
+                     formData={formData}
+                     onFormChange={handleInputChange}
+                     colors={colors}
+                     onColorsChange={(newColors) => {
+                       setColors(newColors);
+                       // Update all text and divider elements with new colors
+                       const updatedElements = elements.map(el => {
+                         if (el.type === 'text' && el.style) {
+                           return { ...el, style: { ...el.style, color: newColors.text } };
+                         } else if (el.type === 'divider' && el.style) {
+                           return { ...el, style: { ...el.style, color: newColors.accent } };
+                         }
+                         return el;
+                       });
+                       updateElements(updatedElements);
+                       toast.success('Renkler tüm elementlere uygulandı');
+                     }}
+                     defaultColors={templateOriginalDesign?.colors}
+                     selectedFont={selectedFont}
+                     onFontChange={(newFont) => {
+                       setSelectedFont(newFont);
+                       // Update all text elements with new font
+                       const updatedElements = elements.map(el => {
+                         if (el.type === 'text' && el.style) {
+                           return { ...el, style: { ...el.style, fontFamily: newFont } };
+                         }
+                         return el;
+                       });
+                       updateElements(updatedElements);
+                       toast.success('Yazı tipi tüm metinlere uygulandı');
+                     }}
+                     invitationId={invitation.id}
+                     userId={user.id}
+                     onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
+                     onImageRemoved={() => setFormData({ ...formData, imageUrl: null })}
+                     onPositionChange={(position) => setFormData({ ...formData, imagePosition: position })}
+                     onLogoShapeChange={(shape) => setFormData({ ...formData, logoShape: shape })}
+                     onOpenGallery={() => setIsGalleryOpen(true)}
+                     onResetToTemplate={handleResetToTemplate}
+                     hasTemplateOriginal={!!templateOriginalDesign}
+                     currentPlan={subscription.currentPlan}
+                   />
+                 </div>
                )}
                {rightPanel === 'properties' && (
-                 <PropertiesPanel
-                   selectedElement={selectedElement}
-                   onUpdate={handleUpdateElement}
-                   onDelete={handleDeleteSelected}
-                   colors={colors}
-                 />
+                 <div className="h-full overflow-y-auto overflow-x-hidden">
+                   <PropertiesPanel
+                     selectedElement={selectedElement}
+                     onUpdate={handleUpdateElement}
+                     onDelete={handleDeleteSelected}
+                     colors={colors}
+                   />
+                 </div>
                )}
                {rightPanel === 'layers' && (
-                 <LayersPanel
-                   layers={layers}
-                   selectedLayerId={selectedElementId}
-                   onSelectLayer={setSelectedElementId}
-                   onToggleVisibility={handleToggleVisibility}
-                   onToggleLock={handleToggleLock}
-                   onDeleteLayer={handleDeleteLayer}
-                   onDuplicateLayer={handleDuplicateLayer}
-                   onReorderLayer={handleReorderLayer}
-                 />
+                 <div className="h-full overflow-y-auto overflow-x-hidden">
+                   <LayersPanel
+                     layers={layers}
+                     selectedLayerId={selectedElementId}
+                     onSelectLayer={setSelectedElementId}
+                     onToggleVisibility={handleToggleVisibility}
+                     onToggleLock={handleToggleLock}
+                     onDeleteLayer={handleDeleteLayer}
+                     onDuplicateLayer={handleDuplicateLayer}
+                     onReorderLayer={handleReorderLayer}
+                   />
+                 </div>
                )}
                {rightPanel === 'guests' && invitation && (
-                 <div className="p-4">
+                 <div className="h-full overflow-y-auto overflow-x-hidden">
                    <GuestList
                      invitationId={invitation.id}
                      invitationTitle={invitation.title}

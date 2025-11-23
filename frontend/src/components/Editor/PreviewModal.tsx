@@ -117,10 +117,16 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
     
     setIsExporting(true);
     try {
+      const targetWidth = canvasSize?.width;
+      const targetHeight = canvasSize?.height;
+
       await pdfService.exportAndDownload(previewRef.current, {
         filename: `${invitationData.title || 'davetiye'}.pdf`,
-        quality: 4, // ULTRA HIGH QUALITY for professional output
-        orientation: 'portrait'
+        quality: 4,
+        orientation: 'portrait',
+        matchCanvasSize: true,
+        targetWidth,
+        targetHeight
       });
     } finally {
       setIsExporting(false);
@@ -132,7 +138,9 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
     
     setIsExporting(true);
     try {
-      const blob = await pdfService.exportToImage(previewRef.current, 5); // ULTRA HIGH QUALITY (5x scale)
+      const targetWidth = canvasSize?.width;
+      const targetHeight = canvasSize?.height;
+      const blob = await pdfService.exportToImage(previewRef.current, 5, targetWidth, targetHeight);
       if (blob) {
         pdfService.downloadImage(blob, `${invitationData.title || 'davetiye'}.png`);
       }
@@ -170,51 +178,51 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
   const canvasHeight = canvasSize?.height || 680;
 
   return (
-    <div className="fixed inset-0 z-[10000] overflow-y-auto">
+    <div className="fixed inset-0 z-[10000] overflow-y-auto bg-black/70 backdrop-blur-sm">
       {/* Backdrop - Modern blur */}
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0"
         onClick={onClose}
       />
 
-      {/* Modal - Modern & Minimalist */}
-      <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden mx-auto border border-gray-200/50">
-          {/* Close button - Modern */}
+      {/* Modal - Modern & Minimalist - Full screen on mobile */}
+      <div className="flex min-h-full items-center justify-center p-0 sm:p-4">
+        <div className="relative bg-white sm:rounded-2xl shadow-2xl w-full sm:max-w-4xl max-h-[100vh] sm:max-h-[90vh] overflow-hidden mx-auto border-0 sm:border border-gray-200/50 flex flex-col">
+          {/* Close button - Modern - Fixed position for mobile */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-50 p-2 bg-white/90 backdrop-blur-sm rounded-xl shadow-md hover:bg-gray-100 transition-all touch-target"
+            className="absolute top-2 right-2 sm:top-4 sm:right-4 z-50 p-2.5 bg-white/95 backdrop-blur-sm rounded-full sm:rounded-xl shadow-lg hover:bg-gray-100 transition-all"
             aria-label="Kapat"
           >
             <X className="h-5 w-5 text-gray-600" />
           </button>
           
-          {/* Header - Modern */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200/50 bg-gradient-to-r from-gray-50 to-white">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Davetiye Önizleme
+          {/* Header - Modern & Compact */}
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 bg-white">
+            <div className="pr-12">
+              <h2 className="text-base sm:text-xl font-bold text-gray-900">
+                Önizleme
               </h2>
               {isDraft && (
-                <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                  <span>⚠️</span> Taslak - Paylaşmak için yayınlayın
+                <p className="text-[10px] sm:text-xs text-amber-600 mt-0.5 flex items-center gap-1">
+                  <span>⚠️</span> Taslak
                 </p>
               )}
             </div>
-            {/* Spacer for close button */}
-            <div className="w-10"></div>
           </div>
 
-          {/* Preview Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+          {/* Preview Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 bg-gray-50 flex items-center justify-center">
             {/* Unified invitation canvas size in preview (same as editor canvas) */}
             <div 
               ref={previewRef}
-              className="bg-white rounded-lg shadow-lg overflow-hidden mx-auto relative"
+              className="bg-white rounded-lg shadow-2xl overflow-hidden mx-auto relative"
               style={{
                 width: `${canvasWidth}px`,
                 height: `${canvasHeight}px`,
-                maxWidth: '100%',
+                maxWidth: 'calc(100vw - 24px)',
+                transform: 'scale(1)',
+                transformOrigin: 'center center',
                 backgroundImage: invitationData.imagePosition === 'background' && invitationData.imageUrl
                   ? `url(${invitationData.imageUrl})`
                   : `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
@@ -470,85 +478,99 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
             </div>
           </div>
 
-          {/* Actions - Modern & Responsive */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 p-4 sm:p-6 border-t border-gray-200/50 bg-gradient-to-r from-white to-gray-50">
+        {/* Actions - Mobile-First Grid Layout */}
+        <div className="border-t border-gray-200 bg-white p-3 sm:p-4">
+          {/* Draft Warning - Mobile Optimized */}
+          {isDraft && (
+            <div className="mb-3 p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-xs text-amber-800 text-center font-medium">
+                ⚠️ Yayınlamadan paylaşım ve indirme yapılamaz
+              </p>
+            </div>
+          )}
+          
+          {/* Action Buttons - 3 Column Grid on Mobile */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {/* Share Button */}
             <button
               onClick={isDraft ? undefined : handleShare}
               disabled={isDraft || !invitation?.id}
-              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+              className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-3 sm:py-3.5 rounded-xl font-medium transition-all ${
                 isDraft || !invitation?.id
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-primary-500 hover:text-primary-600 hover:shadow-md'
+                  : 'bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg'
               }`}
               title={isDraft ? 'Paylaşmak için önce yayınlayın' : 'Paylaş'}
             >
-              <Share2 className="h-4 w-4" />
-              <span>Paylaş</span>
+              <Share2 className="h-5 w-5 sm:h-5 sm:w-5" />
+              <span className="text-xs sm:text-sm font-semibold">Paylaş</span>
             </button>
-            
+
             {/* PNG Export Button */}
             <button
               onClick={isDraft ? undefined : handleExportImage}
               disabled={isDraft || isExporting}
-              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
+              className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-3 sm:py-3.5 rounded-xl font-medium transition-all ${
                 isDraft || isExporting
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:shadow-md'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg'
               }`}
               title={isDraft ? 'İndirmek için önce yayınlayın' : 'PNG olarak indir'}
             >
               {isExporting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <ImageIcon className="h-4 w-4" />
+                <ImageIcon className="h-5 w-5 sm:h-5 sm:w-5" />
               )}
-              <span>PNG</span>
+              <span className="text-xs sm:text-sm font-semibold">PNG</span>
             </button>
 
             {/* PDF Export Button */}
             <button
               onClick={isDraft ? undefined : handleExportPDF}
               disabled={isDraft || isExporting}
-              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-medium transition-all shadow-sm ${
+              className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-4 py-3 sm:py-3.5 rounded-xl font-medium transition-all ${
                 isDraft || isExporting
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white hover:shadow-lg'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg'
               }`}
               title={isDraft ? 'İndirmek için önce yayınlayın' : 'PDF olarak indir'}
             >
               {isExporting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Download className="h-4 w-4" />
+                <Download className="h-5 w-5 sm:h-5 sm:w-5" />
               )}
-              <span>PDF İndir</span>
+              <span className="text-xs sm:text-sm font-semibold">PDF</span>
             </button>
           </div>
         </div>
+        </div>
       </div>
 
-      {/* Share Modal - PRO+ Feature - Portal to body with highest z-index */}
+      {/* Share Modal - PRO+ Feature - Mobile Optimized */}
       {showShareModal && invitation?.id && (
         <div className="fixed inset-0 z-[10001] overflow-y-auto">
           <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
             onClick={() => setShowShareModal(false)}
           />
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-scale-in">
+          <div className="flex min-h-full items-center justify-center p-3 sm:p-4">
+            <div className="relative bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full p-4 sm:p-6 animate-scale-in">
               <button
                 onClick={() => setShowShareModal(false)}
-                className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors z-10"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors z-10"
               >
                 <X className="h-5 w-5" />
               </button>
               
-              <SocialShareButtons
-                invitationUrl={`${window.location.origin}/i/${invitation.id}`}
-                title={invitationData.title}
-                message={invitationData.message || 'Size özel davetiyem!'}
-              />
+              <div className="pt-2">
+                <SocialShareButtons
+                  invitationUrl={`${window.location.origin}/i/${invitation.id}`}
+                  title={invitationData.title}
+                  message={invitationData.message || 'Size özel davetiyem!'}
+                />
+              </div>
             </div>
           </div>
         </div>

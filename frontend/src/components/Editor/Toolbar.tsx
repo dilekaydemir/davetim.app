@@ -39,7 +39,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   ];
 
   return (
-    <div className="w-16 md:w-20 bg-gray-900 text-white flex flex-col items-center py-4 gap-2 shadow-2xl overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+    <div className="w-16 md:w-20 bg-gray-900 text-white flex flex-col items-center py-4 gap-2 shadow-2xl overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
       {/* Logo */}
       <div className="mb-4 pb-4 border-b border-gray-700 w-full flex justify-center">
         <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center font-bold text-lg">
