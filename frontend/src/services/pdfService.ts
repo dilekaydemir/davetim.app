@@ -68,8 +68,16 @@ class PDFService {
     const height = targetHeight ?? element.offsetHeight;
     clone.style.width = `${width}px`;
     clone.style.height = `${height}px`;
-    clone.style.overflow = 'visible';
+    clone.style.minWidth = `${width}px`;
+    clone.style.minHeight = `${height}px`;
+    clone.style.maxWidth = `${width}px`;
+    clone.style.maxHeight = `${height}px`;
+    clone.style.overflow = 'hidden'; // Prevent any overflow
     clone.style.transform = 'none';
+    clone.style.margin = '0';
+    clone.style.padding = '0';
+    clone.style.border = 'none';
+    clone.style.boxSizing = 'border-box';
     
     // Add to DOM
     document.body.appendChild(clone);
@@ -99,11 +107,18 @@ class PDFService {
         width: width,
         height: height,
         
-        // POSITIONING
+        // POSITIONING - Exact positioning to prevent white space
         x: 0,
         y: 0,
         scrollX: 0,
         scrollY: 0,
+        
+        // Prevent any extra space
+        ignoreElements: (element) => {
+          // Ignore elements outside the target area
+          const rect = element.getBoundingClientRect();
+          return rect.left >= width || rect.top >= height;
+        },
         
         // IMAGE QUALITY
         imageTimeout: 30000,             // 30 seconds for images
@@ -194,7 +209,19 @@ class PDFService {
           // Fix root element
           clonedElement.style.position = 'relative';
           clonedElement.style.left = '0';
+          clonedElement.style.top = '0';
           clonedElement.style.transform = 'none';
+          clonedElement.style.width = `${width}px`;
+          clonedElement.style.height = `${height}px`;
+          clonedElement.style.minWidth = `${width}px`;
+          clonedElement.style.minHeight = `${height}px`;
+          clonedElement.style.maxWidth = `${width}px`;
+          clonedElement.style.maxHeight = `${height}px`;
+          clonedElement.style.overflow = 'hidden';
+          clonedElement.style.margin = '0';
+          clonedElement.style.padding = '0';
+          clonedElement.style.border = 'none';
+          clonedElement.style.boxSizing = 'border-box';
         }
       });
       

@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  
+  // Remove console logs in production
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,
@@ -44,4 +49,4 @@ export default defineConfig({
     force: true,
     include: ['react', 'react-dom', 'react-router-dom']
   }
-})
+}))

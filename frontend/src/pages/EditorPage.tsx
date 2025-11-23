@@ -664,7 +664,7 @@ const EditorPage: React.FC = () => {
   };
 
   const handleTogglePublish = async () => {
-    if (!invitation) return;
+    if (!invitation || !user) return;
     
     const newStatus = invitation.status === 'published' ? 'draft' : 'published';
     const statusText = newStatus === 'published' ? 'yayınlandı' : 'taslağa alındı';
@@ -691,16 +691,20 @@ const EditorPage: React.FC = () => {
       if (updated) {
         setInvitation(updated);
         
-        // Yayınlama başarılı, subscription'ı güncelle
+        // Yayınlama başarılı, usage counter'ı artır ve subscription'ı güncelle
         if (newStatus === 'published' && invitation.status === 'draft') {
-          // Subscription service'in counter'ını güncelle
+          // Import subscriptionService
+          const { subscriptionService } = await import('../services/subscriptionService');
+          await subscriptionService.incrementInvitationUsage(user.id);
+          
+          // Refresh subscription to get updated counters
           await subscription.refreshSubscription();
+          toast.success('Davetiye yayınlandı');
         } else {
           toast.success(`Davetiye ${statusText}`);
         }
       }
     } catch (error) {
-      console.error('Toggle publish error:', error);
       toast.error('Status güncellenemedi');
     }
   };

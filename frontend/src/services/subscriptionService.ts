@@ -506,6 +506,49 @@ class SubscriptionService {
   }
 
   /**
+   * Increment invitation usage counters when invitation is published
+   * Called when status changes from draft -> published
+   */
+  async incrementInvitationUsage(userId: string): Promise<boolean> {
+    try {
+      // Get current subscription
+      const subscription = await this.getUserSubscription(userId);
+      
+      if (!subscription) {
+        return false;
+      }
+
+      // Increment counters based on plan type
+      let updates: any = {};
+      
+      if (subscription.tier === 'free') {
+        // FREE: Increment lifetime counter
+        updates.invitations_created_lifetime = subscription.invitationsCreatedLifetime + 1;
+      } else if (subscription.tier === 'pro') {
+        // PRO: Increment both monthly and lifetime
+        updates.invitations_created_this_month = subscription.invitationsCreatedThisMonth + 1;
+        updates.invitations_created_lifetime = subscription.invitationsCreatedLifetime + 1;
+      }
+      // PREMIUM: No limits, no need to increment
+      
+      if (Object.keys(updates).length > 0) {
+        const { error } = await supabase
+          .from('subscriptions')
+          .update(updates)
+          .eq('user_id', userId);
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      return true;
+    } catch (error: any) {
+      return false;
+    }
+  }
+
+  /**
    * Check if user can cancel with refund (3 day policy)
    */
   canCancelWithRefund(subscriptionStartDate: string): { canRefund: boolean; daysLeft: number } {
