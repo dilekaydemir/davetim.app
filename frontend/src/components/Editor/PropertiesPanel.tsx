@@ -265,9 +265,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                 className="w-12 h-12 rounded-lg border-2 border-gray-200 cursor-pointer"
               />
               <div className="flex-1 grid grid-cols-5 gap-1">
-                {[colors.primary, colors.secondary, colors.text, colors.accent, '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00'].map((color) => (
+                {[colors.primary, colors.secondary, colors.text, colors.accent, '#000000', '#ffffff', '#ff0000', '#00ff00', '#0000ff', '#ffff00'].map((color, index) => (
                   <button
-                    key={color}
+                    key={`${color}-${index}`}
                     onClick={() => onUpdate({ 
                       style: { 
                         ...selectedElement.style, 

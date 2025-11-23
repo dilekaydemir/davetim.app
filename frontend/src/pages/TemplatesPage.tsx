@@ -57,7 +57,7 @@ const TemplatesPage: React.FC = () => {
       const searchToUse = overrideSearch !== undefined ? overrideSearch : debouncedSearchTerm;
       
       if (categoryToUse !== 'all') {
-        filters.categorySlug = categoryToUse;
+        filters.category = categoryToUse;
       }
       
       if (searchToUse) {

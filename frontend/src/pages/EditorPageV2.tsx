@@ -477,24 +477,180 @@ const EditorPageV2: React.FC = () => {
         };
         setColors(templateColors);
         
+        // Parse text fields from template
+        let initialElements: any[] = [];
+        
+        if (templateData.text_fields) {
+          try {
+            const parsedFields = typeof templateData.text_fields === 'string' 
+              ? JSON.parse(templateData.text_fields) 
+              : templateData.text_fields;
+              
+            if (Array.isArray(parsedFields)) {
+              initialElements = parsedFields.map((field: any, index: number) => ({
+                id: field.id || `text-${Date.now()}-${index}`,
+                type: 'text',
+                name: field.label || 'Metin',
+                content: field.defaultValue || '',
+                // Distribute vertically starting from 20% top
+                position: { x: 50, y: 20 + (index * 12) }, 
+                size: { width: 400, height: 60 },
+                rotation: 0,
+                opacity: 1,
+                visible: true,
+                locked: false,
+                zIndex: 300 + index,
+                style: {
+                  fontSize: field.style?.fontSize || 16,
+                  fontWeight: field.style?.fontWeight || 'normal',
+                  fontFamily: field.style?.fontFamily || 'Playfair Display',
+                  color: field.style?.color || templateColors.text,
+                  textAlign: field.style?.textAlign || 'center',
+                  fontStyle: field.style?.fontStyle || 'normal',
+                  textDecoration: field.style?.textDecoration || 'none'
+                }
+              }));
+            }
+          } catch (e) {
+            console.error('Error parsing template text fields:', e);
+          }
+        }
+
+        // If no text fields in template, add defaults
+        if (initialElements.length === 0) {
+           const dateContent = new Date().toISOString().split('T')[0];
+           
+           initialElements.push(
+             {
+               id: 'title',
+               type: 'text',
+               name: 'Başlık',
+               content: templateData.name || 'Etkinlik Başlığı',
+               position: { x: 50, y: 20 },
+               size: { width: 400, height: 80 },
+               rotation: 0,
+               opacity: 1,
+               visible: true,
+               locked: false,
+               zIndex: 300,
+               style: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
+             },
+             {
+               id: 'date',
+               type: 'text',
+               name: 'Tarih',
+               content: dateContent,
+               position: { x: 50, y: 40 },
+               size: { width: 300, height: 40 },
+               rotation: 0,
+               opacity: 1,
+               visible: true,
+               locked: false,
+               zIndex: 301,
+               style: { fontSize: 18, textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
+             },
+             {
+               id: 'message',
+               type: 'text',
+               name: 'Mesaj',
+               content: 'Bu özel günümüzde yanımızda olmanız dileğiyle...',
+               position: { x: 50, y: 55 },
+               size: { width: 400, height: 60 },
+               rotation: 0,
+               opacity: 1,
+               visible: true,
+               locked: false,
+               zIndex: 302,
+               style: { fontSize: 14, textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
+             }
+           );
+        }
+
+        // Extract initial form data from text elements
+        let initialTitle = templateData.name || 'Etkinlik Davetiyesi';
+        let initialDate = new Date().toISOString().split('T')[0]; // Default valid date for DB
+        let initialTime = '19:00';
+        let initialLocation = '';
+        let initialMessage = '';
+
+        initialElements.forEach(el => {
+          const id = el.id.toLowerCase();
+          let content = el.content || '';
+          
+          // Title matching
+          if (id.includes('header') || id.includes('title') || id === 'davet') {
+            initialTitle = content;
+          } 
+          // Date matching
+          else if (id.includes('date') || id.includes('tarih') || id.includes('zaman')) {
+            // Try to parse date for DB if it looks like a date
+            const parsedDate = Date.parse(content);
+            if (!isNaN(parsedDate)) {
+               try {
+                 initialDate = new Date(parsedDate).toISOString().split('T')[0];
+               } catch {}
+            }
+          } 
+          // Time matching
+          else if (id.includes('time') || id.includes('saat')) {
+            initialTime = content;
+          } 
+          // Location matching - Expanded keywords
+          else if (['loc', 'venue', 'mekan', 'yer', 'place', 'location', 'address', 'adres'].some(k => id.includes(k))) {
+            initialLocation = content;
+          } 
+          // Message matching - Expanded keywords
+          else if (['msg', 'message', 'metin', 'quote', 'story', 'welcome', 'invite', 'info', 'details', 'text', 'soz', 'söz'].some(k => id.includes(k))) {
+            // If content is empty, set default message directly to the element
+            if (!content || content.trim() === '') {
+                content = `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`;
+                el.content = content; // Update the element content so it shows in editor
+            }
+
+            // If we already have a message and this is 'info' or 'details', it might be secondary info
+            // but usually templates have one main message block. 
+            // Let's prioritize clearer IDs like 'msg' or 'invite' if possible, otherwise take last match
+            if (!initialMessage || id.includes('msg') || id.includes('invite') || id.includes('welcome')) {
+               initialMessage = content;
+            } else if (!initialMessage) {
+               initialMessage = content;
+            }
+          }
+        });
+
         // Create new invitation
         const templateImageUrl = getTemplateFullUrl(templateData.default_image_url || templateData.thumbnail_url);
         
         const newInvitation = await invitationService.createInvitation({
           template_id: templateData.id,
-          title: `${templateData.category || 'Etkinlik'} Davetiyesi`,
+          title: initialTitle,
           event_type: templateData.category || '',
+          event_date: initialDate, // DB requires YYYY-MM-DD
+          event_time: initialTime,
+          event_location_name: initialLocation,
           image_url: templateImageUrl,
           content: {
             colors: templateColors,
             imagePosition: 'background',
             logoShape: 'circle',
-            message: `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`
+            message: initialMessage || `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`,
+            textElements: initialElements
           }
         });
         
         if (newInvitation) {
           setInvitation(newInvitation);
+          // Update form data immediately
+          setFormData({
+            title: initialTitle,
+            eventDate: initialDate, // Keep synced with DB
+            eventTime: initialTime,
+            location: initialLocation,
+            customMessage: initialMessage,
+            imageUrl: templateImageUrl,
+            imagePosition: 'background',
+            logoShape: 'circle'
+          });
           navigate(`/editor/${newInvitation.id}`, { replace: true });
         }
       }
