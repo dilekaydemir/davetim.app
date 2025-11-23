@@ -118,8 +118,11 @@ Buna rağmen:
 6.2. Satıcı Hakları:
 • Hizmet koşullarını değiştirme (önceden bildirerek)
 • Kötüye kullanım durumunda hesabı askıya alma
-• Yasal yükümlülükler için gerekli bilgileri sakla ma
+• Yasal yükümlülükler için gerekli bilgileri saklama
 • Ödeme tahsil etme
+
+6.3. QR Kod ve Medya Güvenliği:
+ALICI, oluşturulan davetiyelerdeki QR kodlar aracılığıyla yüklenen veya erişilen medyaların güvenliğinden bizzat sorumludur. QR kodun üçüncü şahıslarla paylaşılması, çalınması veya yetkisiz kişilerce taranması sonucu medyalara erişim sağlanması durumunda, SATICI hiçbir sorumluluk kabul etmez. ALICI, QR kodların paylaşımı konusunda gerekli hassasiyeti göstermekle yükümlüdür.
 
 7. ALICI'NIN HAK VE YÜKÜMLÜLÜKLERİ
 7.1. Alıcı Yükümlülükleri:
