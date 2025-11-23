@@ -870,9 +870,17 @@ const EditorPageV2: React.FC = () => {
     }
 
     try {
-      const updated = await invitationService.updateInvitation(invitation.id, {
+      const updateData: any = {
         status: newStatus
-      });
+      };
+
+      // Eğer yayınlanıyorsa public yap ve tarih at
+      if (newStatus === 'published') {
+        updateData.is_public = true;
+        updateData.published_at = new Date().toISOString();
+      }
+
+      const updated = await invitationService.updateInvitation(invitation.id, updateData);
 
       if (updated) {
         setInvitation(updated);
