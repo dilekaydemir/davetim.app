@@ -691,12 +691,8 @@ const EditorPage: React.FC = () => {
       if (updated) {
         setInvitation(updated);
         
-        // Yayınlama başarılı, usage counter'ı artır ve subscription'ı güncelle
+        // Yayınlama başarılı, subscription'ı güncelle
         if (newStatus === 'published' && invitation.status === 'draft') {
-          // Import subscriptionService
-          const { subscriptionService } = await import('../services/subscriptionService');
-          await subscriptionService.incrementInvitationUsage(user.id);
-          
           // Refresh subscription to get updated counters
           await subscription.refreshSubscription();
           toast.success('Davetiye yayınlandı');

@@ -449,103 +449,81 @@ class SubscriptionService {
   }
 
   /**
-   * Check if user has reached their invitation creation limit
-   * Returns: { allowed: boolean, reason?: string, remaining?: number | 'unlimited' }
+   * Get real-time invitation usage counts from DB
    */
-  canCreateInvitation(subscription?: Subscription | null): { allowed: boolean; reason?: string; remaining?: number | 'unlimited' } {
-    if (!subscription) {
-      return { allowed: false, reason: 'Abonelik bilgisi bulunamadı' };
+  async getInvitationUsage(userId: string) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    try {
+      // 1. Lifetime Published Count (status = 'published')
+      const { count: lifetimeCount } = await supabase
+        .from('invitations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'published');
+
+      // 2. Monthly Published Count (status = 'published' AND published_at >= startOfMonth)
+      const { count: monthlyCount } = await supabase
+        .from('invitations')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('status', 'published')
+        .gte('published_at', startOfMonth);
+
+      return {
+        lifetime: lifetimeCount || 0,
+        monthly: monthlyCount || 0
+      };
+    } catch (error) {
+      console.error('Error fetching invitation counts:', error);
+      return { lifetime: 0, monthly: 0 };
     }
-
-    // PREMIUM - Unlimited
-    if (subscription.tier === 'premium') {
-      return { allowed: true, remaining: 'unlimited' };
-    }
-
-    // Get plan configuration
-    const planConfig = PLAN_CONFIGS[subscription.tier];
-    if (!planConfig) {
-      return { allowed: false, reason: 'Geçersiz abonelik planı' };
-    }
-
-    // PRO - Monthly limit
-    if (subscription.tier === 'pro') {
-      const limit = planConfig.limits.invitationsPerMonth as number;
-      const used = subscription.invitationsCreatedThisMonth;
-      const remaining = limit - used;
-
-      if (remaining <= 0) {
-        return {
-          allowed: false,
-          reason: `Bu ay ${limit} davetiye hakkınızı kullandınız. Daha fazla davetiye için PREMIUM plana yükseltin veya ay sonunu bekleyin.`,
-          remaining: 0
-        };
-      }
-
-      return { allowed: true, remaining };
-    }
-
-    // FREE - Lifetime limit (tek kullanımlık)
-    if (subscription.tier === 'free') {
-      const limit = planConfig.limits.invitationsLifetime || 1;
-      const used = subscription.invitationsCreatedLifetime;
-      const remaining = limit - used;
-
-      if (remaining <= 0) {
-        return {
-          allowed: false,
-          reason: `Ücretsiz planda ${limit} davetiye hakkınızı kullandınız. Daha fazla davetiye için PRO (₺79/ay, 3 davetiye) veya PREMIUM (₺129/ay, sınırsız) plana yükseltin.`,
-          remaining: 0
-        };
-      }
-
-      return { allowed: true, remaining };
-    }
-
-    return { allowed: false, reason: 'Geçersiz abonelik planı' };
   }
 
   /**
-   * Increment invitation usage counters when invitation is published
-   * Called when status changes from draft -> published
+   * Check creation limits using REAL-TIME counts
    */
-  async incrementInvitationUsage(userId: string): Promise<boolean> {
-    try {
-      // Get current subscription
-      const subscription = await this.getUserSubscription(userId);
-      
-      if (!subscription) {
-        return false;
-      }
-
-      // Increment counters based on plan type
-      let updates: any = {};
-      
-      if (subscription.tier === 'free') {
-        // FREE: Increment lifetime counter
-        updates.invitations_created_lifetime = subscription.invitationsCreatedLifetime + 1;
-      } else if (subscription.tier === 'pro') {
-        // PRO: Increment both monthly and lifetime
-        updates.invitations_created_this_month = subscription.invitationsCreatedThisMonth + 1;
-        updates.invitations_created_lifetime = subscription.invitationsCreatedLifetime + 1;
-      }
-      // PREMIUM: No limits, no need to increment
-      
-      if (Object.keys(updates).length > 0) {
-        const { error } = await supabase
-          .from('subscriptions')
-          .update(updates)
-          .eq('user_id', userId);
-
-        if (error) {
-          throw error;
-        }
-      }
-
-      return true;
-    } catch (error: any) {
-      return false;
+  async checkInvitationLimits(userId: string, tier: PlanTier): Promise<{ allowed: boolean; reason?: string; remaining?: number | 'unlimited' }> {
+    // PREMIUM - Unlimited
+    if (tier === 'premium') {
+      return { allowed: true, remaining: 'unlimited' };
     }
+
+    const planConfig = PLAN_CONFIGS[tier];
+    const usage = await this.getInvitationUsage(userId);
+
+    // PRO - Monthly limit
+    if (tier === 'pro') {
+      const limit = planConfig.limits.invitationsPerMonth as number;
+      const remaining = Math.max(0, limit - usage.monthly);
+
+      if (remaining <= 0) {
+        return {
+          allowed: false,
+          reason: `Bu ay ${limit} davetiye hakkınızı kullandınız (Yayınlanan: ${usage.monthly}). Yeni ayda sıfırlanacaktır.`,
+          remaining: 0
+        };
+      }
+      return { allowed: true, remaining };
+    }
+
+    // FREE - Lifetime limit
+    if (tier === 'free') {
+      const limit = planConfig.limits.invitationsLifetime || 1;
+      const remaining = Math.max(0, limit - usage.lifetime);
+
+      if (remaining <= 0) {
+        return {
+          allowed: false,
+          reason: `Ücretsiz planda ${limit} davetiye hakkınızı kullandınız.`,
+          remaining: 0
+        };
+      }
+      return { allowed: true, remaining };
+    }
+
+    return { allowed: false, reason: 'Plan bilgisi hatalı' };
   }
 
   /**

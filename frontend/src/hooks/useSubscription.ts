@@ -5,7 +5,7 @@
  * kolayca kullanmak için React hook.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../store/authStore';
 import { subscriptionService, Subscription } from '../services/subscriptionService';
 import { PlanTier, getPlanConfig, DEFAULT_PLAN, PlanConfig, needsUpgrade } from '../config/plans';
@@ -50,15 +50,30 @@ export interface UseSubscriptionReturn {
   refreshSubscription: () => Promise<void>;
 }
 
+// Helper to check subscription validity
+const checkSubscriptionValidity = (sub: Subscription | null): boolean => {
+  if (!sub) return false;
+  
+  const now = new Date();
+  const endDate = sub.endDate ? new Date(sub.endDate) : null;
+  const isEndDateValid = endDate && endDate > now;
+  
+  return sub.status === 'active' || 
+         sub.status === 'trialing' ||
+         (sub.status === 'cancelled' && isEndDateValid);
+};
+
 export function useSubscription(): UseSubscriptionReturn {
   const { user } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [usage, setUsage] = useState({ lifetime: 0, monthly: 0 });
   const [isLoading, setIsLoading] = useState(true);
   
   // Abonelik bilgilerini yükle
-  const loadSubscription = async () => {
+  const loadSubscription = useCallback(async () => {
     if (!user?.id) {
       setSubscription(null);
+      setUsage({ lifetime: 0, monthly: 0 });
       setIsLoading(false);
       return;
     }
@@ -67,19 +82,21 @@ export function useSubscription(): UseSubscriptionReturn {
     try {
       const sub = await subscriptionService.getUserSubscription(user.id);
       setSubscription(sub);
+      
+      // Load real-time usage
+      const counts = await subscriptionService.getInvitationUsage(user.id);
+      setUsage(counts);
     } catch (error) {
       console.error('❌ Load subscription error:', error);
       setSubscription(null);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
   
-  // İlk yüklemede ve user ID değiştiğinde (sadece ID'yi izle, tüm user objesini değil!)
   useEffect(() => {
     loadSubscription();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [loadSubscription]);
   
   // Listen for subscription update events
   useEffect(() => {
@@ -93,11 +110,14 @@ export function useSubscription(): UseSubscriptionReturn {
     return () => {
       window.removeEventListener('subscription-updated', handleSubscriptionUpdate);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadSubscription]);
   
   // Plan bilgileri - tier field'ini kullan (planId yok)
-  const currentPlan = subscription?.tier || DEFAULT_PLAN;
+  // Eğer abonelik geçersizse (expire olmuşsa) FREE olarak davran
+  const currentPlan = (subscription && checkSubscriptionValidity(subscription)) 
+    ? subscription.tier 
+    : DEFAULT_PLAN;
+  
   const planConfig = getPlanConfig(currentPlan);
   const planName = planConfig.name;
   
@@ -107,40 +127,22 @@ export function useSubscription(): UseSubscriptionReturn {
   const isPremiumPlan = currentPlan === 'premium';
   const isBusinessPlan = false; // Kurumsal planlar kaldırıldı
   
-  /**
-   * Aboneliğin geçerli olup olmadığını kontrol eder
-   * - active: Aktif abonelik
-   * - trialing: Deneme sürümü
-   * - cancelled: İptal edilmiş ama end_date henüz geçmemiş
-   */
-  const isSubscriptionValid = (sub: typeof subscription): boolean => {
-    if (!sub) return false;
-    
-    const now = new Date();
-    const endDate = sub.endDate ? new Date(sub.endDate) : null;
-    const isEndDateValid = endDate && endDate > now;
-    
-    return sub.status === 'active' || 
-           sub.status === 'trialing' ||
-           (sub.status === 'cancelled' && isEndDateValid);
-  };
-  
   // Özellik kontrol fonksiyonları
   const checkFeatureAccess = async (feature: string) => {
     if (!user?.id) {
       return { allowed: false, reason: 'Lütfen giriş yapın' };
     }
     
-    // Get current subscription
+    // Get current subscription (fresh)
     const currentSubscription = await subscriptionService.getUserSubscription(user.id);
     
-    // Abonelik geçerli mi kontrol et (cancelled ama end_date geçmemişse geçerli)
-    if (currentSubscription && !isSubscriptionValid(currentSubscription)) {
-      return { allowed: false, reason: 'Aboneliğinizin süresi dolmuş' };
-    }
-    
-    // Check feature access
-    const allowed = subscriptionService.canAccessFeature(feature, currentSubscription);
+    // Effective subscription logic:
+    // If no subscription or invalid (expired), treat as FREE tier for feature checks
+    const effectiveSubscription = (currentSubscription && checkSubscriptionValidity(currentSubscription))
+      ? currentSubscription
+      : { ...(currentSubscription || { id: 'mock', userId: user.id }), tier: 'free' } as Subscription;
+      
+    const allowed = subscriptionService.canAccessFeature(feature, effectiveSubscription);
     
     return { 
       allowed, 
@@ -157,23 +159,20 @@ export function useSubscription(): UseSubscriptionReturn {
     // Get current subscription
     const currentSubscription = await subscriptionService.getUserSubscription(user.id);
     
-    if (!currentSubscription) {
-      return { allowed: false, reason: 'Abonelik bilgisi bulunamadı' };
-    }
+    // Eğer abonelik expire ise (veya yoksa), FREE plan limitlerine göre kontrol et
+    const tier = (currentSubscription && checkSubscriptionValidity(currentSubscription)) 
+      ? currentSubscription.tier 
+      : 'free';
     
-    // Abonelik geçerli mi kontrol et (cancelled ama end_date geçmemişse geçerli)
-    if (!isSubscriptionValid(currentSubscription)) {
-      return { allowed: false, reason: 'Aboneliğinizin süresi dolmuş. Yenilemek için Hesabım sayfasını ziyaret edin.' };
-    }
-    
-    // Check invitation creation limit (usage limit, not feature access)
-    const result = subscriptionService.canCreateInvitation(currentSubscription);
+    // Check invitation creation limit (usage limit) using REAL-TIME counts
+    const result = await subscriptionService.checkInvitationLimits(user.id, tier);
     
     return {
       allowed: result.allowed,
       reason: result.reason
     };
   };
+  
   const canAccessPremiumTemplates = () => checkFeatureAccess('premium_templates');
   const canUploadImage = () => checkFeatureAccess('image_upload');
   const canShareWhatsApp = () => checkFeatureAccess('whatsapp_sharing');
@@ -187,14 +186,17 @@ export function useSubscription(): UseSubscriptionReturn {
       return { allowed: false, reason: 'Abonelik bilgisi bulunamadı' };
     }
     
-    // Önce image upload yetkisi var mı kontrol et
+    // Önce image upload yetkisi var mı kontrol et (Expire durumu checkFeatureAccess içinde yönetiliyor)
     const imageAccess = await canUploadImage();
     if (!imageAccess.allowed) {
       return imageAccess;
     }
     
     // Storage limitini kontrol et
-    const remainingStorage = planConfig.limits.storageMB - subscription.storageUsedMB;
+    // Not: storageUsedMb veritabanında snake_case olabilir ama mapped objede camelCase
+    // Interface'e göre: storageUsedMb. Ancak kodda bazen storageUsedMB kullanılmış olabilir.
+    // subscriptionService'deki mapToSubscription: storageUsedMb
+    const remainingStorage = planConfig.limits.storageMB - subscription.storageUsedMb;
     
     if (fileSizeMB > remainingStorage) {
       return {
@@ -208,11 +210,7 @@ export function useSubscription(): UseSubscriptionReturn {
   
   // Guest sayısı kontrolü
   const canAddGuest = async (invitationId: string, currentGuestCount: number): Promise<{ allowed: boolean; reason?: string }> => {
-    if (!subscription) {
-      return { allowed: false, reason: 'Abonelik bilgisi bulunamadı' };
-    }
-    
-    const maxGuests = planConfig.limits.maxGuestsPerInvitation;
+    const maxGuests = planConfig.limits.maxGuestsPerInvitation; // planConfig zaten currentPlan'a göre (expire ise free)
     
     // Unlimited kontrolü
     if (maxGuests === 'unlimited') {
@@ -236,23 +234,23 @@ export function useSubscription(): UseSubscriptionReturn {
   };
   
   const getRemainingInvitations = (): number | 'unlimited' => {
-    if (!subscription) return 0;
-    
-    const limit = planConfig.limits.invitationsPerMonth;
+    const limit = planConfig.limits.invitationsPerMonth; // planConfig expire ise free döner
     
     if (limit === 'unlimited') {
       return 'unlimited';
     }
     
     // Free plan - lifetime limit
+    // EĞER planConfig.limits.invitationsPerMonth 0 ise (Free plan)
+    // VE lifetime limit tanımlı ise
     if (limit === 0 && planConfig.limits.invitationsLifetime) {
-      const remaining = planConfig.limits.invitationsLifetime - subscription.invitationsCreatedLifetime;
+      const remaining = planConfig.limits.invitationsLifetime - usage.lifetime;
       return Math.max(0, remaining);
     }
     
-    // Aylık limit
+    // Aylık limit (PRO)
     if (typeof limit === 'number') {
-      const remaining = limit - subscription.invitationsCreatedThisMonth;
+      const remaining = limit - usage.monthly;
       return Math.max(0, remaining);
     }
     
@@ -262,7 +260,7 @@ export function useSubscription(): UseSubscriptionReturn {
   const getStorageUsagePercentage = (): number => {
     if (!subscription) return 0;
     
-    const used = subscription.storageUsedMB;
+    const used = subscription.storageUsedMb;
     const total = planConfig.limits.storageMB;
     
     return Math.min(100, Math.round((used / total) * 100));
@@ -271,7 +269,7 @@ export function useSubscription(): UseSubscriptionReturn {
   const getRemainingStorageMB = (): number => {
     if (!subscription) return 0;
     
-    const used = subscription.storageUsedMB;
+    const used = subscription.storageUsedMb;
     const total = planConfig.limits.storageMB;
     
     return Math.max(0, total - used);
@@ -290,22 +288,9 @@ export function useSubscription(): UseSubscriptionReturn {
 
   /**
    * Belirli bir tier'daki şablona erişebilir mi?
-   * 
-   * FREE user: sadece 'free' şablonlara erişebilir
-   * PRO user: 'free' ve 'pro' şablonlara erişebilir
-   * PREMIUM user: tüm şablonlara erişebilir
-   * 
-   * ÖNEMLİ: İptal edilmiş abonelikler (cancelled) için de end_date'e kadar erişim devam eder!
    */
   const canAccessTemplate = (templateTier: 'free' | 'pro' | 'premium'): boolean => {
-    if (!subscription || !planConfig) return templateTier === 'free';
-    
-    // Abonelik geçersizse sadece free şablonlara erişebilir
-    if (!isSubscriptionValid(subscription)) {
-      return templateTier === 'free';
-    }
-    
-    // Abonelik geçerliyse tier'a göre kontrol et
+    // currentPlan zaten expire durumunu içeriyor
     const userAccessLevel = planConfig.limits.templateAccessLevel;
     
     // FREE user
@@ -323,20 +308,15 @@ export function useSubscription(): UseSubscriptionReturn {
   };
 
   return {
-    // Abonelik bilgileri
     subscription,
     planConfig,
     isLoading,
-    
-    // Plan bilgileri
     currentPlan,
     planName,
     isFreePlan,
     isProPlan,
     isPremiumPlan,
     isBusinessPlan,
-    
-    // Özellik kontrolleri
     canCreateInvitation,
     canAccessPremiumTemplates,
     canAccessTemplate,
@@ -347,19 +327,12 @@ export function useSubscription(): UseSubscriptionReturn {
     canUseAIDesign,
     canUploadImageWithSize,
     canAddGuest,
-    
-    // Genel kontrol
     checkFeatureAccess,
-    
-    // Yardımcılar
     needsUpgradeFor,
     getRemainingInvitations,
     getStorageUsagePercentage,
     getRemainingStorageMB,
     canCancelWithRefund,
-    
-    // Refresh
     refreshSubscription,
   };
 }
-

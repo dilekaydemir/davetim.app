@@ -360,6 +360,8 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                     />
                   </div>
                 )}
+
+
               {/* Text Elements - Generic rendering (same logic as editor canvas) */}
               {textElements && textElements.length > 0 && textElements.map((elem) => {
                 if (!elem.visible) return null;
@@ -475,6 +477,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                   </div>
                 ))}
               </div>
+
             </div>
           </div>
 

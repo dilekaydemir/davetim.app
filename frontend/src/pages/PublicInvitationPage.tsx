@@ -263,7 +263,7 @@ const PublicInvitationPage: React.FC = () => {
             />
           )}
 
-          {/* FREE Plan Watermark - davetim.app branding (moved outside as footer) */}
+          {/* FREE Plan watermark kaldırıldı */}
 
           {/* QR Code - Dynamic Position */}
           {qrMedia?.qr_image_url && invitation.settings?.showQrOnDesign && (
