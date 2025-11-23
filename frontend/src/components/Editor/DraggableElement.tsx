@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Maximize2, RotateCw, Trash2, Copy, Lock, Unlock } from 'lucide-react';
+import { RotateCw, Trash2, Copy, Lock, Unlock } from 'lucide-react';
 
 interface DraggableElementProps {
   id: string;
@@ -22,6 +22,7 @@ interface DraggableElementProps {
     size?: { width: number; height: number };
     rotation?: number;
     opacity?: number;
+    content?: string;
   }) => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
@@ -67,6 +68,7 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
   const centerRef = useRef({ x: 0, y: 0 });
   const clickTimeout = useRef<NodeJS.Timeout | null>(null);
 
+  // Mouse Handlers
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     if ((e.target as HTMLElement).closest('.control-button')) return;
@@ -75,7 +77,6 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
 
     // Double-click detection for text elements
     if (type === 'text' && clickTimeout.current) {
-      // Double click detected
       clearTimeout(clickTimeout.current);
       clickTimeout.current = null;
       handleDoubleClick();
@@ -83,7 +84,6 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       return;
     }
 
-    // Single click - start drag
     clickTimeout.current = setTimeout(() => {
       clickTimeout.current = null;
     }, 300);
@@ -98,6 +98,30 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       y: e.clientY - position.y
     };
     e.preventDefault();
+  };
+
+  // Touch Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('.control-button')) return;
+    if (locked) return;
+    if (isEditing) return;
+
+    // Prevent default to stop scrolling while dragging
+    // e.preventDefault(); // Sometimes problematic with input focus
+
+    const touch = e.touches[0];
+
+    // Double-tap detection logic could be added here similar to clickTimeout
+    
+    setIsDragging(true);
+    setIsSelected(true);
+    if (onSelect) {
+      onSelect(id);
+    }
+    dragStartPos.current = {
+      x: touch.clientX - position.x,
+      y: touch.clientY - position.y
+    };
   };
 
   const handleDoubleClick = () => {
@@ -126,6 +150,16 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
     dragStartPos.current = { x: e.clientX, y: e.clientY };
   };
 
+  const handleResizeTouchStart = (e: React.TouchEvent) => {
+    if (locked) return;
+    e.stopPropagation();
+    const touch = e.touches[0];
+    setIsResizing(true);
+    setIsSelected(true);
+    resizeStartSize.current = { ...size };
+    dragStartPos.current = { x: touch.clientX, y: touch.clientY };
+  };
+
   const handleRotateStart = (e: React.MouseEvent) => {
     if (locked) return;
     if (!containerRef.current || !elementRef.current) return;
@@ -133,7 +167,6 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
     setIsRotating(true);
     setIsSelected(true);
     
-    const containerRect = containerRef.current.getBoundingClientRect();
     const elementRect = elementRef.current.getBoundingClientRect();
     
     // Calculate center of element in screen coordinates
@@ -146,6 +179,28 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
     const angle = Math.atan2(
       e.clientY - centerRef.current.y,
       e.clientX - centerRef.current.x
+    );
+    rotateStartAngle.current = (angle * 180 / Math.PI) - rotation;
+  };
+
+  const handleRotateTouchStart = (e: React.TouchEvent) => {
+    if (locked) return;
+    if (!containerRef.current || !elementRef.current) return;
+    e.stopPropagation();
+    const touch = e.touches[0];
+    setIsRotating(true);
+    setIsSelected(true);
+    
+    const elementRect = elementRef.current.getBoundingClientRect();
+    
+    centerRef.current = {
+      x: elementRect.left + elementRect.width / 2,
+      y: elementRect.top + elementRect.height / 2
+    };
+    
+    const angle = Math.atan2(
+      touch.clientY - centerRef.current.y,
+      touch.clientX - centerRef.current.x
     );
     rotateStartAngle.current = (angle * 180 / Math.PI) - rotation;
   };
@@ -221,27 +276,105 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
       setIsRotating(false);
     };
 
+    // Touch Event Handlers for Document
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!containerRef.current) return;
+      if (e.cancelable) e.preventDefault(); // Prevent scrolling
+
+      const touch = e.touches[0];
+      const containerRect = containerRef.current.getBoundingClientRect();
+
+      if (isDragging) {
+        const newX = touch.clientX;
+        const newY = touch.clientY;
+        const xPercent = ((newX - containerRect.left) / containerRect.width) * 100;
+        const yPercent = ((newY - containerRect.top) / containerRect.height) * 100;
+
+        onUpdate({
+          position: {
+            x: Math.max(5, Math.min(95, xPercent)),
+            y: Math.max(5, Math.min(95, yPercent))
+          }
+        });
+      } else if (isResizing) {
+        const deltaX = touch.clientX - dragStartPos.current.x;
+        const deltaY = touch.clientY - dragStartPos.current.y;
+        
+        if (resizeMode === 'horizontal') {
+          onUpdate({
+            size: {
+              width: Math.max(30, resizeStartSize.current.width + deltaX),
+              height: resizeStartSize.current.height
+            }
+          });
+        } else if (resizeMode === 'vertical') {
+          onUpdate({
+            size: {
+              width: resizeStartSize.current.width,
+              height: Math.max(30, resizeStartSize.current.height + deltaY)
+            }
+          });
+        } else {
+          onUpdate({
+            size: {
+              width: Math.max(30, resizeStartSize.current.width + deltaX),
+              height: Math.max(30, resizeStartSize.current.height + deltaY)
+            }
+          });
+        }
+      } else if (isRotating) {
+        const angle = Math.atan2(
+          touch.clientY - centerRef.current.y,
+          touch.clientX - centerRef.current.x
+        );
+        const degrees = angle * 180 / Math.PI;
+        const newRotation = (degrees - rotateStartAngle.current + 360) % 360;
+
+        onUpdate({
+          rotation: Math.round(newRotation)
+        });
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+      setIsResizing(false);
+      setIsRotating(false);
+    };
+
     if (isDragging || isResizing || isRotating) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      // Add touch listeners with passive: false to allow preventDefault
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
 
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [isDragging, isResizing, isRotating, onUpdate, containerRef]);
+  }, [isDragging, isResizing, isRotating, onUpdate, containerRef, resizeMode]); // Added resizeMode dependency
 
   // Click outside to deselect
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
       if (elementRef.current && !elementRef.current.contains(e.target as Node)) {
-        setIsSelected(false);
+        // Only deselect if not clicking on toolbar buttons
+        if (!(e.target as HTMLElement).closest('.control-button')) {
+           setIsSelected(false);
+        }
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside); // Add touch listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   // Sync internal selection with controlled prop (for toolbar-based selection)
@@ -255,6 +388,7 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
     <div
       ref={elementRef}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
       style={{
         position: 'absolute',
         left: `${position.x}%`,
@@ -474,6 +608,7 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
               {/* Resize Handle (bottom-right corner) */}
               <div
                 onMouseDown={handleResizeStart}
+                onTouchStart={handleResizeTouchStart}
                 style={{
                   position: 'absolute',
                   bottom: -6,
@@ -492,6 +627,7 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
               {/* Rotation Handle (top-center) */}
               <div
                 onMouseDown={handleRotateStart}
+                onTouchStart={handleRotateTouchStart}
                 style={{
                   position: 'absolute',
                   top: -24,
@@ -520,4 +656,3 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({
     </div>
   );
 };
-

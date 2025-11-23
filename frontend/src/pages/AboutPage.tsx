@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Sparkles, Users, Zap, Shield, TrendingUp, Award, Target } from 'lucide-react';
+import { Heart, Sparkles, Users, Zap, Shield, Award, Target } from 'lucide-react';
 import { SEOHead } from '../components/SEO/SEOHead';
 
 const AboutPage: React.FC = () => {
@@ -32,13 +32,6 @@ const AboutPage: React.FC = () => {
       title: 'Kaliteli',
       description: 'Profesyonel tasarımcılar tarafından hazırlanan premium şablonlar'
     },
-  ];
-
-  const milestones = [
-    { year: '2024', title: 'Kuruluş', description: 'Davetim.app hayata geçti' },
-    { year: '2024', title: 'İlk 1000 Kullanıcı', description: 'Hızlı büyüme başladı' },
-    { year: '2024', title: 'QR Medya', description: 'QR kod ile fotoğraf paylaşımı' },
-    { year: '2025', title: 'Premium Özellikler', description: 'Gelişmiş analitik ve raporlama' },
   ];
 
   return (
@@ -218,62 +211,6 @@ const AboutPage: React.FC = () => {
                   <p className="text-sm text-gray-600">
                     {value.description}
                   </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Milestones Section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-100 rounded-full mb-6">
-              <TrendingUp className="h-4 w-4 text-primary-600" />
-              <span className="text-sm font-semibold text-primary-700">Yolculuğumuz</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Önemli Kilometre Taşları
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Davetim.app'in gelişim hikayesi
-            </p>
-          </div>
-
-          <div className="relative">
-            {/* Timeline Line */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gradient-to-b from-primary-500 to-purple-500 hidden lg:block"></div>
-
-            <div className="space-y-12">
-              {milestones.map((milestone, index) => (
-                <div
-                  key={index}
-                  className={`flex flex-col lg:flex-row items-center gap-8 ${
-                    index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
-                  }`}
-                >
-                  {/* Content */}
-                  <div className="flex-1">
-                    <div className={`bg-white rounded-2xl p-6 shadow-lg border border-gray-200 ${
-                      index % 2 === 0 ? 'lg:text-right' : 'lg:text-left'
-                    }`}>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary-100 rounded-full mb-3">
-                        <span className="text-sm font-bold text-primary-700">{milestone.year}</span>
-                      </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        {milestone.title}
-                      </h3>
-                      <p className="text-gray-600">
-                        {milestone.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Dot */}
-                  <div className="hidden lg:block w-4 h-4 bg-primary-600 rounded-full border-4 border-white shadow-lg z-10"></div>
-
-                  {/* Spacer */}
-                  <div className="flex-1 hidden lg:block"></div>
                 </div>
               ))}
             </div>
