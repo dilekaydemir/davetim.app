@@ -65,74 +65,76 @@ export const SocialShareButtons: React.FC<SocialShareButtonsProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       <div className="text-center">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Davetiyenizi Paylaşın</h3>
-        <p className="text-sm text-gray-600">Davetiyenizi sevdiklerinizle paylaşmak için sosyal medya platformlarını kullanın</p>
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">Davetiyenizi Paylaşın</h3>
+        <p className="text-xs sm:text-sm text-gray-600">Sosyal medyada paylaşın</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <button
           onClick={handleWhatsAppShare}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 font-medium"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-all duration-200 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg"
         >
-          <MessageCircle className="h-5 w-5" />
+          <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
           WhatsApp
         </button>
 
         <button
           onClick={handleTelegramShare}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200 font-medium"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg"
         >
-          <Send className="h-5 w-5" />
+          <Send className="h-4 w-4 sm:h-5 sm:w-5" />
           Telegram
         </button>
 
         <button
           onClick={handleInstagramShare}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 text-white rounded-lg transition-colors duration-200 font-medium"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600 text-white rounded-xl transition-all duration-200 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg"
         >
-          <Instagram className="h-5 w-5" />
+          <Instagram className="h-4 w-4 sm:h-5 sm:w-5" />
           Instagram
         </button>
 
         <button
           onClick={handleFacebookShare}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200 font-medium"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all duration-200 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg"
         >
-          <Facebook className="h-5 w-5" />
+          <Facebook className="h-4 w-4 sm:h-5 sm:w-5" />
           Facebook
         </button>
 
         <button
           onClick={handleTwitterShare}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-900 hover:bg-black text-white rounded-lg transition-colors duration-200 font-medium"
+          className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-900 hover:bg-black text-white rounded-xl transition-all duration-200 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg"
         >
-          <Twitter className="h-5 w-5" />
-          X (Twitter)
+          <Twitter className="h-4 w-4 sm:h-5 sm:w-5" />
+          <span className="hidden sm:inline">X (Twitter)</span>
+          <span className="sm:hidden">Twitter</span>
         </button>
 
         {navigator.share ? (
           <button
             onClick={handleNativeShare}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors duration-200 font-medium"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-all duration-200 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg"
           >
-            <Share2 className="h-5 w-5" />
+            <Share2 className="h-4 w-4 sm:h-5 sm:w-5" />
             Daha Fazla
           </button>
         ) : (
           <button
             onClick={handleCopyLink}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200 font-medium"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-all duration-200 font-semibold text-xs sm:text-sm shadow-md hover:shadow-lg"
           >
-            <LinkIcon className="h-5 w-5" />
-            Link Kopyala
+            <LinkIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden sm:inline">Link Kopyala</span>
+            <span className="sm:hidden">Kopyala</span>
           </button>
         )}
       </div>
 
-      <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+      <div className="mt-3 sm:mt-4">
+        <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
           Davetiye Linki
         </label>
         <div className="flex gap-2">
@@ -140,14 +142,14 @@ export const SocialShareButtons: React.FC<SocialShareButtonsProps> = ({
             type="text"
             value={invitationUrl}
             readOnly
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs sm:text-sm text-gray-600 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <button
             onClick={handleCopyLink}
-            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors duration-200 flex items-center gap-2 text-sm font-medium"
+            className="px-3 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all duration-200 flex items-center gap-1.5 text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg"
           >
-            <LinkIcon className="h-4 w-4" />
-            Kopyala
+            <LinkIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Kopyala</span>
           </button>
         </div>
       </div>

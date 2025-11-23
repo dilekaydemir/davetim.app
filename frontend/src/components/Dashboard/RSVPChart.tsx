@@ -33,12 +33,12 @@ export const RSVPChart: React.FC<RSVPChartProps> = ({
   const pendingPercent = Math.round((pending / total) * 100);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">RSVP Durumu</h3>
+    <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">RSVP Durumu</h3>
       
       {/* Donut Chart */}
-      <div className="flex items-center justify-center mb-6">
-        <div className="relative w-48 h-48">
+      <div className="flex items-center justify-center mb-4 sm:mb-6">
+        <div className="relative w-40 h-40 sm:w-48 sm:h-48">
           <svg className="w-full h-full" viewBox="0 0 100 100">
             {/* Background circle */}
             <circle
@@ -114,37 +114,37 @@ export const RSVPChart: React.FC<RSVPChartProps> = ({
       </div>
 
       {/* Legend */}
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-            <span className="text-sm text-gray-700">Katılacak</span>
+            <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 mr-1.5 sm:mr-2" />
+            <span className="text-xs sm:text-sm text-gray-700">Katılacak</span>
           </div>
           <div className="text-right">
-            <span className="text-sm font-semibold text-gray-900">{attending}</span>
-            <span className="text-xs text-gray-500 ml-2">({attendingPercent}%)</span>
+            <span className="text-xs sm:text-sm font-semibold text-gray-900">{attending}</span>
+            <span className="text-[10px] sm:text-xs text-gray-500 ml-1 sm:ml-2">({attendingPercent}%)</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <XCircle className="h-5 w-5 text-red-500 mr-2" />
-            <span className="text-sm text-gray-700">Katılmayacak</span>
+            <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mr-1.5 sm:mr-2" />
+            <span className="text-xs sm:text-sm text-gray-700">Katılmayacak</span>
           </div>
           <div className="text-right">
-            <span className="text-sm font-semibold text-gray-900">{notAttending}</span>
-            <span className="text-xs text-gray-500 ml-2">({notAttendingPercent}%)</span>
+            <span className="text-xs sm:text-sm font-semibold text-gray-900">{notAttending}</span>
+            <span className="text-[10px] sm:text-xs text-gray-500 ml-1 sm:ml-2">({notAttendingPercent}%)</span>
           </div>
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Clock className="h-5 w-5 text-yellow-500 mr-2" />
-            <span className="text-sm text-gray-700">Bekliyor</span>
+            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 mr-1.5 sm:mr-2" />
+            <span className="text-xs sm:text-sm text-gray-700">Bekliyor</span>
           </div>
           <div className="text-right">
-            <span className="text-sm font-semibold text-gray-900">{pending}</span>
-            <span className="text-xs text-gray-500 ml-2">({pendingPercent}%)</span>
+            <span className="text-xs sm:text-sm font-semibold text-gray-900">{pending}</span>
+            <span className="text-[10px] sm:text-xs text-gray-500 ml-1 sm:ml-2">({pendingPercent}%)</span>
           </div>
         </div>
       </div>

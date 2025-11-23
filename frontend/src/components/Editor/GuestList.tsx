@@ -238,11 +238,11 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
   const getRSVPBadge = (status: string) => {
     switch (status) {
       case 'attending':
-        return <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">✓ Gelecek</span>;
+        return <span className="px-1.5 py-0.5 text-xs rounded bg-green-100 text-green-700 font-medium">Gelecek</span>;
       case 'declined':
-        return <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">✗ Gelemeyecek</span>;
+        return <span className="px-1.5 py-0.5 text-xs rounded bg-red-100 text-red-700 font-medium">Gelemeyecek</span>;
       default:
-        return <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">⏳ Bekliyor</span>;
+        return <span className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-600 font-medium">Bekliyor</span>;
     }
   };
 
@@ -255,75 +255,47 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
   }
 
   return (
-    <div className="space-y-6">
-      {/* Statistics - Modern Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border-2 border-blue-200 hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-blue-200 rounded-lg p-2">
-              <Users className="h-4 w-4 text-blue-700" />
-            </div>
-            <div className="text-3xl font-bold text-blue-700">{stats.total}</div>
-          </div>
-          <div className="text-xs font-semibold text-blue-600">Toplam Davetli</div>
+    <div className="space-y-4 p-4">
+      {/* Statistics - Minimal Cards */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
+          <div className="text-xs text-gray-500 mt-0.5">Toplam</div>
         </div>
-        <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl p-4 border-2 border-green-200 hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-green-200 rounded-lg p-2">
-              <span className="text-green-700 text-sm">✓</span>
-            </div>
-            <div className="text-3xl font-bold text-green-700">{stats.attending}</div>
-          </div>
-          <div className="text-xs font-semibold text-green-600">Gelecek</div>
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-2xl font-bold text-green-600">{stats.attending}</div>
+          <div className="text-xs text-gray-500 mt-0.5">Gelecek</div>
         </div>
-        <div className="bg-gradient-to-br from-yellow-50 to-amber-100 rounded-xl p-4 border-2 border-yellow-200 hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-yellow-200 rounded-lg p-2">
-              <span className="text-yellow-700 text-sm">⏳</span>
-            </div>
-            <div className="text-3xl font-bold text-yellow-700">{stats.pending}</div>
-          </div>
-          <div className="text-xs font-semibold text-yellow-600">Bekliyor</div>
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+          <div className="text-xs text-gray-500 mt-0.5">Bekliyor</div>
         </div>
-        <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-xl p-4 border-2 border-red-200 hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-2">
-            <div className="bg-red-200 rounded-lg p-2">
-              <span className="text-red-700 text-sm">✗</span>
-            </div>
-            <div className="text-3xl font-bold text-red-700">{stats.declined}</div>
-          </div>
-          <div className="text-xs font-semibold text-red-600">Gelemeyecek</div>
+        <div className="bg-white rounded-lg p-3 border border-gray-200">
+          <div className="text-2xl font-bold text-red-600">{stats.declined}</div>
+          <div className="text-xs text-gray-500 mt-0.5">Gelemeyecek</div>
         </div>
       </div>
 
-      {/* Total Attending with Companions - Prominent Card */}
-      <div className="bg-gradient-to-br from-purple-50 via-purple-100 to-pink-50 rounded-2xl p-6 border-2 border-purple-300 shadow-sm hover:shadow-md transition-all">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="bg-purple-200 rounded-xl p-3">
-              <Users className="h-6 w-6 text-purple-700" />
-            </div>
-            <div>
-              <div className="text-4xl font-bold text-purple-700">{stats.total_attending}</div>
-              <div className="text-sm font-semibold text-purple-600">
-                Toplam Katılımcı (Davetli + Refakatçi)
-              </div>
-            </div>
+      {/* Total Attending - Compact */}
+      {stats.total_attending > 0 && (
+        <div className="bg-primary-50 rounded-lg p-3 border border-primary-200">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">Toplam Katılımcı</span>
+            <span className="text-lg font-bold text-primary-700">{stats.total_attending}</span>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Action Buttons - Modern */}
+      {/* Action Buttons - Minimal */}
       <div className="flex flex-wrap gap-2">
         {!isAddingGuest && !editingGuestId && (
           <>
             <button
               onClick={() => setIsAddingGuest(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl font-medium shadow-md hover:shadow-lg transition-all"
+              className="flex items-center gap-2 px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Yeni Davetli Ekle</span>
-              <span className="sm:hidden">Ekle</span>
+              <span>Yeni Davetli</span>
             </button>
             
             {guests.length > 0 && (
@@ -337,14 +309,14 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                     }
                     excelService.exportGuestsToExcel(guests, invitationTitle);
                   }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     subscription.planConfig?.limits.excelExport
-                      ? 'bg-white border-2 border-gray-200 text-gray-700 hover:border-green-500 hover:text-green-600 shadow-sm hover:shadow-md'
+                      ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                   title={
                     subscription.planConfig?.limits.excelExport 
-                      ? "Basit Excel listesi indir"
+                      ? "Excel listesi indir"
                       : "PRO plana yükseltin"
                   }
                   disabled={!subscription.planConfig?.limits.excelExport}
@@ -363,21 +335,21 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                     }
                     excelService.exportGuestsWithStats(guests, invitationTitle, stats);
                   }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     subscription.planConfig?.limits.excelExport
-                      ? 'bg-white border-2 border-gray-200 text-gray-700 hover:border-blue-500 hover:text-blue-600 shadow-sm hover:shadow-md'
+                      ? 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   }`}
                   title={
                     subscription.planConfig?.limits.excelExport
-                      ? "İstatistiklerle birlikte detaylı rapor indir"
+                      ? "Detaylı rapor indir"
                       : "PRO plana yükseltin"
                   }
                   disabled={!subscription.planConfig?.limits.excelExport}
                 >
                   {!subscription.planConfig?.limits.excelExport && <Lock className="h-4 w-4" />}
                   <FileSpreadsheet className="h-4 w-4" />
-                  <span className="hidden sm:inline">Detaylı Rapor</span>
+                  <span className="hidden sm:inline">Rapor</span>
                 </button>
               </>
             )}
@@ -385,21 +357,16 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
         )}
       </div>
 
-      {/* Add/Edit Guest Form - Modern */}
+      {/* Add/Edit Guest Form - Minimal */}
       {(isAddingGuest || editingGuestId) && (
-        <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl p-6 border-2 border-primary-300 shadow-sm">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-primary-600 rounded-xl p-2.5">
-              <UserPlus className="h-5 w-5 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900">
-              {editingGuestId ? 'Davetli Düzenle' : 'Yeni Davetli Ekle'}
-            </h3>
-          </div>
-          <form onSubmit={editingGuestId ? (e) => { e.preventDefault(); handleUpdateGuest(editingGuestId); } : handleAddGuest} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">
+            {editingGuestId ? 'Davetli Düzenle' : 'Yeni Davetli Ekle'}
+          </h3>
+          <form onSubmit={editingGuestId ? (e) => { e.preventDefault(); handleUpdateGuest(editingGuestId); } : handleAddGuest} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Ad Soyad <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -413,8 +380,10 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                     const result = validateName(e.target.value, 'Ad Soyad');
                     setErrors({ ...errors, full_name: result.isValid ? '' : result.error! });
                   }}
-                  className={`input-field ${errors.full_name ? 'input-error' : ''}`}
-                  placeholder="Örn: Ahmet Yılmaz"
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    errors.full_name ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Ahmet Yılmaz"
                   required
                 />
                 {errors.full_name && (
@@ -422,7 +391,7 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   E-posta
                 </label>
                 <input
@@ -438,7 +407,9 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                       setErrors({ ...errors, email: result.isValid ? '' : result.error! });
                     }
                   }}
-                  className={`input-field ${errors.email ? 'input-error' : ''}`}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    errors.email ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="ahmet@example.com"
                 />
                 {errors.email && (
@@ -447,9 +418,9 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Telefon
                 </label>
                 <input
@@ -466,7 +437,9 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                       setErrors({ ...errors, phone: result.isValid ? '' : result.error! });
                     }
                   }}
-                  className={`input-field ${errors.phone ? 'input-error' : ''}`}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                    errors.phone ? 'border-red-300' : 'border-gray-300'
+                  }`}
                   placeholder="05XX XXX XX XX"
                   maxLength={15}
                 />
@@ -475,14 +448,14 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Refakatçi Sayısı (+1, +2, vb.)
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Refakatçi Sayısı
                 </label>
                 <input
                   type="number"
                   value={formData.companion_count}
                   onChange={(e) => setFormData({ ...formData, companion_count: parseInt(e.target.value) || 0 })}
-                  className="input-field"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   min="0"
                   max="10"
                 />
@@ -490,32 +463,29 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notlarınız (Sadece siz görür)
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Notlar (Sadece siz görür)
               </label>
               <textarea
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                className="input-field resize-none"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                 rows={2}
-                placeholder="Örn: VIP masaya oturacak, anne tarafından akraba..."
+                placeholder="VIP masaya oturacak..."
               />
-              <p className="text-xs text-gray-500 mt-1">
-                💡 Bu notları sadece siz görebilirsiniz, davetli göremez. Davetlinin RSVP'de yazdığı notlar ayrı gösterilir.
-              </p>
             </div>
 
-            <div className="flex gap-3 pt-2">
-              <button type="submit" className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all">
-                <Check className="h-5 w-5" />
+            <div className="flex gap-2 pt-2">
+              <button type="submit" className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium transition-colors">
+                <Check className="h-4 w-4" />
                 {editingGuestId ? 'Güncelle' : 'Ekle'}
               </button>
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 rounded-xl font-semibold transition-all flex items-center gap-2"
+                className="px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
                 İptal
               </button>
             </div>
@@ -523,81 +493,72 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
         </div>
       )}
 
-      {/* Guest List - Modern Cards */}
-      <div className="space-y-3">
+      {/* Guest List - Minimal Cards */}
+      <div className="space-y-2">
         {guests.length === 0 ? (
-          <div className="text-center py-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-300">
-            <div className="bg-gray-200 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-              <UserPlus className="h-10 w-10 text-gray-500" />
-            </div>
-            <p className="text-lg font-semibold text-gray-900 mb-1">Henüz davetli eklenmemiş</p>
-            <p className="text-sm text-gray-600">Başlamak için "Yeni Davetli Ekle" butonuna tıklayın</p>
+          <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            <UserPlus className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-sm font-medium text-gray-700 mb-1">Henüz davetli yok</p>
+            <p className="text-xs text-gray-500">Yeni davetli eklemek için butona tıklayın</p>
           </div>
         ) : (
           guests.map((guest) => (
             <div
               key={guest.id}
-              className="bg-white rounded-xl border-2 border-gray-200 p-5 hover:border-primary-300 hover:shadow-md transition-all"
+              className="bg-white rounded-lg border border-gray-200 p-3 hover:border-gray-300 transition-colors"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="font-semibold text-gray-900">{guest.full_name}</h4>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                    <h4 className="text-sm font-semibold text-gray-900">{guest.full_name}</h4>
                     {getRSVPBadge(guest.rsvp_status)}
                     {guest.companion_count > 0 && (
-                      <span className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                      <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                         +{guest.companion_count}
                       </span>
                     )}
                   </div>
                   
-                  <div className="space-y-1 text-sm text-gray-600">
+                  <div className="space-y-1 text-xs text-gray-600">
                     {guest.email && (
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-3 w-3" />
-                        {guest.email}
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{guest.email}</span>
                       </div>
                     )}
                     {guest.phone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-3 w-3" />
-                        {guest.phone}
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="h-3 w-3 flex-shrink-0" />
+                        <span>{guest.phone}</span>
                       </div>
                     )}
                     
                     {/* RSVP Response Details */}
                     {guest.rsvp_status !== 'pending' && guest.rsvp_responded_at && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <p className="text-xs font-semibold text-gray-700 mb-2">📋 RSVP Yanıtı:</p>
-                        
+                      <div className="mt-2 pt-2 border-t border-gray-100">
                         {guest.dietary_restrictions && (
-                          <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded mb-1">
-                            🍽️ Diyet: {guest.dietary_restrictions}
+                          <div className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded mb-1">
+                            Diyet: {guest.dietary_restrictions}
                           </div>
                         )}
-                        
                         {guest.notes && (
-                          <div className="text-xs text-purple-600 bg-purple-50 px-2 py-1 rounded">
-                            💬 Not: "{guest.notes}"
+                          <div className="text-xs text-gray-600 bg-gray-50 px-2 py-0.5 rounded">
+                            {guest.notes}
                           </div>
                         )}
-                        
-                        <p className="text-xs text-gray-400 mt-2">
-                          Yanıt tarihi: {new Date(guest.rsvp_responded_at).toLocaleDateString('tr-TR')}
-                        </p>
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <button
                     onClick={invitationStatus === 'published' ? () => guestService.copyRSVPLink(guest.guest_token) : undefined}
                     disabled={invitationStatus !== 'published'}
-                    className={`p-2.5 rounded-xl transition-all ${
+                    className={`p-1.5 rounded transition-colors ${
                       invitationStatus === 'published'
-                        ? 'text-blue-600 hover:bg-blue-50 hover:scale-110 cursor-pointer'
-                        : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                        ? 'text-blue-600 hover:bg-blue-50'
+                        : 'text-gray-300 cursor-not-allowed'
                     }`}
                     title={invitationStatus === 'published' ? 'RSVP linkini kopyala' : 'Yayınlamadan RSVP linki paylaşılamaz'}
                   >
@@ -605,14 +566,14 @@ const GuestList: React.FC<GuestListProps> = ({ invitationId, invitationTitle = '
                   </button>
                   <button
                     onClick={() => handleEditClick(guest)}
-                    className="p-2.5 text-gray-600 hover:bg-gray-100 rounded-xl transition-all hover:scale-110"
+                    className="p-1.5 text-gray-600 hover:bg-gray-100 rounded transition-colors"
                     title="Düzenle"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteClick(guest)}
-                    className="p-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all hover:scale-110"
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                     title="Sil"
                   >
                     <Trash2 className="h-4 w-4" />

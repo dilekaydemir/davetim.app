@@ -63,32 +63,34 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({ activities }) =>
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-      <h3 className="text-lg font-semibold text-gray-900 mb-6">Son Aktiviteler</h3>
+    <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border border-gray-100">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4 sm:mb-6">Son Aktiviteler</h3>
       
-      <div className="space-y-4 max-h-96 overflow-y-auto">
+      <div className="space-y-3 sm:space-y-4 max-h-96 overflow-y-auto">
         {activities.map((activity) => (
           <div
             key={activity.id}
-            className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-start gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <div className="flex-shrink-0 mt-0.5">
-              {getActivityIcon(activity.type)}
+              <div className="scale-90 sm:scale-100">
+                {getActivityIcon(activity.type)}
+              </div>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-xs sm:text-sm font-medium text-gray-900">
                 {activity.title}
               </p>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-[10px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1">
                 {activity.description}
               </p>
               {activity.invitationTitle && (
-                <p className="text-xs text-gray-500 mt-1 italic">
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1 italic truncate">
                   Davetiye: {activity.invitationTitle}
                 </p>
               )}
             </div>
-            <div className="flex-shrink-0 text-xs text-gray-500">
+            <div className="flex-shrink-0 text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
               {getTimeAgo(activity.timestamp)}
             </div>
           </div>

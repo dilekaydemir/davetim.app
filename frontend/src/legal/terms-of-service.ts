@@ -160,7 +160,12 @@ Platform, sınırlı, geri alınabilir, devredilemeyen bir lisans ile kullanıl�
 • Şirket, bu hizmetlerin kesintilerinden sorumlu değildir
 
 **9.3. Zararlar:**
-Şirket'in sorumluluğu, kullanıcının ödediği abonelik bedeli ile sınırlıdır. Dolaylı zararlardan (kayıp iş, veri kaybı vb.) sorumluluk kabul edilmez.`
+Şirket'in sorumluluğu, kullanıcının ödediği abonelik bedeli ile sınırlıdır. Dolaylı zararlardan (kayıp iş, veri kaybı vb.) sorumluluk kabul edilmez.
+
+**9.4. QR Kod ve Medya Güvenliği:**
+• Kullanıcı, oluşturulan davetiyelerdeki QR kodlar aracılığıyla yüklenen veya erişilen medyaların güvenliğinden bizzat sorumludur
+• QR kodun üçüncü şahıslarla paylaşılması, çalınması veya yetkisiz kişilerce taranması sonucu medyalara erişim sağlanması durumunda, Şirket hiçbir sorumluluk kabul etmez
+• Kullanıcı, QR kodların paylaşımı konusunda gerekli hassasiyeti göstermekle yükümlüdür`
     },
     {
       id: "10",

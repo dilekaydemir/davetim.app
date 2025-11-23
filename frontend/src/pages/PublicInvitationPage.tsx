@@ -90,45 +90,28 @@ const PublicInvitationPage: React.FC = () => {
     }
   };
 
-  const handleDownloadPDF = async () => {
-    const previewElement = document.getElementById('invitation-preview');
-    if (!previewElement || !invitation) return;
-    
-    setIsExporting(true);
-    try {
-      await pdfService.exportAndDownload(previewElement, {
-        filename: `${invitation.title || 'davetiye'}.pdf`,
-        quality: 4, // ULTRA HIGH QUALITY for professional output
-        orientation: 'portrait'
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   const handleShare = () => {
     const shareUrl = window.location.href;
     const shareText = invitation?.title 
       ? `${invitation.title} - Davetiye` 
       : 'Davetiye';
 
-    if (navigator.share) {
-      pdfService.share(shareText, 'Davetiyeyi görüntülemek için tıklayın', shareUrl);
+    if ('share' in navigator) {
+      navigator.share({
+        title: shareText,
+        text: 'Davetiyeyi görüntülemek için tıklayın',
+        url: shareUrl
+      }).catch(console.error);
     } else {
-      navigator.clipboard.writeText(shareUrl)
-        .then(() => toast.success('Link kopyalandı!'))
-        .catch(() => toast.error('Link kopyalanamadı'));
+      const nav = navigator as any;
+      if (nav.clipboard && nav.clipboard.writeText) {
+        nav.clipboard.writeText(shareUrl)
+          .then(() => toast.success('Link kopyalandı!'))
+          .catch(() => toast.error('Link kopyalanamadı'));
+      } else {
+        toast.error('Tarayıcınız panoya kopyalamayı desteklemiyor');
+      }
     }
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('tr-TR', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric'
-    });
   };
 
   if (isLoading) {
@@ -167,6 +150,21 @@ const PublicInvitationPage: React.FC = () => {
   const canvasWidth = invitation.content?.canvasSize?.width || 480;
   const canvasHeight = invitation.content?.canvasSize?.height || 680;
 
+  const handleDownloadPNG = async () => {
+    const previewElement = document.getElementById('invitation-preview');
+    if (!previewElement || !invitation) return;
+
+    setIsExporting(true);
+    try {
+      const blob = await pdfService.exportToImage(previewElement, 5);
+      if (blob) {
+        pdfService.downloadImage(blob, `${invitation.title || 'davetiye'}.png`);
+      }
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/20">
       {/* Draft Banner - Modern */}
@@ -196,7 +194,7 @@ const PublicInvitationPage: React.FC = () => {
               <span className="text-base">←</span>
               <span className="hidden sm:inline">Ana Sayfa</span>
             </button>
-            {/* Only show share/download buttons for published invitations */}
+            {/* Paylaş + PNG indirme (editör tuvali ile birebir aynı) */}
             {invitation.status === 'published' && (
               <div className="flex items-center gap-2">
                 <button
@@ -207,16 +205,17 @@ const PublicInvitationPage: React.FC = () => {
                   <span className="hidden sm:inline">Paylaş</span>
                 </button>
                 <button
-                  onClick={handleDownloadPDF}
+                  onClick={handleDownloadPNG}
                   disabled={isExporting}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg transition-all text-sm font-medium shadow-sm hover:shadow disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 rounded-lg transition-all text-sm font-medium shadow-sm hover:shadow disabled:opacity-50"
+                  title="PNG olarak indir"
                 >
                   {isExporting ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
                     <Download className="h-3.5 w-3.5" />
                   )}
-                  <span className="hidden sm:inline">{isExporting ? 'İndiriliyor...' : 'İndir'}</span>
+                  <span className="hidden sm:inline">PNG</span>
                 </button>
               </div>
             )}
@@ -263,7 +262,7 @@ const PublicInvitationPage: React.FC = () => {
             />
           )}
 
-          {/* FREE Plan Watermark - davetim.app branding (moved outside as footer) */}
+          {/* FREE Plan watermark kaldırıldı */}
 
           {/* QR Code - Dynamic Position */}
           {qrMedia?.qr_image_url && invitation.settings?.showQrOnDesign && (
@@ -315,8 +314,8 @@ const PublicInvitationPage: React.FC = () => {
                     alt="Profil"
                     className="w-full h-full object-cover"
                     style={{
-                      imageRendering: 'high-quality',
-                      WebkitFontSmoothing: 'antialiased',
+                imageRendering: 'auto',
+                WebkitFontSmoothing: 'antialiased',
                       backfaceVisibility: 'hidden'
                     }}
                     crossOrigin="anonymous"
@@ -346,8 +345,8 @@ const PublicInvitationPage: React.FC = () => {
                   alt="Banner"
                   className="w-full h-full object-cover"
                   style={{
-                    imageRendering: 'high-quality',
-                    WebkitFontSmoothing: 'antialiased',
+                imageRendering: 'auto',
+                WebkitFontSmoothing: 'antialiased',
                     backfaceVisibility: 'hidden'
                   }}
                   crossOrigin="anonymous"
@@ -376,8 +375,8 @@ const PublicInvitationPage: React.FC = () => {
                   alt="Logo"
                   className="w-full h-full object-cover"
                   style={{
-                    imageRendering: 'high-quality',
-                    WebkitFontSmoothing: 'antialiased',
+                imageRendering: 'auto',
+                WebkitFontSmoothing: 'antialiased',
                     backfaceVisibility: 'hidden'
                   }}
                   crossOrigin="anonymous"
@@ -490,8 +489,8 @@ const PublicInvitationPage: React.FC = () => {
                   className="w-full h-full object-contain"
                   draggable={false}
                   style={{
-                    imageRendering: 'high-quality',
-                    WebkitFontSmoothing: 'antialiased',
+                imageRendering: 'auto',
+                WebkitFontSmoothing: 'antialiased',
                     backfaceVisibility: 'hidden'
                   }}
                   crossOrigin="anonymous"
