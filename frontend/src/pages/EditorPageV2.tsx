@@ -39,7 +39,7 @@ import { DecorativeElementsGallery } from '../components/Editor/DecorativeElemen
 import PreviewModal from '../components/Editor/PreviewModal';
 import GuestList from '../components/Editor/GuestList';
 import toast from 'react-hot-toast';
-import { ALL_FONTS, type FontFamily, getFontFamily } from '../utils/fonts';
+import { type FontFamily } from '../utils/fonts';
 import { getTemplateFullUrl } from '../utils/templateImageUrl';
 
 // Canvas size presets
@@ -126,7 +126,6 @@ const EditorPageV2: React.FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  const [showMobileActions, setShowMobileActions] = useState(false);
   
   // QR Media
   const [qrMedia, setQrMedia] = useState<Media | null>(null);
@@ -1315,10 +1314,10 @@ const EditorPageV2: React.FC = () => {
 
                  return (
                    <DraggableElement
-                     key={element.id}
-                     id={element.id}
-                     type={element.type === 'divider' ? 'decoration' : element.type}
-                     content={renderedContent}
+                    key={element.id}
+                    id={element.id}
+                    type={element.type as any}
+                    content={renderedContent}
                      imageUrl={element.imageUrl}
                      position={element.position}
                      size={element.size}

@@ -402,7 +402,7 @@ const RSVPPage: React.FC = () => {
                             alt="Profil"
                             className="w-full h-full object-cover"
                             style={{
-                              imageRendering: 'high-quality',
+                              imageRendering: 'auto',
                               WebkitFontSmoothing: 'antialiased',
                               backfaceVisibility: 'hidden'
                             }}
@@ -433,7 +433,7 @@ const RSVPPage: React.FC = () => {
                           alt="Banner"
                           className="w-full h-full object-cover"
                           style={{
-                            imageRendering: 'high-quality',
+                            imageRendering: 'auto',
                             WebkitFontSmoothing: 'antialiased',
                             backfaceVisibility: 'hidden'
                           }}
@@ -463,7 +463,7 @@ const RSVPPage: React.FC = () => {
                           alt="Logo"
                           className="w-full h-full object-cover"
                           style={{
-                            imageRendering: 'high-quality',
+                            imageRendering: 'auto',
                             WebkitFontSmoothing: 'antialiased',
                             backfaceVisibility: 'hidden'
                           }}
@@ -553,7 +553,7 @@ const RSVPPage: React.FC = () => {
                           alt={elem.name}
                           className="w-full h-full object-contain"
                           style={{
-                            imageRendering: 'high-quality',
+                            imageRendering: 'auto',
                             WebkitFontSmoothing: 'antialiased',
                             backfaceVisibility: 'hidden'
                           }}
@@ -694,7 +694,7 @@ const RSVPPage: React.FC = () => {
                             alt="Profil"
                             className="w-full h-full object-cover"
                             style={{
-                              imageRendering: 'high-quality',
+                              imageRendering: 'auto',
                               WebkitFontSmoothing: 'antialiased',
                               backfaceVisibility: 'hidden'
                             }}
@@ -725,7 +725,7 @@ const RSVPPage: React.FC = () => {
                           alt="Banner"
                           className="w-full h-full object-cover"
                           style={{
-                            imageRendering: 'high-quality',
+                            imageRendering: 'auto',
                             WebkitFontSmoothing: 'antialiased',
                             backfaceVisibility: 'hidden'
                           }}
@@ -755,7 +755,7 @@ const RSVPPage: React.FC = () => {
                           alt="Logo"
                           className="w-full h-full object-cover"
                           style={{
-                            imageRendering: 'high-quality',
+                            imageRendering: 'auto',
                             WebkitFontSmoothing: 'antialiased',
                             backfaceVisibility: 'hidden'
                           }}
@@ -845,7 +845,7 @@ const RSVPPage: React.FC = () => {
                           alt={elem.name}
                           className="w-full h-full object-contain"
                           style={{
-                            imageRendering: 'high-quality',
+                            imageRendering: 'auto',
                             WebkitFontSmoothing: 'antialiased',
                             backfaceVisibility: 'hidden'
                           }}

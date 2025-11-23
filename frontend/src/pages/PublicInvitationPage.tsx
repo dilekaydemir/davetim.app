@@ -96,23 +96,22 @@ const PublicInvitationPage: React.FC = () => {
       ? `${invitation.title} - Davetiye` 
       : 'Davetiye';
 
-    if (navigator.share) {
-      pdfService.share(shareText, 'Davetiyeyi görüntülemek için tıklayın', shareUrl);
+    if ('share' in navigator) {
+      navigator.share({
+        title: shareText,
+        text: 'Davetiyeyi görüntülemek için tıklayın',
+        url: shareUrl
+      }).catch(console.error);
     } else {
-      navigator.clipboard.writeText(shareUrl)
-        .then(() => toast.success('Link kopyalandı!'))
-        .catch(() => toast.error('Link kopyalanamadı'));
+      const nav = navigator as any;
+      if (nav.clipboard && nav.clipboard.writeText) {
+        nav.clipboard.writeText(shareUrl)
+          .then(() => toast.success('Link kopyalandı!'))
+          .catch(() => toast.error('Link kopyalanamadı'));
+      } else {
+        toast.error('Tarayıcınız panoya kopyalamayı desteklemiyor');
+      }
     }
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('tr-TR', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric'
-    });
   };
 
   if (isLoading) {
@@ -315,8 +314,8 @@ const PublicInvitationPage: React.FC = () => {
                     alt="Profil"
                     className="w-full h-full object-cover"
                     style={{
-                      imageRendering: 'high-quality',
-                      WebkitFontSmoothing: 'antialiased',
+                imageRendering: 'auto',
+                WebkitFontSmoothing: 'antialiased',
                       backfaceVisibility: 'hidden'
                     }}
                     crossOrigin="anonymous"
@@ -346,8 +345,8 @@ const PublicInvitationPage: React.FC = () => {
                   alt="Banner"
                   className="w-full h-full object-cover"
                   style={{
-                    imageRendering: 'high-quality',
-                    WebkitFontSmoothing: 'antialiased',
+                imageRendering: 'auto',
+                WebkitFontSmoothing: 'antialiased',
                     backfaceVisibility: 'hidden'
                   }}
                   crossOrigin="anonymous"
@@ -376,8 +375,8 @@ const PublicInvitationPage: React.FC = () => {
                   alt="Logo"
                   className="w-full h-full object-cover"
                   style={{
-                    imageRendering: 'high-quality',
-                    WebkitFontSmoothing: 'antialiased',
+                imageRendering: 'auto',
+                WebkitFontSmoothing: 'antialiased',
                     backfaceVisibility: 'hidden'
                   }}
                   crossOrigin="anonymous"
@@ -490,8 +489,8 @@ const PublicInvitationPage: React.FC = () => {
                   className="w-full h-full object-contain"
                   draggable={false}
                   style={{
-                    imageRendering: 'high-quality',
-                    WebkitFontSmoothing: 'antialiased',
+                imageRendering: 'auto',
+                WebkitFontSmoothing: 'antialiased',
                     backfaceVisibility: 'hidden'
                   }}
                   crossOrigin="anonymous"

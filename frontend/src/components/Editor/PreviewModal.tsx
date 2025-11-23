@@ -4,7 +4,6 @@ import { pdfService } from '../../services/pdfService';
 import type { Invitation } from '../../services/invitationService';
 import { useSubscription } from '../../hooks/useSubscription';
 import { SocialShareButtons } from '../Invitation/SocialShareButtons';
-import toast from 'react-hot-toast';
 
 interface PreviewModalProps {
   isOpen: boolean;
@@ -161,16 +160,6 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('tr-TR', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
-    });
-  };
-
   const isDraft = invitation?.status !== 'published';
 
   // Canvas dimensions (fall back to portrait if not provided)
@@ -291,7 +280,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                         alt="Profil"
                         className="w-full h-full object-cover"
                         style={{
-                          imageRendering: 'high-quality',
+                          imageRendering: 'auto',
                           WebkitFontSmoothing: 'antialiased',
                           backfaceVisibility: 'hidden'
                         }}
@@ -322,7 +311,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                       alt="Banner"
                       className="w-full h-full object-cover"
                       style={{
-                        imageRendering: 'high-quality',
+                        imageRendering: 'auto',
                         WebkitFontSmoothing: 'antialiased',
                         backfaceVisibility: 'hidden'
                       }}
@@ -352,7 +341,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                       alt="Logo"
                       className="w-full h-full object-cover"
                       style={{
-                        imageRendering: 'high-quality',
+                        imageRendering: 'auto',
                         WebkitFontSmoothing: 'antialiased',
                         backfaceVisibility: 'hidden'
                       }}
@@ -468,7 +457,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                       className="w-full h-full object-contain"
                       draggable={false}
                       style={{
-                        imageRendering: 'high-quality',
+                        imageRendering: 'auto',
                         WebkitFontSmoothing: 'antialiased',
                         backfaceVisibility: 'hidden'
                       }}
