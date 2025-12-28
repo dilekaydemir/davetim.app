@@ -25,6 +25,7 @@ import {
 import { mediaService, type Media } from '../services/mediaService';
 import { templateService, type Template } from '../services/templateService';
 import { invitationService, type Invitation } from '../services/invitationService';
+import { analyticsService } from '../services/analyticsService';
 import { useAuth } from '../store/authStore';
 import { useSubscription } from '../hooks/useSubscription';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
@@ -842,6 +843,7 @@ const EditorPageV2: React.FC = () => {
       });
 
       toast.success('Kaydedildi!');
+      analyticsService.trackEditorAction('save', invitation.id);
     } catch (error) {
       console.error('Save error:', error);
       toast.error('Kaydetme hatası');
@@ -890,6 +892,7 @@ const EditorPageV2: React.FC = () => {
           // Refresh subscription to get updated counters
           await subscription.refreshSubscription();
           toast.success('Davetiye yayınlandı');
+          analyticsService.trackInvitationAction('publish', invitation.id);
         } else {
           toast.success(`Davetiye ${statusText}`);
         }
@@ -919,6 +922,7 @@ const EditorPageV2: React.FC = () => {
       if (blob) {
         pdfService.downloadImage(blob, `${formData.title || invitation.title || 'davetiye'}.png`);
         toast.success('PNG indirildi!', { id: 'png-export' });
+        analyticsService.trackEditorAction('download', 'png');
       } else {
         toast.error('PNG oluşturulamadı', { id: 'png-export' });
       }
@@ -931,6 +935,7 @@ const EditorPageV2: React.FC = () => {
   function handleShare() {
     if (invitation?.id) {
       pdfService.copyShareLink(invitation.id);
+      analyticsService.trackShare('copy_link', invitation.id);
     }
   }
 
@@ -987,6 +992,7 @@ const EditorPageV2: React.FC = () => {
     updateElements([...elements, newElement]);
     setSelectedElementId(newElement.id);
     toast.success(`${graphic.name} eklendi!`, { icon: '✨' });
+    analyticsService.trackEditorAction('add_element', 'decoration');
   }
 
   function handleResetToTemplate() {
@@ -1108,6 +1114,7 @@ const EditorPageV2: React.FC = () => {
     updateElements([...elements, newElement]);
     setSelectedElementId(newElement.id);
     toast.success('Metin eklendi');
+    analyticsService.trackEditorAction('add_element', 'text');
   }
 
 
@@ -1130,6 +1137,7 @@ const EditorPageV2: React.FC = () => {
     updateElements([...elements, newElement]);
     setSelectedElementId(newElement.id);
     toast.success('Çizgi eklendi');
+    analyticsService.trackEditorAction('add_element', 'shape');
   }
 
   // Handle tool changes

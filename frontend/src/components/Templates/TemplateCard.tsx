@@ -1,5 +1,6 @@
 import React, { memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { analyticsService } from '../../services/analyticsService';
 import { Heart, Eye, Star, Crown, Lock } from 'lucide-react';
 import type { Template } from '../../services/templateService';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -35,12 +36,18 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
       return;
     }
 
+    // Track favorite action
+    analyticsService.trackTemplateFavorite(template.id, !isSaved);
+
     if (onSave) {
       onSave(template.id);
     }
   };
 
   const handleClick = useCallback((e: React.MouseEvent) => {
+    // Track template view
+    analyticsService.trackTemplateView(template.id, template.name, template.tier);
+
     // Şablon erişimi yoksa engelleyelim
     if (isLocked) {
       e.preventDefault();
@@ -51,7 +58,7 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
       return false;
     }
     // Erişim varsa normal link çalışır
-  }, [isLocked, template.tier, onUpgradeNeeded]);
+  }, [isLocked, template.tier, onUpgradeNeeded, template.id, template.name]);
 
   const getTierBadge = () => {
     if (template.tier === 'free') {

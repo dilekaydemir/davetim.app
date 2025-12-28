@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { analyticsService } from '../services/analyticsService';
 import { Plus, Calendar, Edit, Trash2, Eye, Crown, Zap, Users, CheckCircle, TrendingUp, Lock, Sparkles, BarChart3, ExternalLink, Award, Rocket, Gift } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { guestService, type GuestStats } from '../services/guestService';
@@ -77,7 +78,7 @@ const DashboardPage: React.FC = () => {
 
       // Add invitation created activity
       activities.push({
-        id: `${inv.id}-created`,
+        id: `${inv.id} -created`,
         type: 'invitation_created',
         title: 'Yeni davetiye oluşturuldu',
         description: inv.title,
@@ -88,7 +89,7 @@ const DashboardPage: React.FC = () => {
       // Add RSVP activities if any
       if (stats && stats.total_attending > 0) {
         activities.push({
-          id: `${inv.id}-rsvp-yes`,
+          id: `${inv.id} -rsvp - yes`,
           type: 'rsvp_yes',
           title: 'Yeni RSVP yanıtı',
           description: `${stats.total_attending} kişi katılacak`,
@@ -100,7 +101,7 @@ const DashboardPage: React.FC = () => {
       // Add view activity if has views
       if (inv.view_count > 0) {
         activities.push({
-          id: `${inv.id}-views`,
+          id: `${inv.id} -views`,
           type: 'view',
           title: 'Davetiye görüntülendi',
           description: `${inv.view_count} görüntülenme`,
@@ -204,14 +205,19 @@ const DashboardPage: React.FC = () => {
       return;
     }
 
+    // Track create action start
+    analyticsService.trackInvitationAction('create');
+
     navigate('/templates');
   };
 
   const handleEditInvitation = (id: string) => {
+    analyticsService.trackInvitationAction('edit', id);
     navigate(`/editor/${id}`);
   };
 
   const handleViewInvitation = (id: string) => {
+    analyticsService.trackInvitationAction('publish', id);
     navigate(`/i/${id}`);
   };
 
@@ -227,6 +233,7 @@ const DashboardPage: React.FC = () => {
     try {
       const success = await invitationService.deleteInvitation(invitationToDelete.id);
       if (success) {
+        analyticsService.trackInvitationAction('delete', invitationToDelete.id);
         // Reload invitations
         await loadInvitations();
         setShowDeleteDialog(false);
@@ -439,7 +446,7 @@ const DashboardPage: React.FC = () => {
                 <div
                   key={invitation.id}
                   className="p-3 sm:p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-                  style={{ animationDelay: `${index * 30}ms` }}
+                  style={{ animationDelay: `${index * 30} ms` }}
                   onClick={() => handleEditInvitation(invitation.id)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -778,7 +785,7 @@ const DashboardPage: React.FC = () => {
         }}
         onConfirm={handleDeleteConfirm}
         title="Davetiyeyi Sil"
-        message={`"${invitationToDelete?.title}" davetiyesini silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm misafir bilgileri de silinecektir.`}
+        message={`"${invitationToDelete?.title}" davetiyesini silmek istediğinize emin misiniz ? Bu işlem geri alınamaz ve tüm misafir bilgileri de silinecektir.`}
         confirmText="Evet, Sil"
         cancelText="İptal"
         type="danger"

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { paymentService } from '../../services/paymentService';
+import { analyticsService } from '../../services/analyticsService';
 import { subscriptionService } from '../../services/subscriptionService';
 import { useAuthStore } from '../../store/authStore';
 import { authService } from '../../services/authService';
@@ -47,6 +48,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     address: '',
     zipCode: '',
   });
+
+  // Track checkout begin
+  useEffect(() => {
+    if (isOpen) {
+      analyticsService.trackBeginCheckout(planTier, amount);
+    }
+  }, [isOpen, planTier, amount]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [contractAccepted, setContractAccepted] = useState(false);
@@ -202,6 +210,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           'SUCCESS',
           planTier,
           billingPeriod
+        );
+
+        // Track purchase
+        analyticsService.trackPurchase(
+          result.transactionId,
+          planTier,
+          amount
         );
 
         // Force refresh auth state without page reload
