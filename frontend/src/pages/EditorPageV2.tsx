@@ -18,9 +18,9 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { 
+import {
   ArrowLeft, Layers as LayersIcon, Settings, Users, Loader2, Palette,
-  Save, Eye, Share2, Download
+  Save, Eye, Share2, Download, ZoomIn, ZoomOut, Grid
 } from 'lucide-react';
 import { mediaService, type Media } from '../services/mediaService';
 import { templateService, type Template } from '../services/templateService';
@@ -89,7 +89,7 @@ const EditorPageV2: React.FC = () => {
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Canvas state
   const [canvasPreset, setCanvasPreset] = useState<CanvasPreset>('portrait');
   const [zoom, setZoom] = useState(100);
@@ -101,7 +101,7 @@ const EditorPageV2: React.FC = () => {
   const [elements, setElements] = useState<EditorElement[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [rightPanel, setRightPanel] = useState<'design' | 'properties' | 'layers' | 'guests' | 'tools'>('design');
-  
+
   // Image layer ordering per mode (profile/banner/watermark)
   const [imageLayers, setImageLayers] = useState<{ profile: number; banner: number; watermark: number }>({
     profile: 260,
@@ -118,7 +118,7 @@ const EditorPageV2: React.FC = () => {
     banner: { position: { x: 50, y: 8 }, size: { width: 600, height: 200 }, rotation: 0, opacity: 1 },
     watermark: { position: { x: 90, y: 90 }, size: { width: 64, height: 64 }, rotation: 0, opacity: 0.6 }
   });
-  
+
   // Undo/Redo
   const undoRedo = useUndoRedo<EditorElement[]>(elements, 50);
 
@@ -126,7 +126,7 @@ const EditorPageV2: React.FC = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
-  
+
   // QR Media
   const [qrMedia, setQrMedia] = useState<Media | null>(null);
   const [showQrOnDesign, setShowQrOnDesign] = useState(false);
@@ -141,10 +141,10 @@ const EditorPageV2: React.FC = () => {
     text: '#ffffff',
     accent: '#f56565'
   });
-  
+
   // Font
   const [selectedFont, setSelectedFont] = useState<FontFamily>('Playfair Display');
-  
+
   // Template original design for reset
   const [templateOriginalDesign, setTemplateOriginalDesign] = useState<{
     colors?: typeof colors;
@@ -171,57 +171,57 @@ const EditorPageV2: React.FC = () => {
       navigate('/auth');
       return;
     }
-    
+
     if (subscription.isLoading && user?.id) {
       return;
     }
-    
+
     loadData();
   }, [invitationId, searchParams, isAuthenticated, subscription.isLoading, user?.id]);
 
   async function loadData() {
     setIsLoading(true);
-    
+
     try {
       if (invitationId) {
         // Load existing invitation
         const invitationData = await invitationService.getInvitation(invitationId);
-        
+
         if (!invitationData) {
           toast.error('Davetiye bulunamadı');
           navigate('/dashboard');
           return;
         }
-        
-         setInvitation(invitationData);
-         setTemplate(invitationData.template);
-         
-         // Store template's original design for reset
-         if (invitationData.template) {
-           const templateImageUrl = getTemplateFullUrl(
-             invitationData.template.default_image_url || invitationData.template.thumbnail_url
-           );
-           const templateColors = invitationData.template.color_palette ? {
-             primary: invitationData.template.color_palette.primary || '#667eea',
-             secondary: invitationData.template.color_palette.secondary || '#764ba2',
-             background: invitationData.template.color_palette.background || '#ffffff',
-             text: invitationData.template.color_palette.text || '#ffffff',
-             accent: invitationData.template.color_palette.accent || '#f56565'
-           } : undefined;
-           
-           setTemplateOriginalDesign({
-             colors: templateColors,
-             imageUrl: templateImageUrl,
-             imagePosition: 'background'
-           });
-         }
-         
-         // Load QR media
+
+        setInvitation(invitationData);
+        setTemplate(invitationData.template);
+
+        // Store template's original design for reset
+        if (invitationData.template) {
+          const templateImageUrl = getTemplateFullUrl(
+            invitationData.template.default_image_url || invitationData.template.thumbnail_url
+          );
+          const templateColors = invitationData.template.color_palette ? {
+            primary: invitationData.template.color_palette.primary || '#667eea',
+            secondary: invitationData.template.color_palette.secondary || '#764ba2',
+            background: invitationData.template.color_palette.background || '#ffffff',
+            text: invitationData.template.color_palette.text || '#ffffff',
+            accent: invitationData.template.color_palette.accent || '#f56565'
+          } : undefined;
+
+          setTemplateOriginalDesign({
+            colors: templateColors,
+            imageUrl: templateImageUrl,
+            imagePosition: 'background'
+          });
+        }
+
+        // Load QR media
         try {
           const media = await mediaService.getMediaByInvitationId(invitationData.id);
           setQrMedia(media);
-        } catch {}
-        
+        } catch { }
+
         // Load form data
         setFormData({
           title: invitationData.title || '',
@@ -241,7 +241,7 @@ const EditorPageV2: React.FC = () => {
             setCanvasPreset(presetKey);
           }
         }
-        
+
         // Load image layers (z-index) if saved
         if (invitationData.content?.imageLayers) {
           setImageLayers({
@@ -250,7 +250,7 @@ const EditorPageV2: React.FC = () => {
             watermark: invitationData.content.imageLayers.watermark ?? 280
           });
         }
-        
+
         // Load image transforms (position, size, rotation, opacity) if saved
         if (invitationData.content?.imageTransforms) {
           setImageTransforms(prev => ({
@@ -274,17 +274,17 @@ const EditorPageV2: React.FC = () => {
             }
           }));
         }
-        
-         // Load colors
-         if (invitationData.content?.colors) {
-           setColors(invitationData.content.colors);
-         }
-         
-         // Load font
-         if (invitationData.custom_design?.font) {
-           setSelectedFont(invitationData.custom_design.font as FontFamily);
-         }
-        
+
+        // Load colors
+        if (invitationData.content?.colors) {
+          setColors(invitationData.content.colors);
+        }
+
+        // Load font
+        if (invitationData.custom_design?.font) {
+          setSelectedFont(invitationData.custom_design.font as FontFamily);
+        }
+
         // Load QR settings
         if (invitationData.settings) {
           if (typeof invitationData.settings.showQrOnDesign === 'boolean') {
@@ -297,10 +297,10 @@ const EditorPageV2: React.FC = () => {
             setQrSize(invitationData.settings.qrSize);
           }
         }
-        
+
         // Load elements from saved data
         const loadedElements: EditorElement[] = [];
-        
+
         // Prepare combined date content once (from invitation's date/time)
         const dateContentFromInvitation =
           invitationData.event_date && invitationData.event_time
@@ -324,14 +324,14 @@ const EditorPageV2: React.FC = () => {
                 el.type === 'title'
                   ? 'Başlık'
                   : el.type === 'date'
-                  ? 'Tarih'
-                  : el.type === 'location'
-                  ? 'Konum'
-                  : el.type === 'message'
-                  ? 'Mesaj'
-                  : el.type === 'footer'
-                  ? 'Footer'
-                  : 'Metin',
+                    ? 'Tarih'
+                    : el.type === 'location'
+                      ? 'Konum'
+                      : el.type === 'message'
+                        ? 'Mesaj'
+                        : el.type === 'footer'
+                          ? 'Footer'
+                          : 'Metin',
               content,
               position: el.position,
               size: el.size,
@@ -345,7 +345,7 @@ const EditorPageV2: React.FC = () => {
             });
           });
         }
-        
+
         // Load decorative elements
         if (invitationData.content?.decorativeElements && Array.isArray(invitationData.content.decorativeElements)) {
           invitationData.content.decorativeElements.forEach((el: any, i: number) => {
@@ -366,107 +366,107 @@ const EditorPageV2: React.FC = () => {
             }
           });
         }
-        
-         // If no elements loaded, create defaults
-         if (loadedElements.length === 0) {
-           const dateContent = invitationData.event_date && invitationData.event_time 
-             ? `${invitationData.event_date.split('T')[0]} ${invitationData.event_time}` 
-             : invitationData.event_date?.split('T')[0] || invitationData.event_time || '';
-           
-           loadedElements.push(
-             {
-               id: 'title',
-               type: 'text',
-               name: 'Başlık',
-               content: invitationData.title || 'Etkinlik Başlığı',
-               position: { x: 50, y: 20 },
-               size: { width: 400, height: 80 },
-               rotation: 0,
-               opacity: 1,
-               visible: true,
-               locked: false,
-               zIndex: 300,
-               style: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', color: colors.text, fontFamily: selectedFont }
-             },
-             {
-               id: 'date',
-               type: 'text',
-               name: 'Tarih',
-               content: dateContent,
-               position: { x: 50, y: 40 },
-               size: { width: 300, height: 40 },
-               rotation: 0,
-               opacity: 1,
-               visible: true,
-               locked: false,
-               zIndex: 300,
-               style: { fontSize: 18, textAlign: 'center', color: colors.text, fontFamily: selectedFont }
-             },
-             {
-               id: 'location',
-               type: 'text',
-               name: 'Konum',
-               content: invitationData.event_location_name || 'Konum',
-               position: { x: 50, y: 55 },
-               size: { width: 350, height: 40 },
-               rotation: 0,
-               opacity: 1,
-               visible: true,
-               locked: false,
-               zIndex: 300,
-               style: { fontSize: 16, textAlign: 'center', color: colors.text, fontFamily: selectedFont }
-             },
-             {
-               id: 'message',
-               type: 'text',
-               name: 'Mesaj',
-               content: invitationData.content?.message || '',
-               position: { x: 50, y: 70 },
-               size: { width: 400, height: 60 },
-               rotation: 0,
-               opacity: 1,
-               visible: true,
-               locked: false,
-               zIndex: 300,
-               style: { fontSize: 14, textAlign: 'center', color: colors.text, fontFamily: selectedFont }
-             }
-           );
-         }
-        
-         setElements(loadedElements);
-         undoRedo.reset(loadedElements);
-        
+
+        // If no elements loaded, create defaults
+        if (loadedElements.length === 0) {
+          const dateContent = invitationData.event_date && invitationData.event_time
+            ? `${invitationData.event_date.split('T')[0]} ${invitationData.event_time}`
+            : invitationData.event_date?.split('T')[0] || invitationData.event_time || '';
+
+          loadedElements.push(
+            {
+              id: 'title',
+              type: 'text',
+              name: 'Başlık',
+              content: invitationData.title || 'Etkinlik Başlığı',
+              position: { x: 50, y: 20 },
+              size: { width: 400, height: 80 },
+              rotation: 0,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: 300,
+              style: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', color: colors.text, fontFamily: selectedFont }
+            },
+            {
+              id: 'date',
+              type: 'text',
+              name: 'Tarih',
+              content: dateContent,
+              position: { x: 50, y: 40 },
+              size: { width: 300, height: 40 },
+              rotation: 0,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: 300,
+              style: { fontSize: 18, textAlign: 'center', color: colors.text, fontFamily: selectedFont }
+            },
+            {
+              id: 'location',
+              type: 'text',
+              name: 'Konum',
+              content: invitationData.event_location_name || 'Konum',
+              position: { x: 50, y: 55 },
+              size: { width: 350, height: 40 },
+              rotation: 0,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: 300,
+              style: { fontSize: 16, textAlign: 'center', color: colors.text, fontFamily: selectedFont }
+            },
+            {
+              id: 'message',
+              type: 'text',
+              name: 'Mesaj',
+              content: invitationData.content?.message || '',
+              position: { x: 50, y: 70 },
+              size: { width: 400, height: 60 },
+              rotation: 0,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: 300,
+              style: { fontSize: 14, textAlign: 'center', color: colors.text, fontFamily: selectedFont }
+            }
+          );
+        }
+
+        setElements(loadedElements);
+        undoRedo.reset(loadedElements);
+
       } else {
         // Create new invitation from template
         const templateSlug = searchParams.get('template');
-        
+
         if (!templateSlug) {
           toast.error('Şablon seçilmedi');
           navigate('/templates');
           return;
         }
-        
+
         const templateData = await templateService.getTemplateById(templateSlug);
-        
+
         if (!templateData) {
           toast.error('Şablon bulunamadı');
           navigate('/templates');
           return;
         }
-        
+
         // Check access
         const templateTier = templateData.tier as 'free' | 'pro' | 'premium';
         const canAccess = subscription.canAccessTemplate(templateTier);
-        
+
         if (!canAccess) {
           const tierNames = { free: 'Ücretsiz', pro: 'PRO', premium: 'PREMIUM' };
           toast.error(`Bu şablon ${tierNames[templateTier]} plan gerektirir!`);
           navigate('/templates');
           return;
         }
-        
+
         setTemplate(templateData);
-        
+
         // Load template colors
         const templateColors = {
           primary: templateData.color_palette?.primary || '#667eea',
@@ -476,16 +476,16 @@ const EditorPageV2: React.FC = () => {
           accent: templateData.color_palette?.accent || '#f56565'
         };
         setColors(templateColors);
-        
+
         // Parse text fields from template
         let initialElements: any[] = [];
-        
+
         if (templateData.text_fields) {
           try {
-            const parsedFields = typeof templateData.text_fields === 'string' 
-              ? JSON.parse(templateData.text_fields) 
+            const parsedFields = typeof templateData.text_fields === 'string'
+              ? JSON.parse(templateData.text_fields)
               : templateData.text_fields;
-              
+
             if (Array.isArray(parsedFields)) {
               initialElements = parsedFields.map((field: any, index: number) => ({
                 id: field.id || `text-${Date.now()}-${index}`,
@@ -493,7 +493,7 @@ const EditorPageV2: React.FC = () => {
                 name: field.label || 'Metin',
                 content: field.defaultValue || '',
                 // Distribute vertically starting from 20% top
-                position: { x: 50, y: 20 + (index * 12) }, 
+                position: { x: 50, y: 20 + (index * 12) },
                 size: { width: 400, height: 60 },
                 rotation: 0,
                 opacity: 1,
@@ -518,52 +518,52 @@ const EditorPageV2: React.FC = () => {
 
         // If no text fields in template, add defaults
         if (initialElements.length === 0) {
-           const dateContent = new Date().toISOString().split('T')[0];
-           
-           initialElements.push(
-             {
-               id: 'title',
-               type: 'text',
-               name: 'Başlık',
-               content: templateData.name || 'Etkinlik Başlığı',
-               position: { x: 50, y: 20 },
-               size: { width: 400, height: 80 },
-               rotation: 0,
-               opacity: 1,
-               visible: true,
-               locked: false,
-               zIndex: 300,
-               style: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
-             },
-             {
-               id: 'date',
-               type: 'text',
-               name: 'Tarih',
-               content: dateContent,
-               position: { x: 50, y: 40 },
-               size: { width: 300, height: 40 },
-               rotation: 0,
-               opacity: 1,
-               visible: true,
-               locked: false,
-               zIndex: 301,
-               style: { fontSize: 18, textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
-             },
-             {
-               id: 'message',
-               type: 'text',
-               name: 'Mesaj',
-               content: 'Bu özel günümüzde yanımızda olmanız dileğiyle...',
-               position: { x: 50, y: 55 },
-               size: { width: 400, height: 60 },
-               rotation: 0,
-               opacity: 1,
-               visible: true,
-               locked: false,
-               zIndex: 302,
-               style: { fontSize: 14, textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
-             }
-           );
+          const dateContent = new Date().toISOString().split('T')[0];
+
+          initialElements.push(
+            {
+              id: 'title',
+              type: 'text',
+              name: 'Başlık',
+              content: templateData.name || 'Etkinlik Başlığı',
+              position: { x: 50, y: 20 },
+              size: { width: 400, height: 80 },
+              rotation: 0,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: 300,
+              style: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
+            },
+            {
+              id: 'date',
+              type: 'text',
+              name: 'Tarih',
+              content: dateContent,
+              position: { x: 50, y: 40 },
+              size: { width: 300, height: 40 },
+              rotation: 0,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: 301,
+              style: { fontSize: 18, textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
+            },
+            {
+              id: 'message',
+              type: 'text',
+              name: 'Mesaj',
+              content: 'Bu özel günümüzde yanımızda olmanız dileğiyle...',
+              position: { x: 50, y: 55 },
+              size: { width: 400, height: 60 },
+              rotation: 0,
+              opacity: 1,
+              visible: true,
+              locked: false,
+              zIndex: 302,
+              style: { fontSize: 14, textAlign: 'center', color: templateColors.text, fontFamily: 'Playfair Display' }
+            }
+          );
         }
 
         // Extract initial form data from text elements
@@ -576,51 +576,51 @@ const EditorPageV2: React.FC = () => {
         initialElements.forEach(el => {
           const id = el.id.toLowerCase();
           let content = el.content || '';
-          
+
           // Title matching
           if (id.includes('header') || id.includes('title') || id === 'davet') {
             initialTitle = content;
-          } 
+          }
           // Date matching
           else if (id.includes('date') || id.includes('tarih') || id.includes('zaman')) {
             // Try to parse date for DB if it looks like a date
             const parsedDate = Date.parse(content);
             if (!isNaN(parsedDate)) {
-               try {
-                 initialDate = new Date(parsedDate).toISOString().split('T')[0];
-               } catch {}
+              try {
+                initialDate = new Date(parsedDate).toISOString().split('T')[0];
+              } catch { }
             }
-          } 
+          }
           // Time matching
           else if (id.includes('time') || id.includes('saat')) {
             initialTime = content;
-          } 
+          }
           // Location matching - Expanded keywords
           else if (['loc', 'venue', 'mekan', 'yer', 'place', 'location', 'address', 'adres'].some(k => id.includes(k))) {
             initialLocation = content;
-          } 
+          }
           // Message matching - Expanded keywords
           else if (['msg', 'message', 'metin', 'quote', 'story', 'welcome', 'invite', 'info', 'details', 'text', 'soz', 'söz'].some(k => id.includes(k))) {
             // If content is empty, set default message directly to the element
             if (!content || content.trim() === '') {
-                content = `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`;
-                el.content = content; // Update the element content so it shows in editor
+              content = `${templateData.name} ile hazırlanan özel davetiyenize hoş geldiniz.`;
+              el.content = content; // Update the element content so it shows in editor
             }
 
             // If we already have a message and this is 'info' or 'details', it might be secondary info
             // but usually templates have one main message block. 
             // Let's prioritize clearer IDs like 'msg' or 'invite' if possible, otherwise take last match
             if (!initialMessage || id.includes('msg') || id.includes('invite') || id.includes('welcome')) {
-               initialMessage = content;
+              initialMessage = content;
             } else if (!initialMessage) {
-               initialMessage = content;
+              initialMessage = content;
             }
           }
         });
 
         // Create new invitation
         const templateImageUrl = getTemplateFullUrl(templateData.default_image_url || templateData.thumbnail_url);
-        
+
         const newInvitation = await invitationService.createInvitation({
           template_id: templateData.id,
           title: initialTitle,
@@ -637,7 +637,7 @@ const EditorPageV2: React.FC = () => {
             textElements: initialElements
           }
         });
-        
+
         if (newInvitation) {
           setInvitation(newInvitation);
           // Update form data immediately
@@ -724,7 +724,7 @@ const EditorPageV2: React.FC = () => {
     if (!selectedElementId) return;
     const newElements = elements.map(el => {
       if (el.id !== selectedElementId) return el;
-      
+
       const step = 1; // 1% movement
       switch (direction) {
         case 'up':
@@ -739,7 +739,7 @@ const EditorPageV2: React.FC = () => {
           return el;
       }
     });
-    
+
     updateElements(newElements);
   }
 
@@ -786,7 +786,7 @@ const EditorPageV2: React.FC = () => {
   function handleReorderLayer(id: string, direction: 'up' | 'down') {
     const sortedElements = [...elements].sort((a, b) => b.zIndex - a.zIndex);
     const index = sortedElements.findIndex(el => el.id === id);
-    
+
     if (index === -1) return;
     if (direction === 'up' && index === 0) return;
     if (direction === 'down' && index === sortedElements.length - 1) return;
@@ -802,45 +802,45 @@ const EditorPageV2: React.FC = () => {
   // Save function
   async function handleSave() {
     if (!invitation) return;
-    
+
     setIsSaving(true);
-    
+
     try {
       // Convert elements to saveable format
       const textElements = elements.filter(el => el.type === 'text' || el.type === 'divider');
       const decorativeElements = elements.filter(el => el.type === 'decoration');
-      
-       await invitationService.updateInvitation(invitation.id, {
-         title: formData.title,
-         event_date: formData.eventDate || undefined,
-         event_time: formData.eventTime || undefined,
-         event_location_name: formData.location || undefined,
-         image_url: formData.imageUrl || undefined,
-         content: {
-           message: formData.customMessage,
-           colors: colors,
-           imagePosition: formData.imagePosition,
-           logoShape: formData.logoShape,
-        imageLayers: imageLayers,
-        imageTransforms: imageTransforms,
+
+      await invitationService.updateInvitation(invitation.id, {
+        title: formData.title,
+        event_date: formData.eventDate || undefined,
+        event_time: formData.eventTime || undefined,
+        event_location_name: formData.location || undefined,
+        image_url: formData.imageUrl || undefined,
+        content: {
+          message: formData.customMessage,
+          colors: colors,
+          imagePosition: formData.imagePosition,
+          logoShape: formData.logoShape,
+          imageLayers: imageLayers,
+          imageTransforms: imageTransforms,
           canvasPreset,
           canvasSize: {
             width: canvasDimensions.width,
             height: canvasDimensions.height
           },
-           textElements: textElements,
-           decorativeElements: decorativeElements
-         },
-         custom_design: {
-           font: selectedFont
-         },
-         settings: {
-           showQrOnDesign: showQrOnDesign,
-           qrPosition: qrPosition,
-           qrSize: qrSize
-         }
-       });
-      
+          textElements: textElements,
+          decorativeElements: decorativeElements
+        },
+        custom_design: {
+          font: selectedFont
+        },
+        settings: {
+          showQrOnDesign: showQrOnDesign,
+          qrPosition: qrPosition,
+          qrSize: qrSize
+        }
+      });
+
       toast.success('Kaydedildi!');
     } catch (error) {
       console.error('Save error:', error);
@@ -853,7 +853,7 @@ const EditorPageV2: React.FC = () => {
   // Toggle publish status (draft <-> published)
   async function handleTogglePublish() {
     if (!invitation || !user) return;
-    
+
     const newStatus = invitation.status === 'published' ? 'draft' : 'published';
     const statusText = newStatus === 'published' ? 'yayınlandı' : 'taslağa alındı';
 
@@ -901,21 +901,21 @@ const EditorPageV2: React.FC = () => {
 
   async function handleDownload() {
     if (!invitation || !canvasRef.current) return;
-    
+
     // Önce kaydet
     await handleSave();
-    
+
     // Direkt PNG olarak indir
     try {
       toast.loading('PNG oluşturuluyor...', { id: 'png-export' });
-      
+
       const blob = await pdfService.exportToImage(
         canvasRef.current,
         5, // ULTRA HIGH QUALITY (5x scale)
         canvasDimensions.width,
         canvasDimensions.height
       );
-      
+
       if (blob) {
         pdfService.downloadImage(blob, `${formData.title || invitation.title || 'davetiye'}.png`);
         toast.success('PNG indirildi!', { id: 'png-export' });
@@ -933,7 +933,7 @@ const EditorPageV2: React.FC = () => {
       pdfService.copyShareLink(invitation.id);
     }
   }
-  
+
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
     const nextForm = {
@@ -941,7 +941,7 @@ const EditorPageV2: React.FC = () => {
       [name]: value
     };
     setFormData(nextForm);
-    
+
     // Update corresponding text elements on canvas
     const newElements = elements.map(el => {
       // Başlık
@@ -966,10 +966,10 @@ const EditorPageV2: React.FC = () => {
       }
       return el;
     });
-    
+
     updateElements(newElements);
   }
-  
+
   function handleAddDecorativeElement(graphic: any) {
     const newElement: EditorElement = {
       id: `decoration-${Date.now()}`,
@@ -988,7 +988,7 @@ const EditorPageV2: React.FC = () => {
     setSelectedElementId(newElement.id);
     toast.success(`${graphic.name} eklendi!`, { icon: '✨' });
   }
-  
+
   function handleResetToTemplate() {
     if (!templateOriginalDesign) {
       toast.error('Şablon bilgisi bulunamadı');
@@ -1009,7 +1009,7 @@ const EditorPageV2: React.FC = () => {
 
     toast.success('Şablon varsayılanlarına dönüldü');
   }
-  
+
   // Convert layers to Layer format for LayersPanel
   const layers: Layer[] = elements.map(el => ({
     id: el.id,
@@ -1023,7 +1023,7 @@ const EditorPageV2: React.FC = () => {
   // Get selected element for PropertiesPanel
   const selectedElement: ElementProperties | null = (() => {
     if (!selectedElementId) return null;
-    
+
     // Special case: main image (profile / banner / watermark)
     if (selectedElementId.startsWith('main-image-')) {
       const mode = selectedElementId.replace('main-image-', '') as 'profile' | 'banner' | 'watermark';
@@ -1039,14 +1039,14 @@ const EditorPageV2: React.FC = () => {
         style: {}
       };
     }
-    
+
     return (elements.find(el => el.id === selectedElementId) as ElementProperties) || null;
   })();
 
   // Update selected element
   function handleUpdateElement(updates: Partial<ElementProperties>) {
     if (!selectedElementId) return;
-    
+
     // Main image: update imageTransforms instead of elements[]
     if (selectedElementId.startsWith('main-image-')) {
       const mode = selectedElementId.replace('main-image-', '') as 'profile' | 'banner' | 'watermark';
@@ -1056,13 +1056,13 @@ const EditorPageV2: React.FC = () => {
         let nextSize = updates.size || current.size;
         const nextRotation = updates.rotation !== undefined ? updates.rotation : current.rotation;
         const nextOpacity = updates.opacity !== undefined ? updates.opacity : current.opacity;
-        
+
         // Ensure perfect circle for profile and circular logo
         if (mode === 'profile' || (mode === 'watermark' && formData.logoShape === 'circle')) {
           const side = Math.min(nextSize.width, nextSize.height);
           nextSize = { width: side, height: side };
         }
-        
+
         return {
           ...prev,
           [mode]: {
@@ -1075,7 +1075,7 @@ const EditorPageV2: React.FC = () => {
       });
       return;
     }
-    
+
     // Default: update normal elements
     const newElements = elements.map(el =>
       el.id === selectedElementId ? { ...el, ...updates } : el
@@ -1191,27 +1191,27 @@ const EditorPageV2: React.FC = () => {
           </div>
         </div>
 
-         {/* Canvas Size Selector - Hidden on mobile */}
-         <div className="hidden md:flex items-center gap-2">
-           <select
-             value={canvasPreset}
-             onChange={(e) => setCanvasPreset(e.target.value as CanvasPreset)}
-             className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-           >
-             {Object.entries(CANVAS_PRESETS).map(([key, { label }]) => (
-               <option key={key} value={key}>{label}</option>
-             ))}
-           </select>
-           
-           <div className="text-xs text-gray-500">
-             {canvasDimensions.width} × {canvasDimensions.height}px
-           </div>
-         </div>
+        {/* Canvas Size Selector - Hidden on mobile */}
+        <div className="hidden md:flex items-center gap-2">
+          <select
+            value={canvasPreset}
+            onChange={(e) => setCanvasPreset(e.target.value as CanvasPreset)}
+            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            {Object.entries(CANVAS_PRESETS).map(([key, { label }]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
 
-        {/* Undo/Redo + Publish - Compact on mobile */}
-        <div className="flex items-center gap-1 md:gap-3">
-          {/* Mobile Quick Actions */}
-          <div className="flex md:hidden items-center gap-1">
+          <div className="text-xs text-gray-500">
+            {canvasDimensions.width} × {canvasDimensions.height}px
+          </div>
+        </div>
+
+        {/* Undo/Redo + Publish - Compact on mobile/tablet */}
+        <div className="flex items-center gap-1 xl:gap-3">
+          {/* Mobile/Tablet Quick Actions */}
+          <div className="flex xl:hidden items-center gap-1">
             <button
               onClick={handleSave}
               disabled={isSaving}
@@ -1233,7 +1233,7 @@ const EditorPageV2: React.FC = () => {
           <button
             onClick={undoRedo.undo}
             disabled={!undoRedo.canUndo}
-            className="hidden md:flex px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors items-center gap-1"
+            className="hidden xl:flex px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors items-center gap-1"
             title="Geri Al (Ctrl+Z)"
           >
             ↶ Geri
@@ -1242,11 +1242,10 @@ const EditorPageV2: React.FC = () => {
           {/* Publish / Unpublish - Desktop */}
           <button
             onClick={handleTogglePublish}
-            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all border ${
-              invitation.status === 'published'
-                ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
-                : 'bg-primary-50 text-primary-700 border-primary-300 hover:bg-primary-100'
-            }`}
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs md:text-sm font-medium transition-all border ${invitation.status === 'published'
+              ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+              : 'bg-primary-50 text-primary-700 border-primary-300 hover:bg-primary-100'
+              }`}
             title={invitation.status === 'published' ? 'Yayında' : 'Yayınla'}
           >
             <span className="text-base">
@@ -1254,20 +1253,20 @@ const EditorPageV2: React.FC = () => {
             </span>
             <span>{invitation.status === 'published' ? 'Yayında' : 'Yayınla'}</span>
           </button>
-          
+
           <button
             onClick={undoRedo.redo}
             disabled={!undoRedo.canRedo}
-            className="hidden md:flex px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors items-center gap-1"
+            className="hidden xl:flex px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors items-center gap-1"
             title="İleri Al (Ctrl+Y)"
           >
             İleri ↷
           </button>
-          
-          {/* Mobile Menu Button */}
+
+          {/* Mobile/Tablet Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            className="xl:hidden p-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
             title="Menü"
           >
             <Settings className="h-4 w-4" />
@@ -1277,8 +1276,8 @@ const EditorPageV2: React.FC = () => {
 
       {/* Main Content: 3-Panel Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Toolbar - Hidden on mobile */}
-        <div className="hidden md:block">
+        {/* Left Toolbar - Hidden on mobile and tablet */}
+        <div className="hidden xl:flex h-full flex-shrink-0">
           <Toolbar
             activeTool={activeTool}
             onToolChange={setActiveTool}
@@ -1294,9 +1293,9 @@ const EditorPageV2: React.FC = () => {
           />
         </div>
 
-         {/* Center Canvas */}
-         <div className="flex-1 flex flex-col overflow-hidden bg-gray-100">
-           <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+        {/* Center Canvas */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-gray-100">
+          <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
             <div
               ref={canvasRef}
               className="bg-white shadow-2xl rounded-lg relative overflow-hidden"
@@ -1314,7 +1313,7 @@ const EditorPageV2: React.FC = () => {
             >
               {/* Grid overlay */}
               {showGrid && (
-                <div 
+                <div
                   className="absolute inset-0 pointer-events-none"
                   style={{
                     backgroundImage: 'linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)',
@@ -1323,101 +1322,101 @@ const EditorPageV2: React.FC = () => {
                   }}
                 />
               )}
-               {/* Background gradient overlay (if background image is set) */}
-               {formData.imagePosition === 'background' && formData.imageUrl && (
-                 <div 
-                   className="absolute inset-0 pointer-events-none" 
-                   style={{ 
-                     background: `linear-gradient(135deg, ${colors.primary}CC 0%, ${colors.secondary}CC 100%)`,
-                     zIndex: 1
-                   }}
-                 />
-               )}
+              {/* Background gradient overlay (if background image is set) */}
+              {formData.imagePosition === 'background' && formData.imageUrl && (
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{
+                    background: `linear-gradient(135deg, ${colors.primary}CC 0%, ${colors.secondary}CC 100%)`,
+                    zIndex: 1
+                  }}
+                />
+              )}
 
-               {/* Draggable main image (Profile/Banner/Watermark) */}
-               {!isPreviewOpen && !isGalleryOpen && formData.imageUrl && formData.imagePosition !== 'background' && (() => {
-                 const currentMode = formData.imagePosition as 'profile' | 'banner' | 'watermark';
-                 const t = imageTransforms[currentMode];
-                 return (
-                   <DraggableElement
-                     id={`main-image-${currentMode}`}
-                     type="decoration"
-                     imageUrl={formData.imageUrl || undefined}
-                     imageFit={currentMode === 'banner' ? 'cover' : 'cover'}
-                     zIndex={imageLayers[currentMode]}
-                     position={t.position}
-                     size={t.size}
-                     rotation={t.rotation}
-                     opacity={t.opacity}
-                     onSelect={(id) => {
-                       setSelectedElementId(id);
-                       setRightPanel('properties');
-                     }}
-                     onUpdate={(updates) => {
-                       setImageTransforms(prev => ({
-                         ...prev,
-                         [currentMode]: (() => {
-                           const current = prev[currentMode];
-                           let nextPosition = updates.position || current.position;
-                           let nextSize = updates.size || current.size;
-                           const nextRotation = updates.rotation !== undefined ? updates.rotation : current.rotation;
-                           const nextOpacity = updates.opacity !== undefined ? updates.opacity : current.opacity;
-                           
-                           // Ensure perfect circle for profile and circular logo
-                           if (currentMode === 'profile' || (currentMode === 'watermark' && formData.logoShape === 'circle')) {
-                             const side = Math.min(nextSize.width, nextSize.height);
-                             nextSize = { width: side, height: side };
-                           }
-                           
-                           return {
-                             position: nextPosition,
-                             size: nextSize,
-                             rotation: nextRotation,
-                             opacity: nextOpacity
-                           };
-                         })()
-                       }));
-                     }}
-                     onChangeZ={(action) => {
-                       const allZ = [
-                         ...elements.map(e => e.zIndex),
-                         imageLayers.profile,
-                         imageLayers.banner,
-                         imageLayers.watermark
-                       ];
-                       const maxZ = Math.max(...allZ);
-                       const minZ = Math.min(...allZ);
-                       setImageLayers(prev => ({
-                         ...prev,
-                         [currentMode]: action === 'front' ? maxZ + 1 : minZ - 1
-                       }));
-                     }}
-                     onDelete={() => {
-                       setFormData({ ...formData, imageUrl: null });
-                       toast.success('Görsel kaldırıldı');
-                     }}
-                     containerRef={canvasRef}
-                     style={{
-                       borderRadius: currentMode === 'profile'
-                         ? '50%'
-                         : (currentMode === 'watermark'
-                           ? (formData.logoShape === 'circle' ? '50%' : '0')
-                           : '8px'),
-                       border: currentMode === 'profile' ? `4px solid ${colors.accent}` : 'none',
-                       overflow: 'hidden',
-                       boxShadow: currentMode === 'profile' || currentMode === 'banner'
-                         ? '0 4px 12px rgba(0,0,0,0.15)'
-                         : undefined
-                     }}
-                   />
-                 );
-               })()}
+              {/* Draggable main image (Profile/Banner/Watermark) */}
+              {!isPreviewOpen && !isGalleryOpen && formData.imageUrl && formData.imagePosition !== 'background' && (() => {
+                const currentMode = formData.imagePosition as 'profile' | 'banner' | 'watermark';
+                const t = imageTransforms[currentMode];
+                return (
+                  <DraggableElement
+                    id={`main-image-${currentMode}`}
+                    type="decoration"
+                    imageUrl={formData.imageUrl || undefined}
+                    imageFit={currentMode === 'banner' ? 'cover' : 'cover'}
+                    zIndex={imageLayers[currentMode]}
+                    position={t.position}
+                    size={t.size}
+                    rotation={t.rotation}
+                    opacity={t.opacity}
+                    onSelect={(id) => {
+                      setSelectedElementId(id);
+                      setRightPanel('properties');
+                    }}
+                    onUpdate={(updates) => {
+                      setImageTransforms(prev => ({
+                        ...prev,
+                        [currentMode]: (() => {
+                          const current = prev[currentMode];
+                          let nextPosition = updates.position || current.position;
+                          let nextSize = updates.size || current.size;
+                          const nextRotation = updates.rotation !== undefined ? updates.rotation : current.rotation;
+                          const nextOpacity = updates.opacity !== undefined ? updates.opacity : current.opacity;
 
-               {/* Render elements */}
-               {elements.filter(el => el.visible).map((element) => {
-                 // Prepare content for different element types
-                 let renderedContent: React.ReactNode = element.content;
-                 
+                          // Ensure perfect circle for profile and circular logo
+                          if (currentMode === 'profile' || (currentMode === 'watermark' && formData.logoShape === 'circle')) {
+                            const side = Math.min(nextSize.width, nextSize.height);
+                            nextSize = { width: side, height: side };
+                          }
+
+                          return {
+                            position: nextPosition,
+                            size: nextSize,
+                            rotation: nextRotation,
+                            opacity: nextOpacity
+                          };
+                        })()
+                      }));
+                    }}
+                    onChangeZ={(action) => {
+                      const allZ = [
+                        ...elements.map(e => e.zIndex),
+                        imageLayers.profile,
+                        imageLayers.banner,
+                        imageLayers.watermark
+                      ];
+                      const maxZ = Math.max(...allZ);
+                      const minZ = Math.min(...allZ);
+                      setImageLayers(prev => ({
+                        ...prev,
+                        [currentMode]: action === 'front' ? maxZ + 1 : minZ - 1
+                      }));
+                    }}
+                    onDelete={() => {
+                      setFormData({ ...formData, imageUrl: null });
+                      toast.success('Görsel kaldırıldı');
+                    }}
+                    containerRef={canvasRef}
+                    style={{
+                      borderRadius: currentMode === 'profile'
+                        ? '50%'
+                        : (currentMode === 'watermark'
+                          ? (formData.logoShape === 'circle' ? '50%' : '0')
+                          : '8px'),
+                      border: currentMode === 'profile' ? `4px solid ${colors.accent}` : 'none',
+                      overflow: 'hidden',
+                      boxShadow: currentMode === 'profile' || currentMode === 'banner'
+                        ? '0 4px 12px rgba(0,0,0,0.15)'
+                        : undefined
+                    }}
+                  />
+                );
+              })()}
+
+              {/* Render elements */}
+              {elements.filter(el => el.visible).map((element) => {
+                // Prepare content for different element types
+                let renderedContent: React.ReactNode = element.content;
+
                 if (element.type === 'text') {
                   renderedContent = (
                     <div
@@ -1438,8 +1437,8 @@ const EditorPageV2: React.FC = () => {
                           element.style?.textAlign === 'left'
                             ? 'flex-start'
                             : element.style?.textAlign === 'right'
-                            ? 'flex-end'
-                            : 'center',
+                              ? 'flex-end'
+                              : 'center',
                         padding: '8px',
                         wordWrap: 'break-word',
                         whiteSpace: 'pre-wrap'
@@ -1461,56 +1460,56 @@ const EditorPageV2: React.FC = () => {
                     />
                   );
                 } else if (element.type === 'decoration' && element.imageUrl) {
-                   renderedContent = (
-                     <img
-                       src={element.imageUrl}
-                       alt={element.name}
-                       style={{
-                         width: '100%',
-                         height: '100%',
-                         objectFit: 'contain',
-                         pointerEvents: 'none'
-                       }}
-                       crossOrigin="anonymous"
-                     />
-                   );
-                 }
+                  renderedContent = (
+                    <img
+                      src={element.imageUrl}
+                      alt={element.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        pointerEvents: 'none'
+                      }}
+                      crossOrigin="anonymous"
+                    />
+                  );
+                }
 
-                 return (
-                   <DraggableElement
+                return (
+                  <DraggableElement
                     key={element.id}
                     id={element.id}
                     type={element.type as any}
                     content={renderedContent}
-                     imageUrl={element.imageUrl}
-                     position={element.position}
-                     size={element.size}
-                     rotation={element.rotation}
-                     opacity={element.opacity}
-                     zIndex={element.zIndex}
-                     isSelected={selectedElementId === element.id}
-                     locked={element.locked}
-                     onSelect={setSelectedElementId}
-                     onUpdate={(updates) => handleUpdateElement(updates)}
-                     onDelete={() => handleDeleteLayer(element.id)}
-                     onDuplicate={() => handleDuplicateLayer(element.id)}
-                     onToggleLock={() => handleToggleLock(element.id)}
-                     onChangeZ={(action) => {
-                       const allZ = elements.map(e => e.zIndex);
-                       const maxZ = Math.max(...allZ);
-                       const minZ = Math.min(...allZ);
-                       const newElements = elements.map(el =>
-                         el.id === element.id
-                           ? { ...el, zIndex: action === 'front' ? maxZ + 1 : minZ - 1 }
-                           : el
-                       );
-                       updateElements(newElements);
-                     }}
-                     containerRef={canvasRef}
-                     style={element.type === 'text' ? {} : element.style}
-                   />
-                 );
-               })}
+                    imageUrl={element.imageUrl}
+                    position={element.position}
+                    size={element.size}
+                    rotation={element.rotation}
+                    opacity={element.opacity}
+                    zIndex={element.zIndex}
+                    isSelected={selectedElementId === element.id}
+                    locked={element.locked}
+                    onSelect={setSelectedElementId}
+                    onUpdate={(updates) => handleUpdateElement(updates)}
+                    onDelete={() => handleDeleteLayer(element.id)}
+                    onDuplicate={() => handleDuplicateLayer(element.id)}
+                    onToggleLock={() => handleToggleLock(element.id)}
+                    onChangeZ={(action) => {
+                      const allZ = elements.map(e => e.zIndex);
+                      const maxZ = Math.max(...allZ);
+                      const minZ = Math.min(...allZ);
+                      const newElements = elements.map(el =>
+                        el.id === element.id
+                          ? { ...el, zIndex: action === 'front' ? maxZ + 1 : minZ - 1 }
+                          : el
+                      );
+                      updateElements(newElements);
+                    }}
+                    containerRef={canvasRef}
+                    style={element.type === 'text' ? {} : element.style}
+                  />
+                );
+              })}
 
 
               {/* QR Code */}
@@ -1518,240 +1517,235 @@ const EditorPageV2: React.FC = () => {
                 <img
                   src={qrMedia.qr_image_url}
                   alt="QR"
-                  style={{ 
-                    width: `${qrSize}px`, 
+                  style={{
+                    width: `${qrSize}px`,
                     height: `${qrSize}px`,
                     zIndex: 400
                   }}
-                  className={`absolute bg-white p-2 rounded-md shadow ${
-                    qrPosition === 'top-left' ? 'top-4 left-4' :
+                  className={`absolute bg-white p-2 rounded-md shadow ${qrPosition === 'top-left' ? 'top-4 left-4' :
                     qrPosition === 'top-right' ? 'top-4 right-4' :
-                    qrPosition === 'bottom-left' ? 'bottom-4 left-4' :
-                    'bottom-4 right-4'
-                  }`}
+                      qrPosition === 'bottom-left' ? 'bottom-4 left-4' :
+                        'bottom-4 right-4'
+                    }`}
                 />
               )}
             </div>
           </div>
         </div>
 
-         {/* Right Panel - Hidden on mobile, shown as bottom sheet */}
-         <div className="hidden lg:flex w-[420px] bg-white border-l border-gray-200 flex-col">
-           {/* Panel Tabs */}
-           <div className="flex border-b border-gray-200 overflow-x-hidden">
-             <button
-               onClick={() => setRightPanel('design')}
-               className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${
-                 rightPanel === 'design'
-                   ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-               }`}
-             >
-               <Palette className="h-4 w-4 inline mr-1" />
-               Tasarım
-             </button>
-             <button
-               onClick={() => setRightPanel('properties')}
-               className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${
-                 rightPanel === 'properties'
-                   ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-               }`}
-             >
-               <Settings className="h-4 w-4 inline mr-1" />
-               Özellikler
-             </button>
-             <button
-               onClick={() => setRightPanel('layers')}
-               className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${
-                 rightPanel === 'layers'
-                   ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-               }`}
-             >
-               <LayersIcon className="h-4 w-4 inline mr-1" />
-               Katmanlar
-             </button>
-             <button
-               onClick={() => setRightPanel('guests')}
-               className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${
-                 rightPanel === 'guests'
-                   ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
-                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-               }`}
-             >
-               <Users className="h-4 w-4 inline mr-1" />
-               Davetliler
-             </button>
-           </div>
+        {/* Right Panel - Hidden on mobile, shown as bottom sheet */}
+        <div className="hidden lg:flex w-[420px] bg-white border-l border-gray-200 flex-col">
+          {/* Panel Tabs */}
+          <div className="flex border-b border-gray-200 overflow-x-hidden">
+            <button
+              onClick={() => setRightPanel('design')}
+              className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${rightPanel === 'design'
+                ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+            >
+              <Palette className="h-4 w-4 inline mr-1" />
+              Tasarım
+            </button>
+            <button
+              onClick={() => setRightPanel('properties')}
+              className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${rightPanel === 'properties'
+                ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+            >
+              <Settings className="h-4 w-4 inline mr-1" />
+              Özellikler
+            </button>
+            <button
+              onClick={() => setRightPanel('layers')}
+              className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${rightPanel === 'layers'
+                ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+            >
+              <LayersIcon className="h-4 w-4 inline mr-1" />
+              Katmanlar
+            </button>
+            <button
+              onClick={() => setRightPanel('guests')}
+              className={`flex-1 px-2.5 py-2.5 text-xs font-medium transition-colors ${rightPanel === 'guests'
+                ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+            >
+              <Users className="h-4 w-4 inline mr-1" />
+              Davetliler
+            </button>
+          </div>
 
-           {/* Panel Content */}
-           <div className="flex-1 overflow-hidden">
-             {rightPanel === 'design' && invitation && user && (
-               <DesignPanel
-                 formData={formData}
-                 onFormChange={handleInputChange}
-                 colors={colors}
-                 onColorsChange={(newColors) => {
-                   setColors(newColors);
-                   const updatedElements = elements.map(el => {
-                     // Text-like elements: everything except decoration/image/divider
-                     if (el.type !== 'decoration' && el.type !== 'image' && el.type !== 'divider') {
-                       return {
-                         ...el,
-                         style: {
-                           ...(el.style || {}),
-                           color: newColors.text
-                         }
-                       };
-                     }
-                     // Divider elements use accent color
-                     if (el.type === 'divider') {
-                       return {
-                         ...el,
-                         style: {
-                           ...(el.style || {}),
-                           color: newColors.accent
-                         }
-                       };
-                     }
-                     return el;
-                   });
-                   updateElements(updatedElements);
-                   toast.success('Renkler tüm elementlere uygulandı');
-                 }}
-                 defaultColors={templateOriginalDesign?.colors}
-                 selectedFont={selectedFont}
-                 onFontChange={(newFont) => {
-                   setSelectedFont(newFont);
-                   const updatedElements = elements.map(el => {
-                     // Apply font to all text-like elements (exclude decoration/image/divider)
-                     if (el.type !== 'decoration' && el.type !== 'image' && el.type !== 'divider') {
-                       return {
-                         ...el,
-                         style: {
-                           ...(el.style || {}),
-                           fontFamily: newFont
-                         }
-                       };
-                     }
-                     return el;
-                   });
-                   updateElements(updatedElements);
-                   toast.success('Yazı tipi tüm metinlere uygulandı');
-                 }}
-                 invitationId={invitation.id}
-                 userId={user.id}
-                 onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
-                 onImageRemoved={() => setFormData({ ...formData, imageUrl: null })}
-                 onPositionChange={(position) => setFormData({ ...formData, imagePosition: position })}
-                 onLogoShapeChange={(shape) => setFormData({ ...formData, logoShape: shape })}
-                 onOpenGallery={() => setIsGalleryOpen(true)}
-                 onResetToTemplate={handleResetToTemplate}
-                 hasTemplateOriginal={!!templateOriginalDesign}
-                 currentPlan={subscription.currentPlan}
-               />
-             )}
-               {rightPanel === 'design' && invitation && user && (
-                 <DesignPanel
-                   formData={formData}
-                   onFormChange={handleInputChange}
-                   colors={colors}
-                   onColorsChange={(newColors) => {
-                     setColors(newColors);
-                     // Update all text-like and divider elements with new colors
-                     const updatedElements = elements.map(el => {
-                       if (el.type !== 'decoration' && el.type !== 'image' && el.type !== 'divider') {
-                         return {
-                           ...el,
-                           style: {
-                             ...(el.style || {}),
-                             color: newColors.text
-                           }
-                         };
-                       } else if (el.type === 'divider') {
-                         return {
-                           ...el,
-                           style: {
-                             ...(el.style || {}),
-                             color: newColors.accent
-                           }
-                         };
-                       }
-                       return el;
-                     });
-                     updateElements(updatedElements);
-                     toast.success('Renkler tüm elementlere uygulandı');
-                   }}
-                   defaultColors={templateOriginalDesign?.colors}
-                   selectedFont={selectedFont}
-                   onFontChange={(newFont) => {
-                     setSelectedFont(newFont);
-                     // Update all text-like elements with new font
-                     const updatedElements = elements.map(el => {
-                       if (el.type !== 'decoration' && el.type !== 'image' && el.type !== 'divider') {
-                         return {
-                           ...el,
-                           style: {
-                             ...(el.style || {}),
-                             fontFamily: newFont
-                           }
-                         };
-                       }
-                       return el;
-                     });
-                     updateElements(updatedElements);
-                     toast.success('Yazı tipi tüm metinlere uygulandı');
-                   }}
-                   invitationId={invitation.id}
-                   userId={user.id}
-                   onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
-                   onImageRemoved={() => setFormData({ ...formData, imageUrl: null })}
-                   onPositionChange={(position) => setFormData({ ...formData, imagePosition: position })}
-                   onLogoShapeChange={(shape) => setFormData({ ...formData, logoShape: shape })}
-                   onOpenGallery={() => setIsGalleryOpen(true)}
-                   onResetToTemplate={handleResetToTemplate}
-                   hasTemplateOriginal={!!templateOriginalDesign}
-                   currentPlan={subscription.currentPlan}
-                 />
-               )}
-             {rightPanel === 'properties' && (
-               <PropertiesPanel
-                 selectedElement={selectedElement}
-                 onUpdate={handleUpdateElement}
-                 onDelete={handleDeleteSelected}
-                 colors={colors}
-               />
-             )}
-             {rightPanel === 'layers' && (
-               <LayersPanel
-                 layers={layers}
-                 selectedLayerId={selectedElementId}
-                 onSelectLayer={setSelectedElementId}
-                 onToggleVisibility={handleToggleVisibility}
-                 onToggleLock={handleToggleLock}
-                 onDeleteLayer={handleDeleteLayer}
-                 onDuplicateLayer={handleDuplicateLayer}
-                 onReorderLayer={handleReorderLayer}
-               />
-             )}
-             {rightPanel === 'guests' && invitation && (
-               <div className="p-4 overflow-auto h-full">
-                 <GuestList
-                   invitationId={invitation.id}
-                   invitationTitle={invitation.title}
-                   invitationStatus={invitation.status}
-                 />
-               </div>
-             )}
-           </div>
-         </div>
+          {/* Panel Content */}
+          <div className="flex-1 overflow-hidden">
+            {rightPanel === 'design' && invitation && user && (
+              <DesignPanel
+                formData={formData}
+                onFormChange={handleInputChange}
+                colors={colors}
+                onColorsChange={(newColors) => {
+                  setColors(newColors);
+                  const updatedElements = elements.map(el => {
+                    // Text-like elements: everything except decoration/image/divider
+                    if (el.type !== 'decoration' && el.type !== 'image' && el.type !== 'divider') {
+                      return {
+                        ...el,
+                        style: {
+                          ...(el.style || {}),
+                          color: newColors.text
+                        }
+                      };
+                    }
+                    // Divider elements use accent color
+                    if (el.type === 'divider') {
+                      return {
+                        ...el,
+                        style: {
+                          ...(el.style || {}),
+                          color: newColors.accent
+                        }
+                      };
+                    }
+                    return el;
+                  });
+                  updateElements(updatedElements);
+                  toast.success('Renkler tüm elementlere uygulandı');
+                }}
+                defaultColors={templateOriginalDesign?.colors}
+                selectedFont={selectedFont}
+                onFontChange={(newFont) => {
+                  setSelectedFont(newFont);
+                  const updatedElements = elements.map(el => {
+                    // Apply font to all text-like elements (exclude decoration/image/divider)
+                    if (el.type !== 'decoration' && el.type !== 'image' && el.type !== 'divider') {
+                      return {
+                        ...el,
+                        style: {
+                          ...(el.style || {}),
+                          fontFamily: newFont
+                        }
+                      };
+                    }
+                    return el;
+                  });
+                  updateElements(updatedElements);
+                  toast.success('Yazı tipi tüm metinlere uygulandı');
+                }}
+                invitationId={invitation.id}
+                userId={user.id}
+                onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
+                onImageRemoved={() => setFormData({ ...formData, imageUrl: null })}
+                onPositionChange={(position) => setFormData({ ...formData, imagePosition: position })}
+                onLogoShapeChange={(shape) => setFormData({ ...formData, logoShape: shape })}
+                onOpenGallery={() => setIsGalleryOpen(true)}
+                onResetToTemplate={handleResetToTemplate}
+                hasTemplateOriginal={!!templateOriginalDesign}
+                currentPlan={subscription.currentPlan}
+              />
+            )}
+            {rightPanel === 'design' && invitation && user && (
+              <DesignPanel
+                formData={formData}
+                onFormChange={handleInputChange}
+                colors={colors}
+                onColorsChange={(newColors) => {
+                  setColors(newColors);
+                  // Update all text-like and divider elements with new colors
+                  const updatedElements = elements.map(el => {
+                    if (el.type !== 'decoration' && el.type !== 'image' && el.type !== 'divider') {
+                      return {
+                        ...el,
+                        style: {
+                          ...(el.style || {}),
+                          color: newColors.text
+                        }
+                      };
+                    } else if (el.type === 'divider') {
+                      return {
+                        ...el,
+                        style: {
+                          ...(el.style || {}),
+                          color: newColors.accent
+                        }
+                      };
+                    }
+                    return el;
+                  });
+                  updateElements(updatedElements);
+                  toast.success('Renkler tüm elementlere uygulandı');
+                }}
+                defaultColors={templateOriginalDesign?.colors}
+                selectedFont={selectedFont}
+                onFontChange={(newFont) => {
+                  setSelectedFont(newFont);
+                  // Update all text-like elements with new font
+                  const updatedElements = elements.map(el => {
+                    if (el.type !== 'decoration' && el.type !== 'image' && el.type !== 'divider') {
+                      return {
+                        ...el,
+                        style: {
+                          ...(el.style || {}),
+                          fontFamily: newFont
+                        }
+                      };
+                    }
+                    return el;
+                  });
+                  updateElements(updatedElements);
+                  toast.success('Yazı tipi tüm metinlere uygulandı');
+                }}
+                invitationId={invitation.id}
+                userId={user.id}
+                onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
+                onImageRemoved={() => setFormData({ ...formData, imageUrl: null })}
+                onPositionChange={(position) => setFormData({ ...formData, imagePosition: position })}
+                onLogoShapeChange={(shape) => setFormData({ ...formData, logoShape: shape })}
+                onOpenGallery={() => setIsGalleryOpen(true)}
+                onResetToTemplate={handleResetToTemplate}
+                hasTemplateOriginal={!!templateOriginalDesign}
+                currentPlan={subscription.currentPlan}
+              />
+            )}
+            {rightPanel === 'properties' && (
+              <PropertiesPanel
+                selectedElement={selectedElement}
+                onUpdate={handleUpdateElement}
+                onDelete={handleDeleteSelected}
+                colors={colors}
+              />
+            )}
+            {rightPanel === 'layers' && (
+              <LayersPanel
+                layers={layers}
+                selectedLayerId={selectedElementId}
+                onSelectLayer={setSelectedElementId}
+                onToggleVisibility={handleToggleVisibility}
+                onToggleLock={handleToggleLock}
+                onDeleteLayer={handleDeleteLayer}
+                onDuplicateLayer={handleDuplicateLayer}
+                onReorderLayer={handleReorderLayer}
+              />
+            )}
+            {rightPanel === 'guests' && invitation && (
+              <div className="p-4 overflow-auto h-full">
+                <GuestList
+                  invitationId={invitation.id}
+                  invitationTitle={invitation.title}
+                  invitationStatus={invitation.status}
+                />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Mobile Bottom Sheet */}
       {isMobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}>
-          <div 
+          <div
             className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
@@ -1760,289 +1754,360 @@ const EditorPageV2: React.FC = () => {
               <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
 
-             {/* Tabs - Grid Layout for Better Mobile UX */}
-             <div className="grid grid-cols-5 gap-0 border-b border-gray-200 bg-gray-50">
-               <button
-                 onClick={() => setRightPanel('tools')}
-                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
-                   rightPanel === 'tools'
-                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
-                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
-                 }`}
-               >
-                 <Settings className={`h-5 w-5 mb-1 ${rightPanel === 'tools' ? 'text-primary-600' : 'text-gray-400'}`} />
-                 <span className="text-[10px]">Araçlar</span>
-               </button>
-               <button
-                 onClick={() => setRightPanel('design')}
-                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
-                   rightPanel === 'design'
-                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
-                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
-                 }`}
-               >
-                 <Palette className={`h-5 w-5 mb-1 ${rightPanel === 'design' ? 'text-primary-600' : 'text-gray-400'}`} />
-                 <span className="text-[10px]">Tasarım</span>
-               </button>
-               <button
-                 onClick={() => setRightPanel('properties')}
-                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
-                   rightPanel === 'properties'
-                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
-                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
-                 }`}
-               >
-                 <Settings className={`h-5 w-5 mb-1 ${rightPanel === 'properties' ? 'text-primary-600' : 'text-gray-400'}`} />
-                 <span className="text-[10px]">Özellik</span>
-               </button>
-               <button
-                 onClick={() => setRightPanel('layers')}
-                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
-                   rightPanel === 'layers'
-                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
-                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
-                 }`}
-               >
-                 <LayersIcon className={`h-5 w-5 mb-1 ${rightPanel === 'layers' ? 'text-primary-600' : 'text-gray-400'}`} />
-                 <span className="text-[10px]">Katman</span>
-               </button>
-               <button
-                 onClick={() => setRightPanel('guests')}
-                 className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${
-                   rightPanel === 'guests'
-                     ? 'text-primary-600 bg-white border-b-2 border-primary-600'
-                     : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
-                 }`}
-               >
-                 <Users className={`h-5 w-5 mb-1 ${rightPanel === 'guests' ? 'text-primary-600' : 'text-gray-400'}`} />
-                 <span className="text-[10px]">Davetli</span>
-               </button>
-             </div>
+            {/* Tabs - Grid Layout for Better Mobile UX */}
+            <div className="grid grid-cols-5 gap-0 border-b border-gray-200 bg-gray-50">
+              <button
+                onClick={() => setRightPanel('tools')}
+                className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${rightPanel === 'tools'
+                  ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
+                  }`}
+              >
+                <Settings className={`h-5 w-5 mb-1 ${rightPanel === 'tools' ? 'text-primary-600' : 'text-gray-400'}`} />
+                <span className="text-[10px]">Araçlar</span>
+              </button>
+              <button
+                onClick={() => setRightPanel('design')}
+                className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${rightPanel === 'design'
+                  ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
+                  }`}
+              >
+                <Palette className={`h-5 w-5 mb-1 ${rightPanel === 'design' ? 'text-primary-600' : 'text-gray-400'}`} />
+                <span className="text-[10px]">Tasarım</span>
+              </button>
+              <button
+                onClick={() => setRightPanel('properties')}
+                className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${rightPanel === 'properties'
+                  ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
+                  }`}
+              >
+                <Settings className={`h-5 w-5 mb-1 ${rightPanel === 'properties' ? 'text-primary-600' : 'text-gray-400'}`} />
+                <span className="text-[10px]">Özellik</span>
+              </button>
+              <button
+                onClick={() => setRightPanel('layers')}
+                className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${rightPanel === 'layers'
+                  ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
+                  }`}
+              >
+                <LayersIcon className={`h-5 w-5 mb-1 ${rightPanel === 'layers' ? 'text-primary-600' : 'text-gray-400'}`} />
+                <span className="text-[10px]">Katman</span>
+              </button>
+              <button
+                onClick={() => setRightPanel('guests')}
+                className={`flex flex-col items-center justify-center py-3 text-xs font-medium transition-all ${rightPanel === 'guests'
+                  ? 'text-primary-600 bg-white border-b-2 border-primary-600'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'
+                  }`}
+              >
+                <Users className={`h-5 w-5 mb-1 ${rightPanel === 'guests' ? 'text-primary-600' : 'text-gray-400'}`} />
+                <span className="text-[10px]">Davetli</span>
+              </button>
+            </div>
 
-             {/* Content */}
-             <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white">
-               {rightPanel === 'tools' && (
-                 <div className="p-4 space-y-3">
-                   {/* Canvas Size */}
-                   <div className="bg-gray-50 p-3 rounded-xl">
-                     <label className="block text-xs font-semibold text-gray-700 mb-2">
-                       📐 Tuval Boyutu
-                     </label>
-                     <select
-                       value={canvasPreset}
-                       onChange={(e) => setCanvasPreset(e.target.value as CanvasPreset)}
-                       className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white"
-                     >
-                       {Object.entries(CANVAS_PRESETS).map(([key, { label }]) => (
-                         <option key={key} value={key}>{label}</option>
-                       ))}
-                     </select>
-                     <p className="text-xs text-gray-500 mt-1.5 text-center">
-                       {canvasDimensions.width} × {canvasDimensions.height}px
-                     </p>
-                   </div>
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto overflow-x-hidden bg-white">
+              {rightPanel === 'tools' && (
+                <div className="p-4 space-y-3">
+                  {/* Canvas Size */}
+                  <div className="bg-gray-50 p-3 rounded-xl">
+                    <label className="block text-xs font-semibold text-gray-700 mb-2">
+                      📐 Tuval Boyutu
+                    </label>
+                    <select
+                      value={canvasPreset}
+                      onChange={(e) => setCanvasPreset(e.target.value as CanvasPreset)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm bg-white"
+                    >
+                      {Object.entries(CANVAS_PRESETS).map(([key, { label }]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1.5 text-center">
+                      {canvasDimensions.width} × {canvasDimensions.height}px
+                    </p>
+                  </div>
 
-                   {/* Zoom Controls */}
-                   <div className="bg-gray-50 p-3 rounded-xl">
-                     <label className="block text-xs font-semibold text-gray-700 mb-2">
-                       🔍 Yakınlaştırma: {zoom}%
-                     </label>
-                     <div className="flex gap-2">
-                       <button 
-                         onClick={() => setZoom(Math.max(25, zoom - 10))} 
-                         className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-sm font-semibold transition-colors border border-gray-200"
-                       >
-                         −
-                       </button>
-                       <button 
-                         onClick={() => setZoom(100)} 
-                         className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-xs font-medium transition-colors border border-gray-200"
-                       >
-                         100%
-                       </button>
-                       <button 
-                         onClick={() => setZoom(Math.min(200, zoom + 10))} 
-                         className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-sm font-semibold transition-colors border border-gray-200"
-                       >
-                         +
-                       </button>
-                     </div>
-                   </div>
+                  {/* Zoom Controls */}
+                  <div className="bg-gray-50 p-3 rounded-xl">
+                    <label className="block text-xs font-semibold text-gray-700 mb-2">
+                      🔍 Yakınlaştırma: {zoom}%
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setZoom(Math.max(25, zoom - 10))}
+                        className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-sm font-semibold transition-colors border border-gray-200"
+                      >
+                        −
+                      </button>
+                      <button
+                        onClick={() => setZoom(100)}
+                        className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-xs font-medium transition-colors border border-gray-200"
+                      >
+                        100%
+                      </button>
+                      <button
+                        onClick={() => setZoom(Math.min(200, zoom + 10))}
+                        className="flex-1 py-2 bg-white hover:bg-gray-100 rounded-lg text-sm font-semibold transition-colors border border-gray-200"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
 
-                   {/* Grid & History */}
-                   <div className="grid grid-cols-2 gap-2">
-                     <button
-                       onClick={() => setShowGrid(!showGrid)}
-                       className={`py-2.5 rounded-lg text-xs font-medium transition-all ${
-                         showGrid 
-                           ? 'bg-primary-600 text-white shadow-md' 
-                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                       }`}
-                     >
-                       {showGrid ? '✓ Izgara' : 'Izgara'}
-                     </button>
-                     <button
-                       onClick={undoRedo.undo}
-                       disabled={!undoRedo.canUndo}
-                       className="py-2.5 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium transition-colors"
-                     >
-                       ↶ Geri
-                     </button>
-                   </div>
+                  {/* Grid & History */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setShowGrid(!showGrid)}
+                      className={`py-2.5 rounded-lg text-xs font-medium transition-all ${showGrid
+                        ? 'bg-primary-600 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      {showGrid ? '✓ Izgara' : 'Izgara'}
+                    </button>
+                    <button
+                      onClick={undoRedo.undo}
+                      disabled={!undoRedo.canUndo}
+                      className="py-2.5 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-xs font-medium transition-colors"
+                    >
+                      ↶ Geri
+                    </button>
+                  </div>
 
-                   {/* Divider */}
-                   <div className="border-t border-gray-200"></div>
+                  {/* Divider */}
+                  <div className="border-t border-gray-200"></div>
 
-                   {/* Actions - Compact Grid */}
-                   <div className="grid grid-cols-2 gap-2">
-                     <button 
-                       onClick={handleSave} 
-                       disabled={isSaving}
-                       className="py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
-                     >
-                       <Save className="h-5 w-5" />
-                       <span>{isSaving ? 'Kaydediliyor' : 'Kaydet'}</span>
-                     </button>
-                     
-                     <button 
-                       onClick={() => {
-                         setIsPreviewOpen(true);
-                         setIsMobileMenuOpen(false);
-                       }}
-                       className="py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
-                     >
-                       <Eye className="h-5 w-5" />
-                       <span>Önizle</span>
-                     </button>
-                     
-                     <button 
-                       onClick={() => {
-                         handleShare();
-                         setIsMobileMenuOpen(false);
-                       }}
-                       className="py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
-                     >
-                       <Share2 className="h-5 w-5" />
-                       <span>Paylaş</span>
-                     </button>
-                     
-                     <button 
-                       onClick={() => {
-                         handleDownload();
-                         setIsMobileMenuOpen(false);
-                       }}
-                       className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
-                     >
-                       <Download className="h-5 w-5" />
-                       <span>İndir</span>
-                     </button>
-                   </div>
+                  {/* Actions - Compact Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="py-3 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
+                    >
+                      <Save className="h-5 w-5" />
+                      <span>{isSaving ? 'Kaydediliyor' : 'Kaydet'}</span>
+                    </button>
 
-                   <button 
-                     onClick={() => {
-                       handleTogglePublish();
-                       setIsMobileMenuOpen(false);
-                     }}
-                     className={`w-full py-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
-                       invitation.status === 'published'
-                         ? 'bg-green-600 hover:bg-green-700 text-white shadow-md'
-                         : 'bg-orange-600 hover:bg-orange-700 text-white shadow-md'
-                     }`}
-                   >
-                     <span className="text-lg">
-                       {invitation.status === 'published' ? '✓' : '📝'}
-                     </span>
-                     <span>
-                       {invitation.status === 'published' ? 'Yayında' : 'Yayınla'}
-                     </span>
-                   </button>
-                 </div>
-               )}
-               
-               {rightPanel === 'design' && invitation && user && (
-                 <div className="h-full overflow-y-auto overflow-x-hidden">
-                   <DesignPanel
-                     formData={formData}
-                     onFormChange={handleInputChange}
-                     colors={colors}
-                     onColorsChange={(newColors) => {
-                       setColors(newColors);
-                       // Update all text and divider elements with new colors
-                       const updatedElements = elements.map(el => {
-                         if (el.type === 'text' && el.style) {
-                           return { ...el, style: { ...el.style, color: newColors.text } };
-                         } else if (el.type === 'divider' && el.style) {
-                           return { ...el, style: { ...el.style, color: newColors.accent } };
-                         }
-                         return el;
-                       });
-                       updateElements(updatedElements);
-                       toast.success('Renkler tüm elementlere uygulandı');
-                     }}
-                     defaultColors={templateOriginalDesign?.colors}
-                     selectedFont={selectedFont}
-                     onFontChange={(newFont) => {
-                       setSelectedFont(newFont);
-                       // Update all text elements with new font
-                       const updatedElements = elements.map(el => {
-                         if (el.type === 'text' && el.style) {
-                           return { ...el, style: { ...el.style, fontFamily: newFont } };
-                         }
-                         return el;
-                       });
-                       updateElements(updatedElements);
-                       toast.success('Yazı tipi tüm metinlere uygulandı');
-                     }}
-                     invitationId={invitation.id}
-                     userId={user.id}
-                     onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
-                     onImageRemoved={() => setFormData({ ...formData, imageUrl: null })}
-                     onPositionChange={(position) => setFormData({ ...formData, imagePosition: position })}
-                     onLogoShapeChange={(shape) => setFormData({ ...formData, logoShape: shape })}
-                     onOpenGallery={() => setIsGalleryOpen(true)}
-                     onResetToTemplate={handleResetToTemplate}
-                     hasTemplateOriginal={!!templateOriginalDesign}
-                     currentPlan={subscription.currentPlan}
-                   />
-                 </div>
-               )}
-               {rightPanel === 'properties' && (
-                 <div className="h-full overflow-y-auto overflow-x-hidden">
-                   <PropertiesPanel
-                     selectedElement={selectedElement}
-                     onUpdate={handleUpdateElement}
-                     onDelete={handleDeleteSelected}
-                     colors={colors}
-                   />
-                 </div>
-               )}
-               {rightPanel === 'layers' && (
-                 <div className="h-full overflow-y-auto overflow-x-hidden">
-                   <LayersPanel
-                     layers={layers}
-                     selectedLayerId={selectedElementId}
-                     onSelectLayer={setSelectedElementId}
-                     onToggleVisibility={handleToggleVisibility}
-                     onToggleLock={handleToggleLock}
-                     onDeleteLayer={handleDeleteLayer}
-                     onDuplicateLayer={handleDuplicateLayer}
-                     onReorderLayer={handleReorderLayer}
-                   />
-                 </div>
-               )}
-               {rightPanel === 'guests' && invitation && (
-                 <div className="h-full overflow-y-auto overflow-x-hidden">
-                   <GuestList
-                     invitationId={invitation.id}
-                     invitationTitle={invitation.title}
-                     invitationStatus={invitation.status}
-                   />
-                 </div>
-               )}
-             </div>
+                    <button
+                      onClick={() => {
+                        setIsPreviewOpen(true);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
+                    >
+                      <Eye className="h-5 w-5" />
+                      <span>Önizle</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        handleShare();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
+                    >
+                      <Share2 className="h-5 w-5" />
+                      <span>Paylaş</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        handleDownload();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors flex flex-col items-center justify-center gap-1"
+                    >
+                      <Download className="h-5 w-5" />
+                      <span>İndir</span>
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      handleTogglePublish();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full py-3 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${invitation.status === 'published'
+                      ? 'bg-green-600 hover:bg-green-700 text-white shadow-md'
+                      : 'bg-orange-600 hover:bg-orange-700 text-white shadow-md'
+                      }`}
+                  >
+                    <span className="text-lg">
+                      {invitation.status === 'published' ? '✓' : '📝'}
+                    </span>
+                    <span>
+                      {invitation.status === 'published' ? 'Yayında' : 'Yayınla'}
+                    </span>
+                  </button>
+                </div>
+              )}
+
+              {rightPanel === 'design' && invitation && user && (
+                <div className="h-full overflow-y-auto overflow-x-hidden">
+                  <DesignPanel
+                    formData={formData}
+                    onFormChange={handleInputChange}
+                    colors={colors}
+                    onColorsChange={(newColors) => {
+                      setColors(newColors);
+                      // Update all text and divider elements with new colors
+                      const updatedElements = elements.map(el => {
+                        if (el.type === 'text' && el.style) {
+                          return { ...el, style: { ...el.style, color: newColors.text } };
+                        } else if (el.type === 'divider' && el.style) {
+                          return { ...el, style: { ...el.style, color: newColors.accent } };
+                        }
+                        return el;
+                      });
+                      updateElements(updatedElements);
+                      toast.success('Renkler tüm elementlere uygulandı');
+                    }}
+                    defaultColors={templateOriginalDesign?.colors}
+                    selectedFont={selectedFont}
+                    onFontChange={(newFont) => {
+                      setSelectedFont(newFont);
+                      // Update all text elements with new font
+                      const updatedElements = elements.map(el => {
+                        if (el.type === 'text' && el.style) {
+                          return { ...el, style: { ...el.style, fontFamily: newFont } };
+                        }
+                        return el;
+                      });
+                      updateElements(updatedElements);
+                      toast.success('Yazı tipi tüm metinlere uygulandı');
+                    }}
+                    invitationId={invitation.id}
+                    userId={user.id}
+                    onImageUploaded={(imageUrl) => setFormData({ ...formData, imageUrl })}
+                    onImageRemoved={() => setFormData({ ...formData, imageUrl: null })}
+                    onPositionChange={(position) => setFormData({ ...formData, imagePosition: position })}
+                    onLogoShapeChange={(shape) => setFormData({ ...formData, logoShape: shape })}
+                    onOpenGallery={() => setIsGalleryOpen(true)}
+                    onResetToTemplate={handleResetToTemplate}
+                    hasTemplateOriginal={!!templateOriginalDesign}
+                    currentPlan={subscription.currentPlan}
+                  />
+                </div>
+              )}
+              {rightPanel === 'properties' && (
+                <div className="h-full overflow-y-auto overflow-x-hidden">
+                  <PropertiesPanel
+                    selectedElement={selectedElement}
+                    onUpdate={handleUpdateElement}
+                    onDelete={handleDeleteSelected}
+                    colors={colors}
+                  />
+                </div>
+              )}
+              {rightPanel === 'layers' && (
+                <div className="h-full overflow-y-auto overflow-x-hidden">
+                  <LayersPanel
+                    layers={layers}
+                    selectedLayerId={selectedElementId}
+                    onSelectLayer={setSelectedElementId}
+                    onToggleVisibility={handleToggleVisibility}
+                    onToggleLock={handleToggleLock}
+                    onDeleteLayer={handleDeleteLayer}
+                    onDuplicateLayer={handleDuplicateLayer}
+                    onReorderLayer={handleReorderLayer}
+                  />
+                </div>
+              )}
+              {rightPanel === 'guests' && invitation && (
+                <div className="h-full overflow-y-auto overflow-x-hidden">
+                  <GuestList
+                    invitationId={invitation.id}
+                    invitationTitle={invitation.title}
+                    invitationStatus={invitation.status}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
+
+      {/* Mobile Bottom Toolbar - Visible on mobile and tablet */}
+      <div className="xl:hidden fixed bottom-0 left-0 right-0 bg-gray-900 text-white px-2 py-2 z-50 safe-area-inset-bottom">
+        <div className="flex items-center justify-around gap-1">
+          {/* Save */}
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isSaving ? 'opacity-50' : 'active:bg-gray-700'
+              }`}
+          >
+            <Save className={`h-5 w-5 ${isSaving ? 'animate-pulse text-green-400' : 'text-green-400'}`} />
+            <span className="text-[10px] mt-0.5">Kaydet</span>
+          </button>
+
+          {/* Preview */}
+          <button
+            onClick={() => setIsPreviewOpen(true)}
+            className="flex flex-col items-center justify-center p-2 rounded-lg active:bg-gray-700 transition-all"
+          >
+            <Eye className="h-5 w-5 text-blue-400" />
+            <span className="text-[10px] mt-0.5">Önizle</span>
+          </button>
+
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-0.5 bg-gray-800 rounded-lg px-1">
+            <button
+              onClick={() => setZoom(Math.max(25, zoom - 10))}
+              className="p-1.5 rounded active:bg-gray-700 transition-all"
+            >
+              <ZoomOut className="h-4 w-4 text-gray-300" />
+            </button>
+            <span className="text-xs font-mono w-9 text-center">{zoom}%</span>
+            <button
+              onClick={() => setZoom(Math.min(200, zoom + 10))}
+              className="p-1.5 rounded active:bg-gray-700 transition-all"
+            >
+              <ZoomIn className="h-4 w-4 text-gray-300" />
+            </button>
+          </div>
+
+          {/* Grid Toggle */}
+          <button
+            onClick={() => setShowGrid(!showGrid)}
+            className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${showGrid ? 'bg-primary-600' : 'active:bg-gray-700'
+              }`}
+          >
+            <Grid className="h-5 w-5" />
+            <span className="text-[10px] mt-0.5">Izgara</span>
+          </button>
+
+          {/* Design Panel Toggle */}
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+              setRightPanel('design');
+            }}
+            className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isMobileMenuOpen && rightPanel === 'design' ? 'bg-primary-600' : 'active:bg-gray-700'
+              }`}
+          >
+            <Palette className="h-5 w-5 text-purple-400" />
+            <span className="text-[10px] mt-0.5">Tasarım</span>
+          </button>
+
+          {/* Layers Panel Toggle */}
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+              setRightPanel('layers');
+            }}
+            className={`flex flex-col items-center justify-center p-2 rounded-lg transition-all ${isMobileMenuOpen && rightPanel === 'layers' ? 'bg-primary-600' : 'active:bg-gray-700'
+              }`}
+          >
+            <LayersIcon className="h-5 w-5 text-orange-400" />
+            <span className="text-[10px] mt-0.5">Katman</span>
+          </button>
+        </div>
+      </div>
 
       {/* Preview Modal */}
       {isPreviewOpen && invitation && (
@@ -2085,16 +2150,16 @@ const EditorPageV2: React.FC = () => {
           canvasSize={canvasDimensions}
         />
       )}
-       
-       {/* Decorative Elements Gallery */}
-       <DecorativeElementsGallery
-         isOpen={isGalleryOpen}
-         onClose={() => setIsGalleryOpen(false)}
-         onSelectGraphic={handleAddDecorativeElement}
-       />
-     </div>
-   );
- };
- 
- export default EditorPageV2;
+
+      {/* Decorative Elements Gallery */}
+      <DecorativeElementsGallery
+        isOpen={isGalleryOpen}
+        onClose={() => setIsGalleryOpen(false)}
+        onSelectGraphic={handleAddDecorativeElement}
+      />
+    </div>
+  );
+};
+
+export default EditorPageV2;
 

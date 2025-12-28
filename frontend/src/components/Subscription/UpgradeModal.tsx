@@ -21,25 +21,25 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
   recommendedPlan
 }) => {
   const navigate = useNavigate();
-  
+
   if (!isOpen) return null;
-  
+
   // Önerilen planı belirle - Premium şablonlar için sadece PREMIUM plan öner
   const suggestedPlan = recommendedPlan || (
     feature === 'premium_templates' && currentPlan !== 'premium' ? 'premium' :
-    currentPlan === 'free' ? 'pro' : 
-    currentPlan === 'pro' ? 'premium' : 
-    'premium'
+      currentPlan === 'free' ? 'pro' :
+        currentPlan === 'pro' ? 'premium' :
+          'premium'
   ) as PlanTier;
-  
+
   const planConfig = getPlanConfig(suggestedPlan);
   const currentPlanConfig = getPlanConfig(currentPlan);
-  
+
   const handleUpgrade = () => {
     navigate('/pricing');
     onClose();
   };
-  
+
   const getFeatureIcon = () => {
     switch (feature) {
       case 'create_invitation':
@@ -60,15 +60,15 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
         return '✨';
     }
   };
-  
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="flex min-h-full items-center justify-center p-4">
         <div className="relative bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
@@ -79,7 +79,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
           >
             <X className="h-6 w-6" />
           </button>
-          
+
           {/* Header */}
           <div className="text-center mb-6">
             <div className="text-6xl mb-4">{getFeatureIcon()}</div>
@@ -90,7 +90,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
               {featureDescription}
             </p>
           </div>
-          
+
           {/* Current vs Recommended Plan */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <div className="flex items-center justify-between mb-4">
@@ -98,9 +98,9 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 <div className="text-sm text-gray-500 mb-1">Mevcut Planınız</div>
                 <div className="font-semibold text-gray-900">{currentPlanConfig.name}</div>
               </div>
-              
+
               <ArrowRight className="h-5 w-5 text-gray-400 mx-4" />
-              
+
               <div className="flex-1">
                 <div className="text-sm text-gray-500 mb-1">Önerilen Plan</div>
                 <div className="font-semibold text-primary-600 flex items-center">
@@ -113,7 +113,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
                 </div>
               </div>
             </div>
-            
+
             <div className="text-center">
               <div className="text-3xl font-bold text-gray-900">
                 ₺{planConfig.price.monthly}
@@ -126,7 +126,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
               )}
             </div>
           </div>
-          
+
           {/* Benefits */}
           <div className="mb-6">
             <h3 className="font-semibold text-gray-900 mb-3">
@@ -175,7 +175,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
               )}
             </ul>
           </div>
-          
+
           {/* CTA Buttons */}
           <div className="space-y-3">
             <button
@@ -187,17 +187,17 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({
               ) : (
                 <Zap className="h-5 w-5" />
               )}
-              {planConfig.name} Planına Yükselt
+              <span>{planConfig.name} Planına Yükselt</span>
             </button>
-            
+
             <button
               onClick={onClose}
-              className="w-full btn-outline"
+              className="w-full btn-outline flex items-center justify-center"
             >
-              Şimdi Değil
+              <span>Şimdi Değil</span>
             </button>
           </div>
-          
+
           {/* Trust badges */}
           <div className="mt-6 pt-6 border-t border-gray-200 text-center">
             <div className="flex items-center justify-center space-x-4 text-sm text-gray-500">

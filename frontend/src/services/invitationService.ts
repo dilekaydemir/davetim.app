@@ -28,10 +28,10 @@ export interface Invitation {
   expires_at: string | null;
   created_at: string;
   updated_at: string;
-  
+
   // Joined data
   template?: any;
-  
+
   // Owner subscription info (for feature gates in public view)
   owner_subscription_tier?: 'free' | 'pro' | 'premium';
 }
@@ -85,12 +85,12 @@ class InvitationService {
   // =====================================================
   // Invitations CRUD
   // =====================================================
-  
+
   async createInvitation(data: CreateInvitationData): Promise<Invitation | null> {
     try {
       // Get current user
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+
       if (userError || !user) {
         console.error('❌ User not authenticated');
         toast.error('Giriş yapmalısınız');
@@ -183,7 +183,7 @@ class InvitationService {
             .select('tier')
             .eq('user_id', data.user_id)
             .single();
-          
+
           if (subscription && !subError) {
             data.owner_subscription_tier = subscription.tier;
           }
@@ -253,6 +253,14 @@ class InvitationService {
 
   async getUserInvitations(): Promise<Invitation[]> {
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('❌ User not authenticated for getUserInvitations');
+        return [];
+      }
+
       return await retry(async () => {
         const { data, error } = await supabase
           .from('invitations')
@@ -260,6 +268,7 @@ class InvitationService {
             *,
             template:templates(*)
           `)
+          .eq('user_id', user.id) // ✅ Critical: Filter by current user
           .order('updated_at', { ascending: false });
 
         if (error) {
@@ -284,10 +293,20 @@ class InvitationService {
 
   async updateInvitation(invitationId: string, updates: UpdateInvitationData): Promise<Invitation | null> {
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('❌ User not authenticated for updateInvitation');
+        toast.error('Giriş yapmalısınız');
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('invitations')
         .update(updates)
         .eq('id', invitationId)
+        .eq('user_id', user.id) // ✅ Only update own invitations
         .select(`
           *,
           template:templates(*)
@@ -311,10 +330,20 @@ class InvitationService {
 
   async deleteInvitation(invitationId: string): Promise<boolean> {
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('❌ User not authenticated for deleteInvitation');
+        toast.error('Giriş yapmalısınız');
+        return false;
+      }
+
       const { error } = await supabase
         .from('invitations')
         .delete()
-        .eq('id', invitationId);
+        .eq('id', invitationId)
+        .eq('user_id', user.id); // ✅ Only delete own invitations
 
       if (error) {
         console.error('❌ Error deleting invitation:', error);
@@ -333,6 +362,15 @@ class InvitationService {
 
   async publishInvitation(invitationId: string, isPublic: boolean = true): Promise<boolean> {
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        console.error('❌ User not authenticated for publishInvitation');
+        toast.error('Giriş yapmalısınız');
+        return false;
+      }
+
       const { error } = await supabase
         .from('invitations')
         .update({
@@ -340,7 +378,8 @@ class InvitationService {
           is_public: isPublic,
           published_at: new Date().toISOString()
         })
-        .eq('id', invitationId);
+        .eq('id', invitationId)
+        .eq('user_id', user.id); // ✅ Only publish own invitations
 
       if (error) {
         console.error('❌ Error publishing invitation:', error);
@@ -360,7 +399,7 @@ class InvitationService {
   // =====================================================
   // Guests & RSVP
   // =====================================================
-  
+
   async getInvitationGuests(invitationId: string): Promise<InvitationGuest[]> {
     try {
       const { data, error } = await supabase
@@ -405,7 +444,7 @@ class InvitationService {
   }
 
   async updateGuestRSVP(
-    guestId: string, 
+    guestId: string,
     rsvpStatus: 'attending' | 'not_attending' | 'maybe',
     additionalData?: Partial<InvitationGuest>
   ): Promise<boolean> {

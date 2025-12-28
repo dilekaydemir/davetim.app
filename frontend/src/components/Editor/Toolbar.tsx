@@ -1,7 +1,7 @@
 import React from 'react';
-import { 
-  MousePointer2, Type, Image, Shapes, Layers, 
-  ZoomIn, ZoomOut, Maximize2, Save, Eye, Share2, 
+import {
+  MousePointer2, Type, Image, Shapes, Layers,
+  ZoomIn, ZoomOut, Maximize2, Save, Eye, Share2,
   Download, Settings, Grid, Lock, Unlock
 } from 'lucide-react';
 
@@ -39,7 +39,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   ];
 
   return (
-    <div className="w-16 md:w-20 bg-gray-900 text-white flex flex-col items-center py-4 gap-2 shadow-2xl overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+    <div className="w-16 xl:w-20 h-full bg-gray-900 text-white flex flex-col items-center py-4 gap-2 shadow-2xl overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
       {/* Logo */}
       <div className="mb-4 pb-4 border-b border-gray-700 w-full flex justify-center">
         <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center font-bold text-lg">
@@ -58,15 +58,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               onClick={() => onToolChange(tool.id)}
               className={`
                 relative group w-full aspect-square rounded-lg transition-all
-                ${isActive 
-                  ? 'bg-primary-600 text-white shadow-lg' 
+                ${isActive
+                  ? 'bg-primary-600 text-white shadow-lg'
                   : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
                 }
               `}
               title={`${tool.label} (${tool.shortcut})`}
             >
               <Icon className="h-5 w-5 absolute inset-0 m-auto" />
-              
+
               {/* Tooltip */}
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50 hidden md:block">
                 {tool.label}
@@ -112,11 +112,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       <div className="w-full px-2">
         <button
           onClick={onToggleGrid}
-          className={`w-full aspect-square rounded-lg transition-all ${
-            showGrid 
-              ? 'bg-primary-600 text-white' 
+          className={`w-full aspect-square rounded-lg transition-all ${showGrid
+              ? 'bg-primary-600 text-white'
               : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-          }`}
+            }`}
           title="Izgara (G)"
         >
           <Grid className="h-5 w-5 mx-auto" />

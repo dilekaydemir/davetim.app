@@ -7,7 +7,7 @@ export const PRIVACY_POLICY = {
   title: "Gizlilik Politikası ve Kişisel Verilerin Korunması",
   lastUpdated: "24 Ekim 2025",
   companyInfo: {
-    name: "Diligent Computer System & Digital Commerce",
+    name: "Diligent Computer Systems & Digital Commerce - Dilek Aydemir",
     address: '',
     email: "info@davetim.app",
     phone: "+905359216894",
@@ -17,7 +17,7 @@ export const PRIVACY_POLICY = {
     {
       id: "1",
       title: "1. VERİ SORUMLUSU",
-      content: `6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, kişisel verileriniz; veri sorumlusu olarak Diligent Computer System & Digital Commerce ("Şirket") tarafından aşağıda açıklanan kapsamda işlenebilecektir.`
+      content: `6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, kişisel verileriniz; veri sorumlusu olarak Diligent Computer Systems & Digital Commerce - Dilek Aydemir ("Şirket") tarafından aşağıda açıklanan kapsamda işlenebilecektir.`
     },
     {
       id: "2",

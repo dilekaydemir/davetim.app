@@ -10,7 +10,7 @@ export const TERMS_OF_SERVICE = {
     {
       id: "1",
       title: "1. GENEL HÜKÜMLER",
-      content: `Bu Kullanım Koşulları ("Sözleşme"), Diligent Computer System & Digital Commerce ("Şirket") tarafından işletilen davetim.app platformu ("Platform") ile kullanıcı ("Kullanıcı") arasında elektronik ortamda akdedilmiş bir sözleşmedir.
+      content: `Bu Kullanım Koşulları ("Sözleşme"), Diligent Computer Systems & Digital Commerce - Dilek Aydemir ("Şirket") tarafından işletilen davetim.app platformu ("Platform") ile kullanıcı ("Kullanıcı") arasında elektronik ortamda akdedilmiş bir sözleşmedir.
 
 Platforma erişim sağlayarak veya kullanarak bu Kullanım Koşulları'nı kabul etmiş sayılırsınız. Koşulları kabul etmiyorsanız, lütfen Platformu kullanmayınız.`
     },
@@ -193,7 +193,7 @@ Değişiklikler sonrasında Platform kullanımına devam edilmesi, yeni koşulla
       title: "13. İLETİŞİM",
       content: `Kullanım Koşulları ile ilgili sorularınız için:
 
-**Şirket:** Diligent Computer System & Digital Commerce
+**Şirket:** Diligent Computer Systems & Digital Commerce - Dilek Aydemir
 **E-posta:** info@davetim.app
 **Telefon:** +905359216894`
     },

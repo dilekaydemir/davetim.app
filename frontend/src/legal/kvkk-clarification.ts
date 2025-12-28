@@ -12,7 +12,7 @@ export const KVKK_CLARIFICATION = {
       title: "1. VERİ SORUMLUSU",
       content: `6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") uyarınca, kişisel verileriniz veri sorumlusu sıfatıyla aşağıdaki şirket tarafından işlenmektedir:
 
-**Ünvan:** Diligent Computer System & Digital Commerce
+**Ünvan:** Diligent Computer Systems & Digital Commerce - Dilek Aydemir
 **Telefon:** +905359216894
 **E-posta:** info@davetim.app
 **KEP Adresi:** info@davetim.app`

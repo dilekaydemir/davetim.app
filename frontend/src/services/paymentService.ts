@@ -8,6 +8,7 @@ import type {
   PaymentStatusResponse,
   SubscriptionPaymentData,
 } from '../types/payment';
+import { PLAN_CONFIGS } from '../config/plans';
 
 // Payment service base URL
 const PAYMENT_API_BASE_URL = import.meta.env.VITE_PAYMENT_API_URL || 'http://localhost:5000/api/payment';
@@ -48,24 +49,24 @@ class PaymentService {
     try {
       console.log('💳 Processing payment:', paymentData.transactionId);
       console.log('📦 Payment data:', JSON.stringify(paymentData, null, 2));
-      
+
       const response = await this.api.post('/iyzico/process', paymentData);
       const result = response.data as PaymentResponse;
 
       console.log('✅ Payment response:', result);
-      
+
       if (!result.success) {
         console.error('❌ Payment failed:', result.errorMessage, result.errorCode);
       }
-      
+
       return result;
     } catch (error: any) {
       console.error('❌ Payment processing error:', error);
-      
-      const errorMessage = error.response?.data?.errorMessage || 
-                          error.response?.data?.message ||
-                          'Ödeme işlemi sırasında bir hata oluştu';
-      
+
+      const errorMessage = error.response?.data?.errorMessage ||
+        error.response?.data?.message ||
+        'Ödeme işlemi sırasında bir hata oluştu';
+
       toast.error(errorMessage);
       throw error;
     }
@@ -122,13 +123,11 @@ class PaymentService {
   ): Promise<PaymentResponse> {
     const { planTier, billingPeriod, customerId, customerName, customerSurname, customerEmail, customerPhone, billingAddress, cardInfo, installment } = subscriptionData;
 
-    // Calculate amount based on plan and period
-    const planPrices = {
-      pro: { monthly: 39, yearly: 390 },
-      premium: { monthly: 79, yearly: 790 },
-    };
-
-    const amount = planPrices[planTier][billingPeriod];
+    // Get price from centralized plan config (single source of truth)
+    const planConfig = PLAN_CONFIGS[planTier];
+    const amount = billingPeriod === 'yearly' && planConfig.price.yearly
+      ? planConfig.price.yearly
+      : planConfig.price.monthly;
     const transactionId = `SUB-${Date.now()}-${customerId.slice(0, 8)}`;
 
     const paymentRequest: PaymentRequest = {
@@ -160,11 +159,11 @@ class PaymentService {
       cardInfo,
       use3DSecure: true, // ✅ Production: 3D Secure enabled
       installment: installment || 1,
-      
+
       // Backend callback URL (İyzico POST burayı çağırır)
       // callbackUrl: Backend'in callback endpoint'i (İyzico için)
       // NOT: Bu backend tarafından otomatik set ediliyor, burada göndermeye gerek yok
-      
+
       // Client redirect URL (Backend başarı/hata sonrası kullanıcıyı buraya yönlendirir)
       clientRedirectUrl: `${window.location.origin}/payment/callback`,
     };
@@ -180,11 +179,11 @@ class PaymentService {
   handle3DSecure(htmlContent: string): void {
     console.log('🔐 Rendering 3D Secure HTML...');
     console.log('📄 HTML length:', htmlContent.length);
-    
+
     // Save state
     sessionStorage.setItem('payment_3d_in_progress', 'true');
     sessionStorage.setItem('payment_3d_timestamp', Date.now().toString());
-    
+
     // ✅ TAM EKRAN RENDER (iframe sandbox sorunu yok)
     this.render3DSecureFullScreen(htmlContent);
   }
@@ -196,22 +195,22 @@ class PaymentService {
    */
   private render3DSecureFullScreen(htmlContent: string): void {
     console.log('🔐 Opening 3D Secure in new window...');
-    
+
     // Create a blob URL for the HTML content
     const blob = new Blob([htmlContent], { type: 'text/html' });
     const blobUrl = URL.createObjectURL(blob);
-    
+
     // Try to open in same window (works best for callbacks)
     // Save current location to restore if user cancels
     const returnUrl = window.location.href;
     sessionStorage.setItem('payment_return_url', returnUrl);
-    
+
     console.log('✅ Redirecting to 3D Secure page...');
     console.log('📍 Return URL saved:', returnUrl);
-    
+
     // Full page redirect - İyzico can properly redirect back
     window.location.href = blobUrl;
-    
+
     // Cleanup blob URL after a delay
     setTimeout(() => {
       URL.revokeObjectURL(blobUrl);

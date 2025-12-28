@@ -204,7 +204,7 @@ Sadece belirli kanallara onay verebilirsiniz:
 };
 
 export const COMMERCIAL_MESSAGE_CONSENT_TEXT = `
-6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun uyarınca, Diligent Computer System & Digital Commerce tarafından 
+6563 sayılı Elektronik Ticaretin Düzenlenmesi Hakkında Kanun uyarınca, Diligent Computer Systems & Digital Commerce - Dilek Aydemir tarafından 
 kampanyalar, yeni ürün/hizmetler, promosyonlar ve diğer pazarlama amaçlı ticari elektronik iletilerin 
 e-posta, SMS, telefon ve diğer elektronik kanallar aracılığıyla tarafıma iletilmesine ve bu kapsamda 
 kişisel verilerimin işlenmesine açık rıza gösteriyorum. Bu onayımı dilediğim zaman geri alabileceğimi biliyorum.
