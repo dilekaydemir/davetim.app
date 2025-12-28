@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Loader2, X, Sparkles, Filter } from 'lucide-react';
+import { Search, Loader2, X, Sparkles, Filter, Heart } from 'lucide-react';
 import { templateService, type Template, type TemplateCategory } from '../services/templateService';
 import { useAuth } from '../store/authStore';
 import { useSubscription } from '../hooks/useSubscription';
@@ -25,7 +25,7 @@ const TemplatesPage: React.FC = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeTemplateTier, setUpgradeTemplateTier] = useState<'pro' | 'premium'>('pro');
-  
+
   const selectedCategory = searchParams.get('category') || 'all';
 
   // Debounce search term
@@ -44,7 +44,7 @@ const TemplatesPage: React.FC = () => {
 
   const loadData = async (overrideSearch?: string, overrideCategory?: string) => {
     setIsLoading(true);
-    
+
     try {
       // Load categories
       const categoriesData = await templateService.getCategories();
@@ -52,14 +52,15 @@ const TemplatesPage: React.FC = () => {
 
       // Load templates with filters
       const filters: any = {};
-      
+
       const categoryToUse = overrideCategory !== undefined ? overrideCategory : selectedCategory;
       const searchToUse = overrideSearch !== undefined ? overrideSearch : debouncedSearchTerm;
-      
-      if (categoryToUse !== 'all') {
+
+      // 'favorites' özel bir kategori - API'ye gönderme, tüm şablonları getir ve lokal filtrele
+      if (categoryToUse !== 'all' && categoryToUse !== 'favorites') {
         filters.category = categoryToUse;
       }
-      
+
       if (searchToUse) {
         filters.search = searchToUse;
       }
@@ -103,7 +104,7 @@ const TemplatesPage: React.FC = () => {
     }
 
     const isSaved = savedTemplates.has(templateId);
-    
+
     if (isSaved) {
       const success = await templateService.unsaveTemplate(templateId);
       if (success) {
@@ -124,20 +125,20 @@ const TemplatesPage: React.FC = () => {
   const handleSearch = (value: string) => {
     setSearchTerm(value);
   };
-  
+
   const handleClearSearch = () => {
     setSearchTerm('');
     setDebouncedSearchTerm('');
     loadData('', selectedCategory);
   };
-  
+
   const handleClearAllFilters = () => {
     setSearchTerm('');
     setDebouncedSearchTerm('');
     handleCategoryChange('all');
     loadData('', 'all');
   };
-  
+
   const handleUpgradeNeeded = (templateTier: 'pro' | 'premium') => {
     setUpgradeTemplateTier(templateTier);
     setShowUpgradeModal(true);
@@ -147,6 +148,11 @@ const TemplatesPage: React.FC = () => {
   const isSearching = searchTerm !== debouncedSearchTerm;
   const hasActiveSearch = debouncedSearchTerm.trim().length > 0;
   const hasActiveFilters = selectedCategory !== 'all' || hasActiveSearch;
+
+  // Şablonları göster - Favoriler seçiliyse sadece kaydedilen şablonları göster
+  const displayedTemplates = selectedCategory === 'favorites'
+    ? templates.filter(t => savedTemplates.has(t.id))
+    : templates;
 
   // Show skeleton while loading
   if (isLoading) {
@@ -162,7 +168,7 @@ const TemplatesPage: React.FC = () => {
         url="https://davetim.app/templates"
       />
       <CanonicalURL url="https://davetim.app/templates" />
-      
+
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header - Compact */}
@@ -172,7 +178,7 @@ const TemplatesPage: React.FC = () => {
               <Sparkles className="h-4 w-4 text-primary-600" />
               <span className="text-sm font-semibold text-gray-700">100+ Profesyonel Şablon</span>
             </div>
-            
+
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
               Davetiye Şablonları
             </h1>
@@ -192,13 +198,12 @@ const TemplatesPage: React.FC = () => {
                   placeholder="Ara... (Düğün, doğum günü, nişan)"
                   value={searchTerm}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className={`w-full pl-11 pr-11 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm ${
-                    isSearching 
-                      ? 'border-primary-300 bg-primary-50/50 shadow-md' 
-                      : 'border-gray-300 bg-white hover:border-gray-400 focus:shadow-md'
-                  }`}
+                  className={`w-full pl-11 pr-11 py-3 border rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all text-sm ${isSearching
+                    ? 'border-primary-300 bg-primary-50/50 shadow-md'
+                    : 'border-gray-300 bg-white hover:border-gray-400 focus:shadow-md'
+                    }`}
                 />
-                
+
                 {/* Right side icons */}
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
                   {isSearching && (
@@ -221,13 +226,31 @@ const TemplatesPage: React.FC = () => {
             <div className="relative">
               <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <Filter className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                {/* Favorilerim - Sadece giriş yapmış kullanıcılar için */}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => handleCategoryChange('favorites')}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${selectedCategory === 'favorites'
+                      ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-red-50 border border-gray-300 hover:border-red-300'
+                      }`}
+                  >
+                    <Heart className={`h-3.5 w-3.5 ${selectedCategory === 'favorites' ? 'fill-current' : ''}`} />
+                    Favorilerim
+                    {savedTemplates.size > 0 && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${selectedCategory === 'favorites' ? 'bg-white/20' : 'bg-red-100 text-red-600'
+                        }`}>
+                        {savedTemplates.size}
+                      </span>
+                    )}
+                  </button>
+                )}
                 <button
                   onClick={() => handleCategoryChange('all')}
-                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    selectedCategory === 'all'
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
-                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-primary-300'
-                  }`}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCategory === 'all'
+                    ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-primary-300'
+                    }`}
                 >
                   Tümü
                 </button>
@@ -235,11 +258,10 @@ const TemplatesPage: React.FC = () => {
                   <button
                     key={category.id}
                     onClick={() => handleCategoryChange(category.slug)}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                      selectedCategory === category.slug
-                        ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
-                        : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-primary-300'
-                    }`}
+                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCategory === category.slug
+                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-md'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 hover:border-primary-300'
+                      }`}
                   >
                     {category.name}
                   </button>
@@ -272,9 +294,9 @@ const TemplatesPage: React.FC = () => {
           )}
 
           {/* Templates Grid - Responsive */}
-          {templates.length > 0 && (
+          {displayedTemplates.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 animate-fade-in">
-              {templates.map((template, index) => (
+              {displayedTemplates.map((template, index) => (
                 <div
                   key={template.id}
                   style={{ animationDelay: `${index * 30}ms` }}
@@ -292,7 +314,7 @@ const TemplatesPage: React.FC = () => {
           )}
 
           {/* No Results - Modern */}
-          {!isSearching && templates.length === 0 && (
+          {!isSearching && displayedTemplates.length === 0 && (
             <div className="bg-white rounded-2xl shadow-md p-8 sm:p-12 text-center animate-fade-in border border-gray-200">
               <div className="max-w-md mx-auto">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full mb-4">
@@ -380,14 +402,14 @@ const TemplatesPage: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       {/* Upgrade Modal */}
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         feature="premium_templates"
         featureDescription={
-          upgradeTemplateTier === 'premium' 
+          upgradeTemplateTier === 'premium'
             ? "Premium şablonlara erişmek için PREMIUM plana yükseltin!"
             : "PRO şablonlara erişmek için PRO plana yükseltin!"
         }

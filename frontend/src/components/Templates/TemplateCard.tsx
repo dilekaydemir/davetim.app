@@ -1,5 +1,5 @@
 import React, { memo, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Heart, Eye, Star, Crown, Lock } from 'lucide-react';
 import type { Template } from '../../services/templateService';
 import { useSubscription } from '../../hooks/useSubscription';
@@ -13,23 +13,33 @@ interface TemplateCardProps {
 }
 
 const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSaved = false, onUpgradeNeeded }) => {
-  const navigate = useNavigate();
   const subscription = useSubscription();
-  
+
   // Plan kontrolü - Bu tier şablona erişim var mı?
   // FREE: sadece 'free' şablonlar, PRO: 'free'+'pro', PREMIUM: tüm şablonlar
   const templateTier = template.tier as 'free' | 'pro' | 'premium';
   const canAccess = subscription.canAccessTemplate(templateTier);
   const isLocked = !canAccess;
-  
+
   const handleSaveClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Tier kontrolü - Sadece kaydetme işleminde kontrol et, kaldırma serbest
+    // FREE: sadece 'free' şablonlar, PRO: 'free'+'pro', PREMIUM: tüm şablonlar
+    if (!isSaved && !canAccess) {
+      // Şablonu kaydetmeye çalışıyor ama erişim yoksa upgrade modal göster
+      if (onUpgradeNeeded && (template.tier === 'pro' || template.tier === 'premium')) {
+        onUpgradeNeeded(template.tier);
+      }
+      return;
+    }
+
     if (onSave) {
       onSave(template.id);
     }
   };
-  
+
   const handleClick = useCallback((e: React.MouseEvent) => {
     // Şablon erişimi yoksa engelleyelim
     if (isLocked) {
@@ -69,15 +79,15 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
 
   // Kilitli durumlarda Link yerine div kullan
   const WrapperComponent = isLocked ? 'div' : Link;
-  const wrapperProps = isLocked 
+  const wrapperProps = isLocked
     ? {
-        onClick: handleClick,
-        className: `group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer opacity-90`
-      }
+      onClick: handleClick,
+      className: `group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden cursor-pointer opacity-90`
+    }
     : {
-        to: `/editor?template=${template.id}`,
-        className: `group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden`
-      };
+      to: `/editor?template=${template.id}`,
+      className: `group block bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden`
+    };
 
   return (
     <WrapperComponent {...wrapperProps as any}>
@@ -86,12 +96,11 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
         <img
           src={getTemplateThumbnailUrl(template.thumbnail_url || template.default_image_url)}
           alt={template.name}
-          className={`w-full h-full object-cover transition-transform duration-300 ${
-            isLocked ? 'blur-sm' : 'group-hover:scale-105'
-          }`}
+          className={`w-full h-full object-cover transition-transform duration-300 ${isLocked ? 'blur-sm' : 'group-hover:scale-105'
+            }`}
           loading="lazy"
         />
-        
+
         {/* Lock Overlay for Premium/PRO Templates */}
         {isLocked && (
           <div className="absolute inset-0 bg-black bg-opacity-60 flex flex-col items-center justify-center text-white">
@@ -100,15 +109,15 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
               {template.tier === 'premium' ? 'PREMIUM Şablon' : 'PRO Şablon'}
             </div>
             <div className="text-sm text-center px-4">
-              {template.tier === 'premium' 
-                ? 'PREMIUM plana yükseltin' 
+              {template.tier === 'premium'
+                ? 'PREMIUM plana yükseltin'
                 : template.tier === 'pro'
-                ? 'PRO plana yükseltin'
-                : 'Yükseltme gerekli'}
+                  ? 'PRO plana yükseltin'
+                  : 'Yükseltme gerekli'}
             </div>
           </div>
         )}
-        
+
         {/* Overlay on hover */}
         {!isLocked && (
           <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
@@ -135,11 +144,10 @@ const TemplateCard: React.FC<TemplateCardProps> = memo(({ template, onSave, isSa
         {onSave && (
           <button
             onClick={handleSaveClick}
-            className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
-              isSaved
-                ? 'bg-red-500 text-white'
-                : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
-            }`}
+            className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${isSaved
+              ? 'bg-red-500 text-white'
+              : 'bg-white text-gray-600 hover:bg-red-50 hover:text-red-500'
+              }`}
             title={isSaved ? 'Kaydedildi' : 'Kaydet'}
           >
             <Heart className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />

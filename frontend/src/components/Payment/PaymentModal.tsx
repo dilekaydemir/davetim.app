@@ -149,7 +149,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         installment: 1,
       });
       // Status codes: 0 = SUCCESS, 1 = PENDING, 2 = FAILED, 3 = WAITING_3D_SECURE
-      if (result.success && (result.status === 'WAITING_3D' || result.status === 1 || result.status === 3)) {
+      // Compare as strings since result.status can be string or number from API
+      const statusStr = String(result.status);
+      if (result.success && (statusStr === 'WAITING_3D' || statusStr === '1' || statusStr === '3')) {
         // Save pending payment data and transaction ID for callback
         const pendingPaymentData = {
           planTier,
@@ -181,7 +183,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
         // Close payment modal (3D Secure modal is now open)
         onClose();
-      } else if (result.success && result.status === 0) {
+      } else if (result.success && statusStr === '0') {
         // Direct success (without 3D Secure)
         await subscriptionService.upgradeSubscription(
           user.id,

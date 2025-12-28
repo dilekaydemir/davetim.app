@@ -1,11 +1,11 @@
 // Payment Service Types (localhost:5000)
 
-export type PaymentStatus = 
-  | 'SUCCESS' 
-  | 'FAILURE' 
-  | 'PENDING' 
-  | 'WAITING_3D' 
-  | 'CANCELLED' 
+export type PaymentStatus =
+  | 'SUCCESS'
+  | 'FAILURE'
+  | 'PENDING'
+  | 'WAITING_3D'
+  | 'CANCELLED'
   | 'REFUNDED';
 
 export type PaymentCurrency = 'TRY' | 'USD' | 'EUR';
