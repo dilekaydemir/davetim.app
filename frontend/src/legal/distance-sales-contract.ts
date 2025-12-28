@@ -34,7 +34,7 @@ export function generateDistanceSalesContractText(params?: DistanceSalesContract
 İşbu Sözleşme aşağıdaki taraflar arasında aşağıda belirtilen hüküm ve şartlar çerçevesinde imzalanmıştır.
 
 1.1. SATICI:
-Ünvan: Diligent Computer System & Digital Commerce
+Ünvan: Diligent Computer Systems & Digital Commerce - Dilek Aydemir
 Telefon: +90 535 921 68 94
 E-posta: info@davetim.app
 Web: davetim.app
@@ -182,7 +182,7 @@ Onay Yöntemi: Elektronik (Ödeme onayı ile)
 İşbu sözleşme 12 (on iki) maddeden ibaret olup, taraflarca elektronik ortamda onaylanmış ve yürürlüğe girmiştir.
 
 SATICI:
-Diligent Computer System & Digital Commerce
+Diligent Computer Systems & Digital Commerce - Dilek Aydemir
 
 ALICI:
 ${userName}
@@ -194,20 +194,20 @@ ${userEmail}`;
  */
 function getServiceFeatures(planName: string): string {
   const plan = planName.toUpperCase();
-  
+
   const features: Record<string, string> = {
     'FREE': `• 1 adet dijital davetiye (tek kullanım)
 • 5 temel şablona erişim
 • PDF/PNG indirme ve link paylaşımı
 • RSVP takibi (50 misafir)
 • 5 MB depolama, watermark'lı yayın`,
-    
+
     'PRO': `• Aylık 3 dijital davetiye
 • PRO seviyesi şablonlar
 • Görsel yükleme ve renk özelleştirme
 • Sosyal medya paylaşımı + Excel export
 • Sınırsız RSVP ve 100 MB depolama`,
-    
+
     'PREMIUM': `• Sınırsız dijital davetiye
 • Premium şablonlar ve PRO özellikleri
 • QR medya yükleme (3 ay / yıllıkta 12 ay)

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, Lock, AlertCircle, Loader2 } from 'lucide-react';
 import { paymentService } from '../../services/paymentService';
+import { analyticsService } from '../../services/analyticsService';
 import { subscriptionService } from '../../services/subscriptionService';
 import { useAuthStore } from '../../store/authStore';
 import { authService } from '../../services/authService';
@@ -30,7 +31,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   const { refreshSubscription } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [useTestCard, setUseTestCard] = useState(false);
-  
+
   // Form state
   const [cardInfo, setCardInfo] = useState<CardInfo>({
     cardHolderName: '',
@@ -48,11 +49,18 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     zipCode: '',
   });
 
+  // Track checkout begin
+  useEffect(() => {
+    if (isOpen) {
+      analyticsService.trackBeginCheckout(planTier, amount);
+    }
+  }, [isOpen, planTier, amount]);
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [contractAccepted, setContractAccepted] = useState(false);
 
   if (!isOpen || !user) return null;
-  
+
   // Generate Distance Sales Contract with user-specific data
   const distanceSalesContract = generateDistanceSalesContractText({
     userName: user.fullName,
@@ -111,7 +119,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
     if (!billingAddress.address.trim()) {
       newErrors.address = 'Adres gerekli';
     }
-    
+
     // Validate contract acceptance
     if (!contractAccepted) {
       newErrors.contract = 'Mesafeli Satış Sözleşmesini kabul etmelisiniz';
@@ -149,7 +157,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         installment: 1,
       });
       // Status codes: 0 = SUCCESS, 1 = PENDING, 2 = FAILED, 3 = WAITING_3D_SECURE
-      if (result.success && (result.status === 'WAITING_3D' || result.status === 1 || result.status === 3)) {
+      // Compare as strings since result.status can be string or number from API
+      const statusStr = String(result.status);
+      if (result.success && (statusStr === 'WAITING_3D' || statusStr === '1' || statusStr === '3')) {
         // Save pending payment data and transaction ID for callback
         const pendingPaymentData = {
           planTier,
@@ -158,30 +168,30 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         };
         sessionStorage.setItem('pending_payment', JSON.stringify(pendingPaymentData));
         sessionStorage.setItem('last_transaction_id', result.transactionId);
-        
+
         console.log('💾 Saved payment data to sessionStorage:', {
           transactionId: result.transactionId,
           planTier,
           billingPeriod,
           amount,
         });
-        
+
         // ✅ DOĞRU: HTML'i frontend'te render et
         if (!result.threeDSecureHtmlContent) {
           toast.error('3D Secure HTML içeriği alınamadı');
           console.error('❌ threeDSecureHtmlContent eksik:', result);
           return;
         }
-        
+
         console.log('✅ 3D Secure HTML alındı, render ediliyor...');
         toast.success('3D Secure doğrulama ekranı açılıyor...');
-        
+
         // Render 3D Secure HTML in modal (frontend'te direkt render)
         paymentService.handle3DSecure(result.threeDSecureHtmlContent);
-        
+
         // Close payment modal (3D Secure modal is now open)
         onClose();
-      } else if (result.success && result.status === 0) {
+      } else if (result.success && statusStr === '0') {
         // Direct success (without 3D Secure)
         await subscriptionService.upgradeSubscription(
           user.id,
@@ -189,7 +199,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           billingPeriod,
           result.transactionId
         );
-        
+
         await subscriptionService.savePaymentHistory(
           user.id,
           result.transactionId,
@@ -202,25 +212,32 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
           billingPeriod
         );
 
+        // Track purchase
+        analyticsService.trackPurchase(
+          result.transactionId,
+          planTier,
+          amount
+        );
+
         // Force refresh auth state without page reload
         console.log('🔄 Force refreshing auth state...');
         sessionStorage.removeItem('pending_payment');
-        
+
         // Wait a bit for database to settle
         console.log('⏳ Waiting 1 second for database to settle...');
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
+
         // Get fresh user data from Supabase
         console.log('🔄 Fetching fresh user data from database...');
         const freshUser = await authService.getCurrentUser();
         console.log('📊 Fresh user data:', freshUser);
         console.log('📊 Fresh subscription tier:', freshUser?.subscriptionTier);
-        
+
         // Update auth store with fresh data
         if (freshUser) {
           console.log('🔄 Updating auth store with fresh data...');
           updateUser(freshUser);
-          
+
           // Force storage to persist immediately
           const currentState = useAuthStore.getState();
           localStorage.setItem('auth-store', JSON.stringify({
@@ -231,14 +248,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
             },
             version: 0
           }));
-          
+
           console.log('✅ Auth store updated');
           console.log('✅ Updated user:', useAuthStore.getState().user);
-          
+
           // Dispatch custom event to force re-render
           console.log('📢 Dispatching subscription update event...');
-          window.dispatchEvent(new CustomEvent('subscription-updated', { 
-            detail: { user: freshUser } 
+          window.dispatchEvent(new CustomEvent('subscription-updated', {
+            detail: { user: freshUser }
           }));
         }
 
@@ -246,13 +263,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         console.log('🔄 Refreshing subscription hook...');
         await refreshSubscription();
         console.log('✅ Subscription hook refreshed');
-        
+
         // Small delay to ensure UI updates propagate
         await new Promise(resolve => setTimeout(resolve, 800));
 
         toast.success('Ödeme başarılı! 🎉');
         onClose();
-        
+
         // Navigate to account page (no reload)
         navigate('/account');
       } else {
@@ -277,10 +294,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto animate-fade-in">
-      {/* Backdrop with blur */}
+      {/* Backdrop with blur - no click to close for payment security */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300"
-        onClick={onClose}
       />
 
       {/* Modal */}
@@ -321,7 +337,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                       {billingPeriod === 'monthly' ? 'Aylık' : 'Yıllık'}
                     </div>
                   </div>
-                  
+
                   <div className="pt-3 border-t border-white/20">
                     <div className="flex items-baseline justify-between">
                       <span className="text-white/80 text-xs">Toplam</span>
@@ -341,12 +357,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     <Lock className="h-4 w-4 flex-shrink-0" />
                     <p>256-bit SSL şifreleme</p>
                   </div>
-                  
+
                   {/* Payment Infrastructure Logo */}
                   <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-                    <img 
-                      src="/images/bank_band_logo.png" 
-                      alt="Desteklenen Ödeme Yöntemleri" 
+                    <img
+                      src="/images/bank_band_logo.png"
+                      alt="Desteklenen Ödeme Yöntemleri"
                       className="w-full h-auto object-contain opacity-90"
                     />
                   </div>
@@ -482,7 +498,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 {/* Billing Address Section - COMPACT */}
                 <div className="pt-4 border-t border-gray-200">
                   <h4 className="text-sm font-semibold text-gray-900 mb-3">Fatura Adresi</h4>
-                  
+
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -539,7 +555,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     className="w-full px-3 py-2.5 bg-gray-50 border-2 border-gray-200 rounded-lg text-xs text-gray-700 font-mono leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-primary-100"
                     rows={12}
                   />
-                  
+
                   {/* Contract Acceptance Checkbox */}
                   <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                     <label className="flex items-start gap-3 cursor-pointer group">
@@ -551,7 +567,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                         className="mt-0.5 w-5 h-5 text-primary-600 bg-white border-2 border-gray-300 rounded focus:ring-2 focus:ring-primary-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <span className="text-sm text-gray-900 leading-tight group-hover:text-gray-700 transition-colors">
-                        <strong>Mesafeli Satış Sözleşmesi</strong>'ni okudum, anladım ve kabul ediyorum. 
+                        <strong>Mesafeli Satış Sözleşmesi</strong>'ni okudum, anladım ve kabul ediyorum.
                         <span className="block mt-1 text-xs text-amber-700">
                           * Bu sözleşmeyi kabul etmeden ödeme yapamazsınız.
                         </span>
@@ -608,7 +624,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                     <a href="/privacy" className="text-primary-600 hover:text-primary-700 underline">Gizlilik Politikası</a>
                     'nı kabul etmiş olursunuz.
                   </p>
-                  
+
                   <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
                     <div className="flex items-center gap-1">
                       <Lock className="h-3 w-3 text-green-600" />

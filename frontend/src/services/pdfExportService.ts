@@ -32,7 +32,7 @@ class PDFExportService {
         <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px;">
           <h1 style="font-size: 24px; margin: 0 0 10px 0; color: #1a1a1a;">${legalDocument.title}</h1>
           <p style="margin: 0; color: #666; font-size: 11px;">Son Güncelleme: ${legalDocument.lastUpdated}</p>
-          <p style="margin: 5px 0 0 0; color: #666; font-size: 11px;">Diligent Computer System & Digital Commerce</p>
+          <p style="margin: 5px 0 0 0; color: #666; font-size: 11px;">Diligent Computer Systems & Digital Commerce - Dilek Aydemir</p>
         </div>
       `;
 
@@ -52,7 +52,7 @@ class PDFExportService {
       const footer = `
         <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; text-align: center;">
           <p style="margin: 0; font-size: 10px; color: #666;">
-            Diligent Computer System & Digital Commerce<br/>
+            Diligent Computer Systems & Digital Commerce - Dilek Aydemir<br/>
             E-posta: info@davetim.app | Telefon: +905359216894<br/>
             © ${new Date().getFullYear()} Tüm hakları saklıdır.
           </p>
@@ -74,12 +74,12 @@ class PDFExportService {
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
+
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
+
       let heightLeft = imgHeight;
       let position = 0;
 
@@ -111,7 +111,7 @@ class PDFExportService {
   ): Promise<void> {
     try {
       const contract = generateDistanceSalesContract(contractData);
-      
+
       // Create a temporary container
       const container = document.createElement('div');
       container.style.position = 'absolute';
@@ -157,7 +157,7 @@ class PDFExportService {
             ve Mesafeli Sözleşmeler Yönetmeliği hükümlerine göre düzenlenmiştir.
           </p>
           <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666;">
-            <p style="margin: 0;">Diligent Computer System & Digital Commerce</p>
+            <p style="margin: 0;">Diligent Computer Systems & Digital Commerce - Dilek Aydemir</p>
             <p style="margin: 3px 0 0 0;">E-posta: info@davetim.app | Telefon: +905359216894</p>
           </div>
         </div>
@@ -178,12 +178,12 @@ class PDFExportService {
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
+
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
+
       let heightLeft = imgHeight;
       let position = 0;
 
@@ -240,25 +240,25 @@ class PDFExportService {
   ): Promise<void> {
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
+
       // Set font
       pdf.setFont('helvetica');
-      
+
       // Add title
       pdf.setFontSize(20);
       pdf.setFont('helvetica', 'bold');
       pdf.text(title, 20, 20);
-      
+
       // Add date
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       pdf.text(new Date().toLocaleDateString('tr-TR'), 20, 30);
-      
+
       // Add content
       pdf.setFontSize(12);
       const lines = pdf.splitTextToSize(content, 170);
       pdf.text(lines, 20, 40);
-      
+
       // Download
       pdf.save(filename);
     } catch (error) {

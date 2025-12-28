@@ -67,10 +67,10 @@ const LegalPage: React.FC = () => {
 
   const handleDownloadPDF = async () => {
     if (!document || !documentInfo) return;
-    
+
     setIsDownloading(true);
     const loadingToast = toast.loading('PDF oluşturuluyor...');
-    
+
     try {
       const filename = `${documentInfo.slug}-${new Date().toISOString().split('T')[0]}.pdf`;
       await pdfExportService.exportLegalDocumentToPDF(document, filename);
@@ -150,7 +150,7 @@ const LegalPage: React.FC = () => {
                 <Building className="h-5 w-5 text-gray-400 mt-0.5" />
                 <div>
                   <p className="text-sm text-gray-600">Yayınlayan</p>
-                  <p className="font-medium text-gray-900">Diligent Computer System & Digital Commerce</p>
+                  <p className="font-medium text-gray-900">Diligent Computer Systems & Digital Commerce - Dilek Aydemir</p>
                 </div>
               </div>
             </div>

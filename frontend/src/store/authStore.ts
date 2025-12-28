@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { authService, type AuthUser, type SignUpData, type SignInData } from '../services/authService'
+import { analyticsService } from '../services/analyticsService'
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthState {
@@ -34,7 +35,7 @@ export const useAuthStore = create<AuthState>()(
       // Initialize auth state
       initialize: async () => {
         if (get().isInitialized) return
-        
+
         set({ isLoading: true })
 
         try {
@@ -69,6 +70,16 @@ export const useAuthStore = create<AuthState>()(
 
             if (event === 'SIGNED_IN' && session) {
               const user = await authService.getCurrentUser()
+
+              // Track stored user properties on auto-login
+              if (user) {
+                analyticsService.setUserProperties({
+                  id: user.id,
+                  tier: user.subscriptionTier,
+                  method: 'auto'
+                });
+              }
+
               set({ session, user })
             } else if (event === 'SIGNED_OUT') {
               set({ session: null, user: null })
@@ -100,12 +111,24 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const result = await authService.signUp(data)
-          
+
           if (result.user && result.session) {
             // Ensure subscription exists after signup
             await authService.ensureSubscription(result.user.id)
-            
+
             const user = await authService.getCurrentUser()
+
+            // Track signup
+            analyticsService.trackSignUp('email');
+
+            if (user) {
+              analyticsService.setUserProperties({
+                id: user.id,
+                tier: user.subscriptionTier || 'free',
+                method: 'email'
+              });
+            }
+
             set({
               session: result.session,
               user,
@@ -114,7 +137,7 @@ export const useAuthStore = create<AuthState>()(
           } else {
             set({ isLoading: false })
           }
-          
+
           return result
         } catch (error) {
           set({ isLoading: false })
@@ -128,9 +151,21 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const result = await authService.signIn(data)
-          
+
           if (result.user && result.session) {
             const user = await authService.getCurrentUser()
+
+            // Track login
+            analyticsService.trackLogin('email');
+
+            if (user) {
+              analyticsService.setUserProperties({
+                id: user.id,
+                tier: user.subscriptionTier || 'free',
+                method: 'email'
+              });
+            }
+
             set({
               session: result.session,
               user,
@@ -139,7 +174,7 @@ export const useAuthStore = create<AuthState>()(
           } else {
             set({ isLoading: false })
           }
-          
+
           return result
         } catch (error) {
           set({ isLoading: false })
@@ -153,6 +188,9 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           await authService.signInWithGoogle()
+          // Track google login attempt (actual success handled in callback)
+          analyticsService.trackLogin('google');
+
           // Auth state will be updated by the onAuthStateChange listener
           set({ isLoading: false })
         } catch (error) {
@@ -167,11 +205,11 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           await authService.signOut()
-          
+
           // Clear all storage
           localStorage.clear()
           sessionStorage.clear()
-          
+
           set({
             user: null,
             session: null,
@@ -210,7 +248,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           await authService.updateProfile(data)
-          
+
           // Refresh user data
           const user = await authService.getCurrentUser()
           set({
@@ -248,7 +286,7 @@ export const useAuthStore = create<AuthState>()(
 // Helper hooks for easier usage
 export const useAuth = () => {
   const store = useAuthStore()
-  
+
   return {
     // State
     user: store.user,

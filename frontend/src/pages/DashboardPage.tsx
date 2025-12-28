@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { analyticsService } from '../services/analyticsService';
 import { Plus, Calendar, Edit, Trash2, Eye, Crown, Zap, Users, CheckCircle, TrendingUp, Lock, Sparkles, BarChart3, ExternalLink, Award, Rocket, Gift } from 'lucide-react';
 import { invitationService, type Invitation } from '../services/invitationService';
 import { guestService, type GuestStats } from '../services/guestService';
@@ -24,7 +25,7 @@ const DashboardPage: React.FC = () => {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [guestStats, setGuestStats] = useState<Record<string, GuestStats>>({});
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Confirm dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [invitationToDelete, setInvitationToDelete] = useState<{ id: string; title: string } | null>(null);
@@ -45,13 +46,13 @@ const DashboardPage: React.FC = () => {
     try {
       const data = await invitationService.getUserInvitations();
       setInvitations(data);
-      
+
       // Load guest stats for each invitation
       const statsPromises = data.map(async (invitation) => {
         const stats = await guestService.getGuestStats(invitation.id);
         return { invitationId: invitation.id, stats };
       });
-      
+
       const statsResults = await Promise.all(statsPromises);
       const statsMap: Record<string, GuestStats> = {};
       statsResults.forEach(({ invitationId, stats }) => {
@@ -71,13 +72,13 @@ const DashboardPage: React.FC = () => {
   const generateAnalyticsData = (invitations: Invitation[], statsMap: Record<string, GuestStats>) => {
     // Generate recent activities
     const activities: Activity[] = [];
-    
+
     invitations.slice(0, 10).forEach((inv) => {
       const stats = statsMap[inv.id];
-      
+
       // Add invitation created activity
       activities.push({
-        id: `${inv.id}-created`,
+        id: `${inv.id} -created`,
         type: 'invitation_created',
         title: 'Yeni davetiye oluşturuldu',
         description: inv.title,
@@ -88,7 +89,7 @@ const DashboardPage: React.FC = () => {
       // Add RSVP activities if any
       if (stats && stats.total_attending > 0) {
         activities.push({
-          id: `${inv.id}-rsvp-yes`,
+          id: `${inv.id} -rsvp - yes`,
           type: 'rsvp_yes',
           title: 'Yeni RSVP yanıtı',
           description: `${stats.total_attending} kişi katılacak`,
@@ -100,7 +101,7 @@ const DashboardPage: React.FC = () => {
       // Add view activity if has views
       if (inv.view_count > 0) {
         activities.push({
-          id: `${inv.id}-views`,
+          id: `${inv.id} -views`,
           type: 'view',
           title: 'Davetiye görüntülendi',
           description: `${inv.view_count} görüntülenme`,
@@ -116,7 +117,7 @@ const DashboardPage: React.FC = () => {
 
     // Generate top templates data
     const templateUsage: Record<string, TemplateUsage> = {};
-    
+
     invitations.forEach((inv) => {
       if (inv.template) {
         const templateId = inv.template_id;
@@ -149,17 +150,17 @@ const DashboardPage: React.FC = () => {
     // Generate REAL views timeline (last 7 days) - NO MOCK DATA
     const viewsTimeline = [];
     const now = new Date();
-    
+
     for (let i = 6; i >= 0; i--) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       // Calculate actual views for this date from invitations
       // In production, this should come from a daily_views table
       // For now, we'll show 0 for all days (real data)
       let dayViews = 0;
-      
+
       // Count views from invitations created on this day
       invitations.forEach(inv => {
         const invDate = new Date(inv.created_at).toISOString().split('T')[0];
@@ -167,7 +168,7 @@ const DashboardPage: React.FC = () => {
           dayViews += inv.view_count;
         }
       });
-      
+
       viewsTimeline.push({
         date: dateStr,
         views: dayViews,
@@ -182,7 +183,7 @@ const DashboardPage: React.FC = () => {
   const totalAttending = Object.values(guestStats).reduce((sum, stats) => sum + (stats?.total_attending || 0), 0);
   const totalNotAttending = Object.values(guestStats).reduce((sum, stats) => sum + (stats?.declined || 0), 0);
   const totalPending = Object.values(guestStats).reduce((sum, stats) => sum + (stats?.pending || 0), 0);
-  
+
   const userStats = {
     totalInvitations: invitations.length,
     draftInvitations: invitations.filter(i => i.status === 'draft').length,
@@ -197,21 +198,26 @@ const DashboardPage: React.FC = () => {
   const handleCreateNew = async () => {
     // Check if user can create invitation
     const { allowed, reason } = await subscription.canCreateInvitation();
-    
+
     if (!allowed) {
       toast.error(reason || 'Davetiye oluşturma limitine ulaştınız');
       navigate('/pricing');
       return;
     }
-    
+
+    // Track create action start
+    analyticsService.trackInvitationAction('create');
+
     navigate('/templates');
   };
 
   const handleEditInvitation = (id: string) => {
+    analyticsService.trackInvitationAction('edit', id);
     navigate(`/editor/${id}`);
   };
 
   const handleViewInvitation = (id: string) => {
+    analyticsService.trackInvitationAction('publish', id);
     navigate(`/i/${id}`);
   };
 
@@ -222,11 +228,12 @@ const DashboardPage: React.FC = () => {
 
   const handleDeleteConfirm = async () => {
     if (!invitationToDelete) return;
-    
+
     setIsDeleting(true);
     try {
       const success = await invitationService.deleteInvitation(invitationToDelete.id);
       if (success) {
+        analyticsService.trackInvitationAction('delete', invitationToDelete.id);
         // Reload invitations
         await loadInvitations();
         setShowDeleteDialog(false);
@@ -253,7 +260,7 @@ const DashboardPage: React.FC = () => {
   // Remaining invitations helper
   const getRemainingInvitationsDisplay = () => {
     const remaining = subscription.getRemainingInvitations();
-    
+
     if (remaining === 'unlimited') {
       return (
         <span className="text-primary-700 font-semibold flex items-center gap-1">
@@ -262,7 +269,7 @@ const DashboardPage: React.FC = () => {
         </span>
       );
     }
-    
+
     if (remaining === 0) {
       return (
         <span className="text-red-600 font-semibold flex items-center gap-1">
@@ -271,7 +278,7 @@ const DashboardPage: React.FC = () => {
         </span>
       );
     }
-    
+
     return (
       <span className="text-primary-700 font-semibold">
         {remaining} Kalan
@@ -403,7 +410,7 @@ const DashboardPage: React.FC = () => {
             )}
           </div>
         </div>
-        
+
         {/* Action Bar - Compact */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900">
@@ -436,10 +443,11 @@ const DashboardPage: React.FC = () => {
           <div className="bg-white shadow-md rounded-2xl overflow-hidden border border-gray-200 animate-fade-in mb-6">
             <div className="divide-y divide-gray-100">
               {invitations.map((invitation, index) => (
-                <div 
-                  key={invitation.id} 
-                  className="p-3 sm:p-4 hover:bg-gray-50 transition-colors"
-                  style={{ animationDelay: `${index * 30}ms` }}
+                <div
+                  key={invitation.id}
+                  className="p-3 sm:p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  style={{ animationDelay: `${index * 30} ms` }}
+                  onClick={() => handleEditInvitation(invitation.id)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -452,7 +460,7 @@ const DashboardPage: React.FC = () => {
                           {getStatusBadge(invitation.status)}
                         </div>
                       </div>
-                      
+
                       {/* Details Row - More Compact on Mobile */}
                       <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1 text-[11px] sm:text-xs text-gray-600 mb-2">
                         <span className="flex items-center gap-0.5 sm:gap-1">
@@ -470,7 +478,7 @@ const DashboardPage: React.FC = () => {
                           <span>{invitation.view_count}</span>
                         </span>
                       </div>
-                      
+
                       {/* Guest Stats - More Compact on Mobile */}
                       {guestStats[invitation.id] && guestStats[invitation.id].total > 0 && (
                         <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
@@ -495,9 +503,9 @@ const DashboardPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Action Buttons - Mobile Optimized */}
-                    <div className="flex items-center gap-0.5 sm:gap-1 self-start sm:self-center">
+                    <div className="flex items-center gap-0.5 sm:gap-1 self-start sm:self-center" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => handleEditInvitation(invitation.id)}
                         className="p-1.5 sm:p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-primary-50 transition-all touch-target"
@@ -651,8 +659,8 @@ const DashboardPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <Link 
-                to="/qr-manage" 
+              <Link
+                to="/qr-manage"
                 className="inline-flex items-center gap-1.5 text-xs text-purple-700 hover:text-purple-800 font-bold group"
               >
                 QR Medya Yönet
@@ -675,8 +683,8 @@ const DashboardPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <Link 
-                to="/templates?filter=premium" 
+              <Link
+                to="/templates?filter=premium"
                 className="inline-flex items-center gap-1.5 text-xs text-blue-700 hover:text-blue-800 font-bold group"
               >
                 Premium Şablonlar
@@ -699,8 +707,8 @@ const DashboardPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <Link 
-                to="/contact" 
+              <Link
+                to="/contact"
                 className="inline-flex items-center gap-1.5 text-xs text-green-700 hover:text-green-800 font-bold group"
               >
                 Destek Talebi
@@ -720,8 +728,8 @@ const DashboardPage: React.FC = () => {
               <p className="text-sm text-gray-600 mb-3">
                 Popüler şablonlarla hemen davetiye oluşturun
               </p>
-              <Link 
-                to="/templates" 
+              <Link
+                to="/templates"
                 className="inline-flex items-center gap-1.5 text-sm text-primary-700 hover:text-primary-800 font-bold group"
               >
                 Şablonları İncele
@@ -737,8 +745,8 @@ const DashboardPage: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-3">
                   Sınırsız davetiye ve özel şablonlar
                 </p>
-                <Link 
-                  to="/pricing" 
+                <Link
+                  to="/pricing"
                   className="inline-flex items-center gap-1.5 text-sm text-green-700 hover:text-green-800 font-bold group"
                 >
                   Planları Karşılaştır
@@ -755,8 +763,8 @@ const DashboardPage: React.FC = () => {
                 <p className="text-sm text-gray-600 mb-3">
                   QR medya, AI tasarım ve sınırsız davetiye
                 </p>
-                <Link 
-                  to="/pricing" 
+                <Link
+                  to="/pricing"
                   className="inline-flex items-center gap-1.5 text-sm text-purple-700 hover:text-purple-800 font-bold group"
                 >
                   Premium Özellikleri Gör
@@ -767,7 +775,7 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
       </div>
-      
+
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={showDeleteDialog}
@@ -777,7 +785,7 @@ const DashboardPage: React.FC = () => {
         }}
         onConfirm={handleDeleteConfirm}
         title="Davetiyeyi Sil"
-        message={`"${invitationToDelete?.title}" davetiyesini silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve tüm misafir bilgileri de silinecektir.`}
+        message={`"${invitationToDelete?.title}" davetiyesini silmek istediğinize emin misiniz ? Bu işlem geri alınamaz ve tüm misafir bilgileri de silinecektir.`}
         confirmText="Evet, Sil"
         cancelText="İptal"
         type="danger"

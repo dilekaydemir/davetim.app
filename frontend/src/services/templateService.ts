@@ -1,13 +1,10 @@
 import { supabase } from './supabase';
 import toast from 'react-hot-toast';
 import { retry, getUserFriendlyErrorMessage } from '../utils/retry';
-import type { 
-  TemplateV2, 
-  ColorPalette, 
-  TextField, 
-  DecorativeElement,
-  TemplateCategory as TemplateCategoryType,
-  TemplateFilters as TemplateFiltersV2
+import type {
+  ColorPalette,
+  TextField,
+  DecorativeElement
 } from '../types/template';
 
 // Legacy Types (for backward compatibility)
@@ -53,7 +50,7 @@ export interface UserTemplate {
   is_favorite: boolean;
   created_at: string;
   updated_at: string;
-  
+
   // Joined data
   template?: Template;
 }
@@ -71,7 +68,7 @@ class TemplateService {
   // =====================================================
   // Template Categories
   // =====================================================
-  
+
   async getCategories(): Promise<TemplateCategory[]> {
     try {
       return await retry(async () => {
@@ -129,7 +126,7 @@ class TemplateService {
   // =====================================================
   // Templates
   // =====================================================
-  
+
   async getTemplates(filters?: TemplateFilters): Promise<Template[]> {
     try {
       return await retry(async () => {
@@ -161,7 +158,7 @@ class TemplateService {
 
         // Order by sort_order, then featured
         query = query.order('sort_order', { ascending: true })
-                     .order('is_featured', { ascending: false });
+          .order('is_featured', { ascending: false });
 
         const { data, error } = await query;
 
@@ -262,7 +259,7 @@ class TemplateService {
   // =====================================================
   // User Templates (Saved/Favorited)
   // =====================================================
-  
+
   async getUserTemplates(): Promise<UserTemplate[]> {
     try {
       const { data, error } = await supabase
@@ -297,9 +294,17 @@ class TemplateService {
 
   async saveTemplate(templateId: string): Promise<boolean> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Oturum açmanız gerekiyor');
+        return false;
+      }
+
       const { error } = await supabase
         .from('user_templates')
         .insert({
+          user_id: user.id,
           template_id: templateId,
           is_favorite: true
         });
@@ -325,10 +330,18 @@ class TemplateService {
 
   async unsaveTemplate(templateId: string): Promise<boolean> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Oturum açmanız gerekiyor');
+        return false;
+      }
+
       const { error } = await supabase
         .from('user_templates')
         .delete()
-        .eq('template_id', templateId);
+        .eq('template_id', templateId)
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('❌ Error unsaving template:', error);
@@ -346,10 +359,17 @@ class TemplateService {
 
   async toggleFavorite(templateId: string, isFavorite: boolean): Promise<boolean> {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        return false;
+      }
+
       const { error } = await supabase
         .from('user_templates')
         .update({ is_favorite: isFavorite })
-        .eq('template_id', templateId);
+        .eq('template_id', templateId)
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('❌ Error toggling favorite:', error);
